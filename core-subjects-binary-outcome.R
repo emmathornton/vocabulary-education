@@ -420,6 +420,7 @@ n5 = qualifications1 %>% filter(gc_s_qual_five == 1)
 n5 = qualifications1[qualifications1$mcsid %in% n5$mcsid,] 
 
 
+
 n5 = n5 %>% select(mcsid, gcnum00, gc_rowid,gc_s_qual_nfir_r20, gc_l_fvsb_name_r30, gc_l_fvgd) 
 names(n5) <- c("mcsid", "cm_number", "row_id", "total_quals", "subject_name", "subject_grade")
 
