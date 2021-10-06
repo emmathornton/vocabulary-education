@@ -331,9 +331,9 @@ have_maths <- have_maths %>% mutate(maths_gcse = case_when(maths == 1 ~ 1,
 maths_gcse <- have_maths %>% select(mcsid, maths_gcse)
 
 #have science? (NB if CM reports any form of science then this counts) ####
-#first, get those who have science subjects - select science subjects from wide_gcse_subject - but dont want computer science. 
-have_science_gcse <- wide_gcse_subject %>% select(gcse.mcsid, contains("science"), contains("biology"), Physics, Chemistry, -"Computer Science")
-names(have_science_gcse) <- c("mcsid", "additional_applied_science", "additional_science", "applied_science", "combined_science", 
+#first, get those who have science subjects - select science subjects from wide_gcse_subject - including computer science
+have_science_gcse <- wide_gcse_subject %>% select(gcse.mcsid, contains("science"), contains("biology"), Physics, Chemistry)
+names(have_science_gcse) <- c("mcsid", "additional_applied_science", "additional_science", "applied_science", "combined_science", "computer_science",
                          "further_additional_science", "science", "science_modular", "additional_science_modular", 
                          "biology", "human_biology", "physics", "chemistry") #rename columns
 
@@ -349,6 +349,7 @@ have_science <- have_science %>% mutate(science_gcse = case_when(additional_appl
                                                                  additional_science == 1 ~ 1, 
                                                                  applied_science == 1 ~ 1, 
                                                                  combined_science == 1 ~ 1, 
+                                                                 computer_science == 1 ~ 1, 
                                                                  further_additional_science == 1 ~ 1,
                                                                  science == 1 ~ 1, 
                                                                  science_modular == 1 ~ 1,
@@ -365,6 +366,7 @@ have_science <- have_science %>% mutate(science_gcse = case_when(additional_appl
                                                                  additional_science == 2 ~ 1, 
                                                                  applied_science == 2 ~ 1, 
                                                                  combined_science == 2 ~ 1, 
+                                                                 computer_science == 2 ~ 1, 
                                                                  further_additional_science == 2 ~ 1,
                                                                  science == 2 ~ 1, 
                                                                  science_modular == 2 ~ 1,
@@ -378,6 +380,7 @@ have_science <- have_science %>% mutate(science_gcse = case_when(additional_appl
                                                                  chemistry_I == 2 ~ 1, 
                                                                  physics_I == 2 ~ 1, 
                                                                  additional_science == 3 ~ 1, 
+                                                                 computer_science == 3 ~ 1, 
                                                                  science == 3 ~ 1, 
                                                                  TRUE ~ 0))
 #is.na(have_science) ~ 0))
