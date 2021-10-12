@@ -690,15 +690,15 @@ names(core_iGCSE_subjects_grades) <- c("mcsid", "biology_I", "chemistry_I", "phy
 #combine core grades together into one dataframe (for GCSE and iGCSE)
 combined_core_grades = merge(all=TRUE, core_subjects_grades, core_iGCSE_subjects_grades, by = "mcsid")
 
-core_grades <- combined_core_grades %>%  mutate(benchmark = case_when((english >= 4  | english_lang >= 4  | english_lit >= 4 | english_first_lang_I >= 4 |english_lit_I >= 4 )  & 
-                                                                        (maths >= 4 | maths_linear >= 4 | maths_numeracy >= 4 | further_maths >= 4 | additional_maths >= 4 | maths_I >= 4)  &
-                                                                        (biology >= 4 | chemistry >= 4 | physics >= 4 | additional_science >= 4 | science >= 4 | applied_science >= 4 |
-                                                                           combined_science >= 4 | modular_science >= 4 | further_additional_science >= 4 |additional_applied_science >= 4 |
-                                                                           additional_science_modular >= 4 |human_biology >= 4 | biology_I >= 4 | chemistry_I >= 4 | physics_I >= 4 | science_I >= 4) ~ 1))
-
-
-
-core_grades$benchmark[is.na(core_grades$benchmark)] <- 0
+#create binary variable. those who score >=4 on at least an english subject, at least one maths subject and at least 1 science subject = 1. else = 0. 
+core_grades <- combined_core_grades %>%  mutate(benchmark = case_when(
+  (english >= 4  | english_lang >= 4  | english_lit >= 4 | english_first_lang_I >= 4 |english_lit_I >= 4 ) & 
+    (maths >= 4 | maths_linear >= 4 | maths_numeracy >= 4 | further_maths >= 4 | additional_maths >= 4 | maths_I >= 4) &
+    (biology >= 4 | chemistry >= 4 | physics >= 4 | additional_science >= 4 | science >= 4 | applied_science >= 4 |
+       combined_science >= 4 | modular_science >= 4 | further_additional_science >= 4 |computer_science >=4 |
+     additional_applied_science >= 4 | additional_science_modular >= 4 |human_biology >= 4 | 
+       biology_I >= 4 | chemistry_I >= 4 | physics_I >= 4 | science_I >= 4) ~ 1,
+  TRUE ~ 0))
 
 #get counts
 benchmark = table(core_grades$benchmark)
