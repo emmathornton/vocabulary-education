@@ -705,6 +705,69 @@ benchmark = table(core_grades$benchmark)
 prop.table(benchmark)*100
 
 #NATIONAL 5 - SCOTALND. GRADE C OR ABOVE. 
+
+n5 = qualifications1 %>% filter(gc_s_qual_five == 1)
+n5 = qualifications1[qualifications1$mcsid %in% n5$mcsid,] 
+
+
+
+n5 = n5 %>% select(mcsid, gcnum00, gc_rowid,gc_s_qual_nfir_r20, gc_l_fvsb_name_r30, gc_l_fvgd) 
+names(n5) <- c("mcsid", "cm_number", "row_id", "total_quals", "subject_name", "subject_grade")
+
+n5_subject_key = c(`3`	 = "Design and Manufacture",
+                   `4`	 = "Drama",
+                   `7`	 = "Energy (Skills for Work)",
+                   `8`	 = "Engineering Science",
+                   `10`	 = "Language: English",
+                   `12`	 = "ESOL (English for Speakers of Other Languages)",
+                   `14`	 = "Financial Services (Skills for Work)",
+                   `15`	 = "Food and Drink Manufcturing Industry (Skills for Work)",
+                   `16`	 = "Language: French",
+                   `19`	 = "Geography",
+                   `20`	 = "Language: German",
+                   `21`	 = "Graphic Communication",
+                   `25`	 = "History",
+                   `28`	 = "Hospitality:Practical Cookery",
+                   `34`	 = "Martime Skills (Skills for Work)",
+                   `35`	 = "Mathematics",
+                   `37`	 = "Modern Studies",
+                   `38`	 = "Music",
+                   `41`	 = "Physical Education",
+                   `42`	 = "Physics",
+                   `45`	 = "Practical Woodworking",
+                   `47`	 = "Religious, Moral and Philosophical Studies",
+                   `50`	 = "Language: Spanish",
+                   `52`	 = "Textiles Industry  (Skills for Work)",
+                   `56`	 = "Art and Design",
+                   `57`	 = "Biology",
+                   `58`	 = "Business Management",
+                   `59`	 = "Language: Cantonese",
+                   `60`	 = "Care",
+                   `61`	 = "Chemistry",
+                   `63`	 = "Computing Science",
+                   `64`	 = "Other",
+                   `65`	 = "Recoded due to low counts - check SA")
+#-9	 = Refusal
+#-8	 = Do not know
+#-1	 = Not applicable
+n5$subject_name = as.factor(n5$subject_name)
+n5$subject_name =  recode(n5$subject_name, !!!n5_subject_key)
+n5 = n5 %>%  filter(!is.na(subject_name))
+#grades
+#Value = 1.0	Label = A
+#Value = 2.0	Label = B
+#Value = 3.0	Label = C
+#Value = 4.0	Label = D
+#Value = 5.0	Label = No award (fail)
+#Value = -9.0	Label = Refusal
+#Value = -8.0	Label = Do not know
+#Value = -1.0	Label = Not applicable
+#recode so that A is a higher number. 
+#check what want scale of this to be  when meet!!
+
+n5$subject_grade =  as.numeric(n5$subject_grade)
+n5$subject_grade  = recode(n5$subject_grade, `1` = 5, `2` = 4, `3` = 3, `4` =2, `5` = 0)
+
 #convert to wide format
 #could put into wide format where the column names are subject name and column values are subject grade? 
 n5_grades <- n5 %>% select(mcsid, row_id,  subject_name, subject_grade)
@@ -730,8 +793,8 @@ wide_n5_grades = wide_n5_grades %>%
   tidyr::pivot_wider(names_from = subject_name, values_from = subject_grade) %>% 
   select(-row)
 
-core_n5_grades <- wide_n5_grades %>% select(mcsid, c("Language: English",  contains("math"), "Biology", "Chemistry", "Physics"))
-names(core_n5_grades) <- c("mcsid", "english", "maths", "biology", "chemistry", "physics")
+core_n5_grades <- wide_n5_grades %>% select(mcsid, c("Language: English",  contains("math"), "Computing Science", "Biology", "Chemistry", "Physics"))
+names(core_n5_grades) <- c("mcsid", "english", "maths","computer_science", "biology", "chemistry", "physics")
 
 core_n5_grades <- core_n5_grades%>%  mutate(benchmarkN5 = case_when((english >= 3 )  & 
                                                                       (maths >= 3 )  &
