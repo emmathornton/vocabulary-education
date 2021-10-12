@@ -604,6 +604,8 @@ core_subjects_combined = core_subjects_combined %>% mutate(core_subjects_binary 
 
 taken_core_binary = core_subjects_combined %>% select(mcsid, core_subjects_binary)
 
+
+
 #cm have grade 4 or above on core subjects ####
 
 
@@ -719,9 +721,21 @@ no_quals = no_quals %>% filter(country !=3)
 no_quals = no_quals %>% select(mcsid, gc_s_qual_none)
 names(no_quals) = c("mcsid", "no_quals")
 
+#btec only. this will = 1 only if all other quals reported are answeered no (2)
+btec_only = qualifications1 %>% filter(gc_s_qual_btec== 1)
+btec_only = btec_only %>% select(mcsid, gc_s_qual_btec, gc_s_qual_five, gc_s_qual_gcse, gc_s_qual_igcs)
+btec_only = merge(btec_only, country, by = "mcsid")
+btec_only = btec_only %>%  filter(country !=3)
+btec_only = btec_only %>% mutate(btec_only1 = case_when((gc_s_qual_btec == 1) & (gc_s_qual_five == 1) | (gc_s_qual_gcse == 1)  |(gc_s_qual_igcs == 1) ~  2, (gc_s_qual_btec == 1) |(gc_s_qual_five == 2) | (gc_s_qual_gcse == 2) |(gc_s_qual_igcs == 2) ~ 1))
+btec_only = btec_only %>% filter(btec_only1 == 1)
+btec_only = btec_only %>% select(mcsid,btec_only1)
+
+
 #combine core grades together into one dataframe (for GCSE and iGCSE)
 combined_core_grades = merge(all=TRUE, core_subjects_grades, core_iGCSE_subjects_grades, by = "mcsid")
 combined_core_grades = merge(all=TRUE, combined_core_grades, no_quals, by="mcsid")
+combined_core_grades = merge(all=TRUE, combined_core_grades, btec_only, by="mcsid")
+
 
 #create binary variable. those who score >=4 on at least an english subject, at least one maths subject and at least 1 science subject = 1. else = 0. 
 core_grades <- combined_core_grades %>%  mutate(benchmark = case_when(
@@ -851,8 +865,19 @@ no_quals_scotland = no_quals_scotland %>% filter(country ==3)
 no_quals_scotland = no_quals_scotland %>% select(mcsid, gc_s_qual_none)
 names(no_quals_scotland) = c("mcsid", "no_quals_scotland")
 
+#btec only scotland. this will = 1 only if all other quals reported are answeered no (2)
+btec_only_scotland = qualifications1 %>% filter(gc_s_qual_btec== 1)
+btec_only_scotland  = btec_only_scotland  %>% select(mcsid, gc_s_qual_btec, gc_s_qual_five, gc_s_qual_gcse, gc_s_qual_igcs)
+btec_only_scotland  = merge(btec_only_scotland , country, by = "mcsid")
+btec_only_scotland  = btec_only_scotland  %>%  filter(country ==3)
+btec_only_scotland  = btec_only_scotland  %>% mutate(btec_only1_scotland = case_when((gc_s_qual_btec == 1) & (gc_s_qual_five == 1) | (gc_s_qual_gcse == 1)  |(gc_s_qual_igcs == 1) ~  2, (gc_s_qual_btec == 1) |(gc_s_qual_five == 2) | (gc_s_qual_gcse == 2) |(gc_s_qual_igcs == 2) ~ 1))
+btec_only_scotland  = btec_only_scotland  %>% filter(btec_only1_scotland == 1)
+btec_only_scotland  = btec_only_scotland  %>% select(mcsid,btec_only1_scotland)
+
 core_grades_scotland = merge(all = TRUE, core_n5_grades, n4_only, by = "mcsid")
 core_grades_scotland = merge(all = TRUE, core_grades_scotland, no_quals_scotland, by = "mcsid")
+core_grades_scotland = merge(all = TRUE, core_grades_scotland, btec_only_scotland, by = "mcsid")
+
 
 core_n5_grades <-  core_grades_scotland %>%  mutate(benchmarkN5 = case_when((english >= 3 )  & 
                                                                       (maths >= 3 )  &
@@ -860,29 +885,38 @@ core_n5_grades <-  core_grades_scotland %>%  mutate(benchmarkN5 = case_when((eng
                                                                          biology >= 3 | chemistry >= 3 | physics >= 3 ) ~ 1,
                                                                     TRUE ~ 0))
 
-
-#this will = 1 only if all other quals reported are answeered no (2)
-btec_only = qualifications1 %>% filter(gc_s_qual_btec== 1)
-btec_only = btec_only %>% select(mcsid, gc_s_qual_btec, gc_s_qual_five, gc_s_qual_gcse, gc_s_qual_igcs)
-btec_only = btec_only %>% mutate(btec_only1 = case_when((gc_s_qual_btec == 1) & (gc_s_qual_five == 1) | (gc_s_qual_gcse == 1)  |(gc_s_qual_igcs == 1) ~  2, (gc_s_qual_btec == 1) |(gc_s_qual_five == 2) | (gc_s_qual_gcse == 2) |(gc_s_qual_igcs == 2) ~ 1))
-btec_only = btec_only %>% filter(btec_only1 == 1)
-
 #combine N5 and GCSE core grades into one variable
 #first combine the dataframes
 #replace is/na with the other one 
-core_grades_combined = merge (all=TRUE, core_grades, core_n5_grades, by="mcsid")
-core_grades_combined = core_grades_combined %>% select(mcsid, benchmark, benchmarkN5)
-#merge into one variable
-#core_grades_combined$core_grades_binary = ifelse(!is.na(core_grades_combined$benchmark), 
-# core_grades_combined$benchmark, core_grades_combined$benchmarkN5)
+core_grades_binary= merge (all=TRUE, core_grades, core_n5_grades, by="mcsid")
+core_grades_binary = core_grades_binary %>% select(mcsid, benchmark, benchmarkN5)
 
-core_grades_combined = core_grades_combined %>% mutate(benchmark_binary = 
+
+
+core_grades_binary= core_grades_binary %>% mutate(benchmark_binary = 
                                                          case_when(benchmark == 0 & benchmarkN5 == 1 ~  1, 
                                                                    benchmark == 1 & benchmarkN5 == 1 ~ 1,
                                                                    benchmark == 0 & benchmarkN5 == 0 ~ 0,
                                                                    benchmark == 1 & benchmarkN5 == 0 ~ 1,
                                                                    is.na(benchmarkN5) ~ benchmark, 
-                                                                   is.na(benchmark) ~ benchmarkN5))
+                                                                   is.na(benchmark) ~ benchmarkN5, 
+                                                  TRUE ~ 0))
+
+
+benchmark_binary = table(core_grades_binary$benchmark_binary)
+prop.table(benchmark_binary)*100
+
+#merge into one variable
+#core_grades_combined$core_grades_binary = ifelse(!is.na(core_grades_combined$benchmark), 
+# core_grades_combined$benchmark, core_grades_combined$benchmarkN5)
+
+#core_grades_combined = core_grades_combined %>% mutate(benchmark_binary = 
+   #                                                      case_when(benchmark == 0 & benchmarkN5 == 1 ~  1, 
+   #                                                                benchmark == 1 & benchmarkN5 == 1 ~ 1,
+    #                                                               benchmark == 0 & benchmarkN5 == 0 ~ 0,
+     #                                                              benchmark == 1 & benchmarkN5 == 0 ~ 1,
+     #                                                              is.na(benchmarkN5) ~ benchmark, 
+        #                                                           is.na(benchmark) ~ benchmarkN5))
 
 #take those who sat the core subjects  - so binary variable here will be those who got 4 and above but only for those who took the subjects in the first place. 
 
