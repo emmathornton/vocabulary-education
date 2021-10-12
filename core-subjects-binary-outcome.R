@@ -829,13 +829,43 @@ wide_n5_grades = wide_n5_grades %>%
 core_n5_grades <- wide_n5_grades %>% select(mcsid, c("Language: English",  contains("math"), "Computing Science", "Biology", "Chemistry", "Physics"))
 names(core_n5_grades) <- c("mcsid", "english", "maths","computer_science", "biology", "chemistry", "physics")
 
-core_n5_grades <- core_n5_grades%>%  mutate(benchmarkN5 = case_when((english >= 3 )  & 
+
+n4_only = qualifications1 %>% filter(gc_s_qual_four == 1 & gc_s_qual_five == 2) #n4 = yes, n5 = no
+#n4_only = n4_only %>% select(mcsid, gc_s_qual_four, gc_s_qual_five)
+#n4_only = n4_only %>% filter(gc_s_qual_four == 1)
+#n4_only = qualifications1[qualifications1$mcsid %in% n4_only$mcsid,] 
+#n4_only = n4_only %>% mutate(national_4_only = case_when(gc_s_qual_four == 1 & 
+                                           #                gc_s_qual_five == 2 ~ 1, 
+                                                 #        TRUE ~ 0 ))
+
+n4_only = n4_only %>% select(mcsid, gc_s_qual_four)
+
+
+#add in those who say have none of these subjects - for those who live in Scotland)
+#country = 3 
+no_quals_scotland = qualifications1 %>% filter(gc_s_qual_none== 1) # be careful here as for rest of rows per cm, this will be NA.
+no_quals_scotland = no_quals_scotland %>% select(mcsid, gcnum00, gc_rowid, gc_s_qual_none) #get relevant variables 
+#add country 
+no_quals_scotland = merge(no_quals_scotland, country, by = "mcsid")
+no_quals_scotland = no_quals_scotland %>% filter(country ==3)
+no_quals_scotland = no_quals_scotland %>% select(mcsid, gc_s_qual_none)
+names(no_quals_scotland) = c("mcsid", "no_quals_scotland")
+
+core_grades_scotland = merge(all = TRUE, core_n5_grades, n4_only, by = "mcsid")
+core_grades_scotland = merge(all = TRUE, core_grades_scotland, no_quals_scotland, by = "mcsid")
+
+core_n5_grades <-  core_grades_scotland %>%  mutate(benchmarkN5 = case_when((english >= 3 )  & 
                                                                       (maths >= 3 )  &
                                                                       (computer_science >=3 |
                                                                          biology >= 3 | chemistry >= 3 | physics >= 3 ) ~ 1,
                                                                     TRUE ~ 0))
 
 
+#this will = 1 only if all other quals reported are answeered no (2)
+btec_only = qualifications1 %>% filter(gc_s_qual_btec== 1)
+btec_only = btec_only %>% select(mcsid, gc_s_qual_btec, gc_s_qual_five, gc_s_qual_gcse, gc_s_qual_igcs)
+btec_only = btec_only %>% mutate(btec_only1 = case_when((gc_s_qual_btec == 1) & (gc_s_qual_five == 1) | (gc_s_qual_gcse == 1)  |(gc_s_qual_igcs == 1) ~  2, (gc_s_qual_btec == 1) |(gc_s_qual_five == 2) | (gc_s_qual_gcse == 2) |(gc_s_qual_igcs == 2) ~ 1))
+btec_only = btec_only %>% filter(btec_only1 == 1)
 
 #combine N5 and GCSE core grades into one variable
 #first combine the dataframes
