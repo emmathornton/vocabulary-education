@@ -640,11 +640,11 @@ wide_grades = wide_grades %>%
 
 core_subjects_grades <- wide_grades %>% select(mcsid, c("Language: English", "Language: English Language", "Language: English Literature",
                                                         "Mathematics", "Mathematics - Linear", "Mathematics - Numeracy", contains("math"), "Biology", "Chemistry", "Physics"), #include additional mathematics?
-                                               contains("science"), -"Computer Science", contains("biology"))
+                                               contains("science"), contains("biology"))
 
 names(core_subjects_grades) <- c("mcsid", "english", "english_lang", "english_lit",
                                  "maths", "maths_linear", "maths_numeracy", "further_maths", "additional_maths", "biology", "chemistry", "physics", 
-                                 "additional_science", "science", "applied_science", "combined_science", "modular_science", "further_additional_science", 
+                                 "additional_science", "science", "applied_science", "combined_science", "modular_science", "further_additional_science", "computer_science", 
                                  "additional_applied_science", "additional_science_modular", "human_biology")
 
 #core_grades$english[core_grades$english == 'NULL'] <- NA
