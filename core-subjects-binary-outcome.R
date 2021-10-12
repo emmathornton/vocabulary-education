@@ -798,7 +798,9 @@ names(core_n5_grades) <- c("mcsid", "english", "maths","computer_science", "biol
 
 core_n5_grades <- core_n5_grades%>%  mutate(benchmarkN5 = case_when((english >= 3 )  & 
                                                                       (maths >= 3 )  &
-                                                                      (biology >= 3 | chemistry >= 3 | physics >= 3 ) ~ 1))
+                                                                      (computer_science >=3 |
+                                                                         biology >= 3 | chemistry >= 3 | physics >= 3 ) ~ 1,
+                                                                    TRUE ~ 0))
 
 
 
