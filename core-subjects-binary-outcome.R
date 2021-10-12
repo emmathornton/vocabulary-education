@@ -636,6 +636,29 @@ wide_grades = wide_grades %>%
   select(-row)
 
 
+#wide_grades = wide_grades %>% rename(english_lit = "Language: English Literature", 
+ #                                    english = "Language: English", 
+  #                                   english_lang = "Language: English Language", 
+   #                                  maths = "Mathematics", 
+ #                                    maths_linear = "Mathematics - Linear", 
+  #                                   maths_numeracy = "Mathematics - Numeracy", 
+   #                                  further_maths = "Further Mathematics", 
+    #                                 additional_maths =  " Additional Mathematics", 
+     #                                biology = "Biology", 
+      #                               chemistry = "Chemistry", 
+       #                              physics = "Physics",
+        #                             additional_science = "Additional Science", 
+         #                            science = "Science", 
+          #                           applied_science = "Applied Science", 
+           #                          combined_science = `Combined Science `,
+            #                         modular_science = "Science (Modular)",
+             #                        further_additional_science = `Further Additional Science`,
+              #                       computer_science = `Computer Science`,
+               #                      additional_applied_science = `Additional Applied Science`,
+                #                     additional_science_modular = `Additional Science (Modular)`,
+                 #                    human_biology = `Biology (Human)`)
+                                    
+
 #select core subjects from this wide dataset
 
 core_subjects_grades <- wide_grades %>% select(mcsid, c("Language: English", "Language: English Language", "Language: English Literature",
@@ -686,9 +709,19 @@ core_iGCSE_subjects_grades <- wide_IGCSE_grades %>% select(mcsid, c("Biology", "
 
 names(core_iGCSE_subjects_grades) <- c("mcsid", "biology_I", "chemistry_I", "physics_I", "science_I", "english_first_lang_I", "english_lit_I", "maths_I")
 
+#add in those who say have none of these subjects - for those who live in england, wales or NI (will do scotland separately)
+#country = 1, 2 or 4. country !=3 (ie not scotland)
+no_quals = qualifications1 %>% filter(gc_s_qual_none== 1) # be careful here as for rest of rows per cm, this will be NA.
+no_quals = no_quals %>% select(mcsid, gcnum00, gc_rowid, gc_s_qual_none) #get relevant variables 
+#add country 
+no_quals = merge(no_quals, country, by = "mcsid")
+no_quals = no_quals %>% filter(country !=3)
+no_quals = no_quals %>% select(mcsid, gc_s_qual_none)
+names(no_quals) = c("mcsid", "no_quals")
 
 #combine core grades together into one dataframe (for GCSE and iGCSE)
 combined_core_grades = merge(all=TRUE, core_subjects_grades, core_iGCSE_subjects_grades, by = "mcsid")
+combined_core_grades = merge(all=TRUE, combined_core_grades, no_quals, by="mcsid")
 
 #create binary variable. those who score >=4 on at least an english subject, at least one maths subject and at least 1 science subject = 1. else = 0. 
 core_grades <- combined_core_grades %>%  mutate(benchmark = case_when(
@@ -802,9 +835,6 @@ core_n5_grades <- core_n5_grades%>%  mutate(benchmarkN5 = case_when((english >= 
                                                                          biology >= 3 | chemistry >= 3 | physics >= 3 ) ~ 1,
                                                                     TRUE ~ 0))
 
-
-
-core_n5_grades$benchmarkN5[is.na(core_n5_grades$benchmarkN5)] <- 0
 
 
 #combine N5 and GCSE core grades into one variable
