@@ -563,11 +563,11 @@ prop.table(benchmark_binary)*100
 
 #take those who sat the core subjects  - so binary variable here will be those who got 4 and above but only for those who took the subjects in the first place. 
 
-took_core_binary = taken_core_binary %>% filter(core_subjects_binary == 1)
+#took_core_binary = taken_core_binary %>% filter(core_subjects_binary == 1)
 
-core_benchmark_binary = core_grades_combined[core_grades_combined$mcsid %in% took_core_binary$mcsid,]
+#core_benchmark_binary = core_grades_combined[core_grades_combined$mcsid %in% took_core_binary$mcsid,]
 #select relevant variables 
-core_benchmark_binary = core_benchmark_binary %>% select(mcsid, benchmark_binary)
+#core_benchmark_binary = core_benchmark_binary %>% select(mcsid, benchmark_binary)
 
 #welsh GCSE - also include as a core subject if CM from wales (version with and version without, one will be a sensitivity) ####
 
