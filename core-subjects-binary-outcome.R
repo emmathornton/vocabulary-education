@@ -912,6 +912,42 @@ core_grades_binary= core_grades_binary %>% mutate(benchmark_binary =
 benchmark_binary = table(core_grades_binary$benchmark_binary)
 prop.table(benchmark_binary)*100
 
+#CONTINOUS OUTCOME VARIABLE. ####
+#merge together core subejcts for GCSE and iGCSE
+core_subjects_continuous = merge(all=TRUE, core_subjects_grades, core_iGCSE_subjects_grades, by = "mcsid")
+#create english data, maths data, science data. 
+#english 
+english_subjects_gcse = core_subjects_continuous %>% select(mcsid, contains("english"))
+english_subjects_gcse = english_subjects_gcse %>%  mutate (english_score =                                                             rowMeans(.[-1], na.rm = TRUE), .after = 1) #calculate means across rows excluding row 1 (mcsid)
+#convert NaN to NA
+english_subjects_gcse$english_score[is.nan(english_subjects_gcse$english_score)]<-NA
+#maths                                                                              
+maths_subjects_gcse = core_subjects_continuous %>% select(mcsid, contains("math"))
+
+maths_subjects_gcse = maths_subjects_gcse %>%  mutate (maths_score = 
+                                                             rowMeans(.[-1], na.rm = TRUE), .after = 1) #calculate means across rows excluding row 1 (mcsid)
+#convert NaN to NA
+maths_subjects_gcse$maths_score[is.nan(maths_subjects_gcse$maths_score)]<-NA
+
+#science
+science_subjects_gcse = core_subjects_continuous %>% select(mcsid, contains("biology"), contains("chemistry"), contains("physics"), contains("science"))
+
+science_subjects_gcse = science_subjects_gcse %>%  mutate (science_score = 
+                                                             rowMeans(.[-1], na.rm = TRUE), .after = 1) #calculate means across rows excluding row 1 (mcsid)
+#convert NaN to NA
+science_subjects_gcse$science_score[is.nan(science_subjects_gcse$science_score)]<-NA
+
+#pull out english score, maths score and science score, and mcsid
+
+english_score = english_subjects_gcse %>% select(mcsid, english_score)
+maths_score = maths_subjects_gcse %>% select(mcsid, maths_score)
+science_score = science_subjects_gcse %>% select(mcsid, science_score)
+
+#combine english, maths and science score together
+core_subjects_score = merge(all=TRUE, english_score, maths_score, by = "mcsid")
+core_subjects_score = merge(all=TRUE, core_subjects_score, science_score, by = "mcsid")
+
+
 #merge into one variable
 #core_grades_combined$core_grades_binary = ifelse(!is.na(core_grades_combined$benchmark), 
 # core_grades_combined$benchmark, core_grades_combined$benchmarkN5)
@@ -926,11 +962,11 @@ prop.table(benchmark_binary)*100
 
 #take those who sat the core subjects  - so binary variable here will be those who got 4 and above but only for those who took the subjects in the first place. 
 
-took_core_binary = taken_core_binary %>% filter(core_subjects_binary == 1)
+#took_core_binary = taken_core_binary %>% filter(core_subjects_binary == 1)
 
-core_benchmark_binary = core_grades_combined[core_grades_combined$mcsid %in% took_core_binary$mcsid,]
+#core_benchmark_binary = core_grades_combined[core_grades_combined$mcsid %in% took_core_binary$mcsid,]
 #select relevant variables 
-core_benchmark_binary = core_benchmark_binary %>% select(mcsid, benchmark_binary)
+#core_benchmark_binary = core_benchmark_binary %>% select(mcsid, benchmark_binary)
 
 #welsh GCSE - also include as a core subject if CM from wales (version with and version without, one will be a sensitivity) ####
 
