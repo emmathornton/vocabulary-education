@@ -670,6 +670,7 @@ new_sex1<- data.frame(sex_combine, new_sex)
 cm_sex<- c("mcsid", "sex_combine" )
 cm_sex <- new_sex1[cm_sex]
 
+#caregiver vocabulary ####
 #main respondent word activity test
 #get items for main respondent activity test to recode
 main_vocabTest = mcs6_parent_assessment %>% select(mcsid, fresp00, fpmcog0a:fpmcog0t) %>% 
