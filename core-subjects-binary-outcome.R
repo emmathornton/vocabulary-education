@@ -970,6 +970,11 @@ n5_core_subjects_score = n5_core_subjects_score %>% mutate(average_grade_n5 = ro
                                                      .after = 1)
 n5_core_subjects_score$average_grade_n5 = round(n5_core_subjects_score$average_grade_n5, 2)
   
+#continous score version 2 - average of highest grade for each subject ####
+
+english_subjects_highest = english_subjects_gcse %>% select(!english_score) %>% 
+  mutate(highest_english = pmax(english,english_lang,english_lit,
+  english_first_lang_I,english_lit_I, na.rm= TRUE), .after = 1) #get this to give the highest per row without having to name each column??
 
 
 #merge into one variable
