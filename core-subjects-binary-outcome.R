@@ -885,7 +885,7 @@ core_grades_scotland = merge(all = TRUE, core_grades_scotland, no_quals_scotland
 core_grades_scotland = merge(all = TRUE, core_grades_scotland, btec_only_scotland, by = "mcsid")
 
 
-core_n5_grades <-  core_grades_scotland %>%  mutate(benchmarkN5 = case_when((english >= 3 )  & 
+core_grades_n5 <-  core_grades_scotland %>%  mutate(benchmarkN5 = case_when((english >= 3 )  & 
                                                                       (maths >= 3 )  &
                                                                       (computer_science >=3 |
                                                                          biology >= 3 | chemistry >= 3 | physics >= 3 ) ~ 1,
@@ -894,7 +894,7 @@ core_n5_grades <-  core_grades_scotland %>%  mutate(benchmarkN5 = case_when((eng
 #combine N5 and GCSE core grades into one variable
 #first combine the dataframes
 #replace is/na with the other one 
-core_grades_binary= merge (all=TRUE, core_grades, core_n5_grades, by="mcsid")
+core_grades_binary= merge (all=TRUE, core_grades, core_grades_n5, by="mcsid")
 core_grades_binary = core_grades_binary %>% select(mcsid, benchmark, benchmarkN5)
 
 
@@ -917,23 +917,23 @@ prop.table(benchmark_binary)*100
 core_subjects_continuous = merge(all=TRUE, core_subjects_grades, core_iGCSE_subjects_grades, by = "mcsid")
 #create english data, maths data, science data. 
 #english 
-english_subjects_gcse = core_subjects_continuous %>% select(mcsid, contains("english"))
-english_subjects_gcse = english_subjects_gcse %>%  mutate (english_score =                                                             rowMeans(.[-1], na.rm = TRUE), .after = 1) #calculate means across rows excluding row 1 (mcsid)
+english_subjects_gcse = core_subjects_continuous %>% select(mcsid, contains("english")) %>% 
+  mutate (english_score =
+            rowMeans(.[-1], na.rm = TRUE), .after = 1) #calculate means across rows excluding row 1 (mcsid)
 #convert NaN to NA
 english_subjects_gcse$english_score[is.nan(english_subjects_gcse$english_score)]<-NA
 #maths                                                                              
-maths_subjects_gcse = core_subjects_continuous %>% select(mcsid, contains("math"))
-
-maths_subjects_gcse = maths_subjects_gcse %>%  mutate (maths_score = 
-                                                             rowMeans(.[-1], na.rm = TRUE), .after = 1) #calculate means across rows excluding row 1 (mcsid)
+maths_subjects_gcse = core_subjects_continuous %>% select(mcsid, contains("math")) %>% 
+  mutate (maths_score = 
+            rowMeans(.[-1], na.rm = TRUE), .after = 1) #calculate means across rows excluding row 1 (mcsid)
 #convert NaN to NA
 maths_subjects_gcse$maths_score[is.nan(maths_subjects_gcse$maths_score)]<-NA
 
 #science
-science_subjects_gcse = core_subjects_continuous %>% select(mcsid, contains("biology"), contains("chemistry"), contains("physics"), contains("science"))
-
-science_subjects_gcse = science_subjects_gcse %>%  mutate (science_score = 
-                                                             rowMeans(.[-1], na.rm = TRUE), .after = 1) #calculate means across rows excluding row 1 (mcsid)
+science_subjects_gcse = core_subjects_continuous %>% select(mcsid, contains("biology"), contains("chemistry"), 
+                                                            contains("physics"), contains("science")) %>% 
+  mutate (science_score = 
+            rowMeans(.[-1], na.rm = TRUE), .after = 1) #calculate means across rows excluding row 1 (mcsid)
 #convert NaN to NA
 science_subjects_gcse$science_score[is.nan(science_subjects_gcse$science_score)]<-NA
 
@@ -946,6 +946,30 @@ science_score = science_subjects_gcse %>% select(mcsid, science_score)
 #combine english, maths and science score together
 core_subjects_score = merge(all=TRUE, english_score, maths_score, by = "mcsid")
 core_subjects_score = merge(all=TRUE, core_subjects_score, science_score, by = "mcsid")
+
+#get mean of these scores. need to have a response for english, maths and science score
+core_subjects_score = core_subjects_score %>% mutate(average_grade = rowMeans(.[-1]), 
+                                                           .after = 1)
+core_subjects_score$average_grade = round(core_subjects_score$average_grade, 2)
+
+#N5 CONTINOUS VARIABLE
+n5_english_score = as.data.frame(core_n5_grades %>% select(mcsid, english))
+n5_maths_score = as.data.frame(core_n5_grades %>% select(mcsid, maths))
+n5_science_subjects = as.data.frame(core_n5_grades %>% select(mcsid, computer_science, biology, chemistry, physics)) %>% 
+  mutate (science_score = rowMeans(.[-1], na.rm = TRUE), .after = 1)
+#convert NaN to NA
+n5_science_subjects$science_score[is.nan(n5_science_subjects$science_score)]<-NA
+n5_science_subjects$science_score = round(n5_science_subjects$science_score, 2)
+n5_science_score = n5_science_subjects %>% select(mcsid, science_score)
+
+n5_core_subjects_score = merge(all=TRUE, n5_english_score, n5_maths_score, by="mcsid")
+n5_core_subjects_score = merge(all= TRUE, n5_core_subjects_score, n5_science_score, by="mcsid")
+
+#get mean of these scores. need to have a response for english, maths and science score
+n5_core_subjects_score = n5_core_subjects_score %>% mutate(average_grade_n5 = rowMeans(.[-1]), 
+                                                     .after = 1)
+n5_core_subjects_score$average_grade_n5 = round(n5_core_subjects_score$average_grade_n5, 2)
+  
 
 
 #merge into one variable
