@@ -906,7 +906,8 @@ core_grades_binary= core_grades_binary %>% mutate(benchmark_binary =
                                                                    benchmark == 1 & benchmarkN5 == 0 ~ 1,
                                                                    is.na(benchmarkN5) ~ benchmark, 
                                                                    is.na(benchmark) ~ benchmarkN5, 
-                                                  TRUE ~ 0))
+                                                  TRUE ~ 0)) %>% 
+  select(mcsid, benchmark_binary)
 
 
 benchmark_binary = table(core_grades_binary$benchmark_binary)
@@ -949,7 +950,8 @@ core_subjects_score = merge(all=TRUE, core_subjects_score, science_score, by = "
 
 #get mean of these scores. need to have a response for english, maths and science score
 core_subjects_score = core_subjects_score %>% mutate(average_grade = rowMeans(.[-1]), 
-                                                           .after = 1)
+                                                           .after = 1) %>% 
+  select(mcsid, average_grade)
 core_subjects_score$average_grade = round(core_subjects_score$average_grade, 2)
 
 #N5 CONTINOUS VARIABLE
@@ -967,8 +969,12 @@ n5_core_subjects_score = merge(all= TRUE, n5_core_subjects_score, n5_science_sco
 
 #get mean of these scores. need to have a response for english, maths and science score
 n5_core_subjects_score = n5_core_subjects_score %>% mutate(average_grade_n5 = rowMeans(.[-1]), 
-                                                     .after = 1)
+                                                     .after = 1) %>% 
+  select(mcsid, average_grade_n5)
 n5_core_subjects_score$average_grade_n5 = round(n5_core_subjects_score$average_grade_n5, 2)
+
+education_main_outcomes = merge(all=TRUE, core_grades_binary, core_subjects_score, by = "mcsid")
+education_main_outcomes = merge(all=TRUE, education_main_outcomes, n5_core_subjects_score, by="mcsid")
   
 #continous score version 2 - average of highest grade for each subject ####
 
