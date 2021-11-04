@@ -9,6 +9,7 @@ library(tidyr)
 library(tidyverse)
 #load in data####
 mcs3_child_assessment <- read_sav("mcs3_cm_cognitive_assessment.sav")
+mcs2_child_assessment <- read_sav("mcs2_cm_cognitive_assessment.sav")
 mcs1_hh <- read_sav("mcs1_hhgrid.sav")
 mcs2_hh <- read_sav("mcs2_hhgrid.sav")
 mcs_family <- read_sav("mcs_longitudinal_family_file.sav")
@@ -22,8 +23,10 @@ mcs5_parent<- read_sav("mcs5_parent_interview.sav")
 mcs2_geography <- read_sav("mcs2_geographically_linked_data.sav")
 mcs1_geography <- read_sav("mcs1_geographically_linked_data.sav")
 mcs6_parent_assessment <- read_sav("mcs6_parent_assessment.sav")
+mcs3_cm_derived = read_sav("mcs3_cm_derived.sav")
 #convert all to lowercase####
 names(mcs3_child_assessment) <- tolower(names(mcs3_child_assessment))
+names(mcs2_child_assessment) <- tolower(names(mcs2_child_assessment))
 names(mcs_family) <- tolower(names(mcs_family))
 names(mcs5_parent) <- tolower(names(mcs5_parent))
 names(mcs1_parent) <- tolower(names(mcs1_parent))
@@ -37,6 +40,7 @@ names(mcs2_hh) <- tolower(names(mcs2_hh))
 names(mcs2_geography) <- tolower(names(mcs2_geography))
 names(mcs1_geography) <- tolower(names(mcs1_geography))
 names(mcs6_parent_assessment) <- tolower(names(mcs6_parent_assessment))
+names(mcs3_cm_derived) <- tolower(names(mcs3_cm_derived))
 #create sweep entry variable to identify second entry families later####
 sweep_entry <- c("mcsid", "sentry")
 sweep_entry <- mcs_family[sweep_entry]
@@ -67,8 +71,8 @@ respondent_key = c(`1` = "main",
 
 #PREDICTOR VARIABLE _AGE 5 VOCAB ####
 
-age5_vocab = mcs3_child_assessment %>% select(mcsid, ccnvtscore, cccmno00) %>% 
-  filter(cccmno00 == 1) %>% 
+age5_vocab = mcs3_child_assessment %>% select(mcsid, ccnvtscore, ccnum00) %>% 
+  filter(ccnum00 == 1) %>% 
   select(mcsid, ccnvtscore) %>% 
   filter(!is.na(ccnvtscore)) %>% 
   rename(age5_vocab = ccnvtscore)
@@ -162,146 +166,155 @@ income = merge(all=TRUE, oecd_income, oecd_income_9months, by="mcsid") %>%
 #do this separately for sweep 1 and 2 as can change between sweeps
 
 #sweep 1 respondent identity
-respondent_identity_sweep1 = mcs1_derived %>% select(mcsid, amdres00, apdres00) 
-mother_respondent_main = respondent_identity_sweep1 %>% filter(amdres00 == 1 | amdres00 == 3 |amdres00 ==5|
-                                                                 amdres00==7 | amdres00 == 9 | amdres00 == 11 |
-                                                                 amdres00 == 13 |amdres00 == 15) %>% 
-  select(mcsid, amdres00) %>% 
-  rename(mother_mainRespondent = "amdres00")
+respondent_identity_sweep1 = mcs1_derived %>% select(mcsid, addres00, aelig00) 
+mother_respondent_main = respondent_identity_sweep1 %>% filter(aelig00 == 1 & (addres00 == 1 | addres00 == 3 |addres00 ==5|
+                                                                                 addres00==7 | addres00 == 9 | addres00 == 11 |
+                                                                                 addres00 == 13 |addres00 == 15)) %>% 
+  select(mcsid, addres00) %>% 
+  rename(mother_mainRespondent = "addres00")
 
-mother_respondent_partner = respondent_identity_sweep1 %>% filter(apdres00 == 1 | apdres00 == 3 |apdres00 ==5|
-                                                                    apdres00==7 | apdres00 == 9 | apdres00 == 11 |
-                                                                    apdres00 == 13 |apdres00 == 15 | apdres00 == 21 ) %>% 
-  select(mcsid, apdres00) %>% 
-  rename(mother_partnerRespondent = "apdres00")
+mother_respondent_partner = respondent_identity_sweep1 %>% filter((aelig00 == 2 | aelig00 == 3) & (addres00 == 1 | addres00 == 3 |addres00 ==5|
+                                                                                                     addres00==7 | addres00 == 9 | addres00 == 11 |
+                                                                                                     addres00 == 13 |addres00 == 15 | addres00 == 21)) %>% 
+  select(mcsid, addres00) %>% 
+  rename(mother_partnerRespondent = "addres00")
 
-father_respondent_main = respondent_identity_sweep1 %>% filter(amdres00 == 2 | amdres00 == 4 |amdres00 ==6|
-                                                                 amdres00==8 | amdres00 == 10 | amdres00 == 12 |
-                                                                 amdres00 == 14 |amdres00 == 16) %>% 
-  select(mcsid, amdres00) %>% 
-  rename(father_mainRespondent = "amdres00")
+father_respondent_main = respondent_identity_sweep1 %>% filter(aelig00 == 1 & (addres00 == 2 | addres00 == 4 |addres00 ==6|
+                                                                                 addres00==8 | addres00 == 10 | addres00 == 12 |
+                                                                                 addres00 == 14 |addres00 == 16)) %>% 
+  select(mcsid, addres00) %>% 
+  rename(father_mainRespondent = "addres00")
 
-father_respondent_partner = respondent_identity_sweep1 %>% filter(apdres00 == 2 | apdres00 == 4 |apdres00 ==6|
-                                                                    apdres00==8 | apdres00 == 10 | apdres00 == 12 |
-                                                                    apdres00 == 14 |apdres00 == 16 | apdres00 == 22 | apdres00 == 24) %>% 
-  select(mcsid, apdres00) %>% 
-  rename(father_partnerRespondent = "apdres00")
+father_respondent_partner = respondent_identity_sweep1 %>% filter((aelig00 == 2 | aelig00 == 3) & (addres00 == 2 | addres00 == 4 |addres00 ==6|
+                                                                                                     addres00==8 | addres00 == 10 | addres00 == 12 |
+                                                                                                     addres00 == 14 |addres00 == 16 | addres00 == 22 | addres00 == 24)) %>% 
+  select(mcsid, addres00) %>% 
+  rename(father_partnerRespondent = "addres00")
 
 #sweep 2 respondent identity
 
-respondent_identity_sweep2  = mcs2_derived %>% select(mcsid, bmdres00, bpdres00)
+respondent_identity_sweep2  = mcs2_derived %>% select(mcsid, bddres00, belig00)
 #split sweep 2 into original families and families that joined in second sweep. 
 respondent_sweep2_original = merge(all=TRUE, respondent_identity_sweep2, sweep_entry, by = "mcsid") %>% 
   filter(sentry == 1)
-mother_respondent_main_sweep2_original = respondent_sweep2_original %>% filter(bmdres00 == 1 | bmdres00 == 3 |bmdres00 ==5|
-                                                                                 bmdres00==7 | bmdres00 == 9 | bmdres00 == 11 |
-                                                                                 bmdres00 == 13 |bmdres00 == 15) %>% 
-  select(mcsid, bmdres00) %>% 
-  rename(mother_mainRespondent_2 = "bmdres00")
+mother_respondent_main_sweep2_original = respondent_sweep2_original %>% filter(belig00 == 1 & (bddres00 == 1 | bddres00 == 3 |bddres00 ==5|
+                                                                                                 bddres00==7 | bddres00 == 9 | bddres00 == 11 |
+                                                                                                 bddres00 == 13 |bddres00 == 15)) %>% 
+  select(mcsid, bddres00) %>% 
+  rename(mother_mainRespondent_2 = "bddres00")
 
-mother_respondent_partner_sweep2_original = respondent_sweep2_original %>% filter(bpdres00 == 1 | bpdres00 == 3 |bpdres00 ==5|
-                                                                                    bpdres00==7 | bpdres00 == 9 | bpdres00 == 11 |
-                                                                                    bpdres00 == 13 |bpdres00 == 15 | bpdres00 == 21 ) %>% 
-  select(mcsid, bpdres00) %>% 
-  rename(mother_partnerRespondent_2 = "bpdres00")
+mother_respondent_partner_sweep2_original = respondent_sweep2_original %>% filter((belig00 == 2 | belig00 == 3) & (bddres00 == 1 | bddres00 == 3 |bddres00 ==5|
+                                                                                                                     bddres00==7 | bddres00 == 9 | bddres00 == 11 |
+                                                                                                                     bddres00 == 13 |bddres00 == 15 | bddres00 == 21)) %>% 
+  select(mcsid, bddres00) %>% 
+  rename(mother_partnerRespondent_2 = "bddres00")
 
-father_respondent_main_sweep2_original = respondent_sweep2_original%>% filter(bmdres00 == 2 | bmdres00 == 4 |bmdres00 ==6|
-                                                                                bmdres00==8 | bmdres00 == 10 | bmdres00 == 12 |
-                                                                                bmdres00 == 14 |bmdres00 == 16) %>% 
-  select(mcsid, bmdres00) %>% 
-  rename(father_mainRespondent_2 = "bmdres00")
+father_respondent_main_sweep2_original = respondent_sweep2_original%>% filter(belig00 == 1  & (bddres00 == 2 | bddres00 == 4 |bddres00 ==6|
+                                                                                                 bddres00==8 | bddres00 == 10 | bddres00 == 12 |
+                                                                                                 bddres00 == 14 |bddres00 == 16)) %>% 
+  select(mcsid, bddres00) %>% 
+  rename(father_mainRespondent_2 = "bddres00")
 
-father_respondent_partner_sweep2_original = respondent_sweep2_original %>% filter(bpdres00 == 2 | bpdres00 == 4 |bpdres00 ==6|
-                                                                                    bpdres00==8 | bpdres00 == 10 | bpdres00 == 12 |
-                                                                                    bpdres00 == 14 |bpdres00 == 16 |bpdres00 == 18 | bpdres00 == 22 | bpdres00 == 24) %>% 
-  select(mcsid, bpdres00) %>% 
-  rename(father_partnerRespondent_2 = "bpdres00")
+father_respondent_partner_sweep2_original = respondent_sweep2_original %>% filter((belig00 == 2 | belig00 == 3) & bddres00 == 2 | bddres00 == 4 |bddres00 ==6|
+                                                                                    bddres00==8 | bddres00 == 10 | bddres00 == 12 |
+                                                                                    bddres00 == 14 |bddres00 == 16 |bddres00 == 18 | bddres00 == 22 | bddres00 == 24) %>% 
+  select(mcsid, bddres00) %>% 
+  rename(father_partnerRespondent_2 = "bddres00")
 
 #families that joined in second sweep - new families
 respondent_sweep2_new = merge(all=TRUE, respondent_identity_sweep2, sweep_entry, by = "mcsid") %>% 
   filter(sentry == 2)
-mother_respondent_main_sweep2_new = respondent_sweep2_new %>% filter(bmdres00 == 1 | bmdres00 == 3 |bmdres00 ==5|
-                                                                       bmdres00==7 | bmdres00 == 9 | bmdres00 == 11 |
-                                                                       bmdres00 == 13 |bmdres00 == 15) %>% 
-  select(mcsid, bmdres00) %>% 
-  rename(mother_mainRespondent_2_new = "bmdres00")
+mother_respondent_main_sweep2_new = respondent_sweep2_new %>% filter(belig00 == 1 & (bddres00 == 1 | bddres00 == 3 |bddres00 ==5|
+                                                                                       bddres00==7 | bddres00 == 9 | bddres00 == 11 |
+                                                                                       bddres00 == 13 |bddres00 == 15)) %>% 
+  select(mcsid, bddres00) %>% 
+  rename(mother_mainRespondent_2_new = "bddres00")
 
-mother_respondent_partner_sweep2_new = respondent_sweep2_new %>% filter(bpdres00 == 1 | bpdres00 == 3 |bpdres00 ==5|
-                                                                          bpdres00==7 | bpdres00 == 9 | bpdres00 == 11 |
-                                                                          bpdres00 == 13 |bpdres00 == 15 | bpdres00 == 21 ) %>% 
-  select(mcsid, bpdres00) %>% 
-  rename(mother_partnerRespondent_2_new = "bpdres00")
+mother_respondent_partner_sweep2_new = respondent_sweep2_new %>% filter((belig00 == 2 | belig00 == 3) & (bddres00 == 1 | bddres00 == 3 |bddres00 ==5|
+                                                                                                           bddres00==7 | bddres00 == 9 | bddres00 == 11 |
+                                                                                                           bddres00 == 13 |bddres00 == 15 | bddres00 == 21 )) %>% 
+  select(mcsid, bddres00) %>% 
+  rename(mother_partnerRespondent_2_new = "bddres00")
 
-father_respondent_main_sweep2_new = respondent_sweep2_new%>% filter(bmdres00 == 2 | bmdres00 == 4 |bmdres00 ==6|
-                                                                      bmdres00==8 | bmdres00 == 10 | bmdres00 == 12 |
-                                                                      bmdres00 == 14 |bmdres00 == 16) %>% 
-  select(mcsid, bmdres00) %>% 
-  rename(father_mainRespondent_2_new = "bmdres00")
+father_respondent_main_sweep2_new = respondent_sweep2_new%>% filter(belig00 == 1  & (bddres00 == 2 | bddres00 == 4 |bddres00 ==6|
+                                                                                       bddres00==8 | bddres00 == 10 | bddres00 == 12 |
+                                                                                       bddres00 == 14 |bddres00 == 16)) %>% 
+  select(mcsid, bddres00) %>% 
+  rename(father_mainRespondent_2_new = "bddres00")
 
-father_respondent_partner_sweep2_new = respondent_sweep2_new %>% filter(bpdres00 == 2 | bpdres00 == 4 |bpdres00 ==6|
-                                                                          bpdres00==8 | bpdres00 == 10 | bpdres00 == 12 |
-                                                                          bpdres00 == 14 |bpdres00 == 16 | bpdres00 == 18 |bpdres00 == 22 | bpdres00 == 24) %>% 
-  select(mcsid, bpdres00) %>% 
-  rename(father_partnerRespondent_2_new = "bpdres00")
+father_respondent_partner_sweep2_new = respondent_sweep2_new %>% filter((belig00 == 2 | belig00 == 3) & (bddres00 == 2 | bddres00 == 4 |bddres00 ==6|
+                                                                                                           bddres00==8 | bddres00 == 10 | bddres00 == 12 |
+                                                                                                           bddres00 == 14 |bddres00 == 16 | bddres00 == 18 |bddres00 == 22 | bddres00 == 24)) %>% 
+  select(mcsid, bddres00) %>% 
+  rename(father_partnerRespondent_2_new = "bddres00")
 
 
 #parent NVQ at age 3 - for original families
 #recode education variables
-mcs2_derived$bmdnvq00[mcs2_derived$bmdnvq00==-1] <- NA
-mcs2_derived$bmdnvq00[mcs2_derived$bmdnvq00==-1] <- NA
-mcs2_derived$bmdnvq00[mcs2_derived$bmdnvq00==95] <- 0 #overseas qual only - convert into an NVQ level 0
-mcs2_derived$bmdnvq00[mcs2_derived$bmdnvq00==96] <- 0
-#partner
-mcs2_derived$bpdnvq00[mcs2_derived$bpdnvq00==-1] <- NA
-mcs2_derived$bpdnvq00[mcs2_derived$bpdnvq00==-1] <- NA
-mcs2_derived$bpdnvq00[mcs2_derived$bpdnvq00==95] <- 0 #overseas qual only - convert into an NVQ level 0
-mcs2_derived$bpdnvq00[mcs2_derived$bpdnvq00==96] <- 0
+mcs2_derived$bddnvq00[mcs2_derived$bddnvq00==-1] <- NA
+mcs2_derived$bddnvq00[mcs2_derived$bddnvq00==-1] <- NA
+mcs2_derived$bddnvq00[mcs2_derived$bddnvq00==95] <- 0 #overseas qual only - convert into an NVQ level 0
+mcs2_derived$bddnvq00[mcs2_derived$bddnvq00==96] <- 0
+
 #mother
-maternal_NVQ_age3_original_main = mcs2_derived %>% select(mcsid, bmdnvq00) %>% 
-  filter(mcsid %in% mother_respondent_main_sweep2_original$mcsid) 
-maternal_NVQ_age3_original_partner = mcs2_derived %>% select(mcsid, bpdnvq00) %>% 
-  filter(mcsid %in% mother_respondent_partner_sweep2_original$mcsid) 
+maternal_NVQ_age3_original_main = mcs2_derived %>% select(mcsid, bddnvq00, belig00) %>% 
+  filter(belig00 == 1 & (mcsid %in% mother_respondent_main_sweep2_original$mcsid)) %>% 
+  select(mcsid, bddnvq00) %>% 
+  rename("main_education" = bddnvq00)
+maternal_NVQ_age3_original_partner = mcs2_derived %>% select(mcsid, bddnvq00, belig00) %>% 
+  filter((belig00 == 2 |belig00 == 3) & (mcsid %in% mother_respondent_partner_sweep2_original$mcsid)) %>% 
+  select(mcsid, bddnvq00) %>% 
+  rename("partner_education" = bddnvq00)
 maternal_NVQ_age3_original = merge(all=TRUE, maternal_NVQ_age3_original_main, maternal_NVQ_age3_original_partner, by="mcsid") %>% 
-  mutate(maternal_education_age3 = case_when(!is.na(bmdnvq00) ~ bmdnvq00, 
-                                             is.na(bmdnvq00) ~ bpdnvq00)) %>% 
+  mutate(maternal_education_age3 = case_when(!is.na(main_education) ~ main_education, 
+                                             is.na(main_education) ~ partner_education)) %>% 
   select(mcsid, maternal_education_age3)
+
 #father
-paternal_NVQ_age3_original_main = mcs2_derived %>%  select(mcsid, bmdnvq00) %>% 
-  filter(mcsid %in% father_respondent_main_sweep2_original$mcsid) 
-paternal_NVQ_age3_original_partner = mcs2_derived %>%  select(mcsid, bpdnvq00) %>% 
-  filter(mcsid %in% father_respondent_partner_sweep2_original$mcsid) 
+paternal_NVQ_age3_original_main = mcs2_derived %>%  select(mcsid, bddnvq00, belig00) %>% 
+  filter(belig00 ==1 & (mcsid %in% father_respondent_main_sweep2_original$mcsid)) %>% 
+  select(mcsid, bddnvq00) %>% 
+  rename("main_education" = bddnvq00)
+paternal_NVQ_age3_original_partner = mcs2_derived %>%  select(mcsid, bddnvq00, belig00) %>% 
+  filter((belig00 == 2 |belig00 == 3) & (mcsid %in% father_respondent_partner_sweep2_original$mcsid)) %>% 
+  select(mcsid, bddnvq00) %>% 
+  rename("partner_education" = bddnvq00)
 paternal_NVQ_age3_original = merge(all=TRUE, paternal_NVQ_age3_original_main,paternal_NVQ_age3_original_partner, by = "mcsid") %>% 
-  mutate(paternal_education_age3 = case_when(!is.na(bpdnvq00) ~ bpdnvq00, 
-                                             is.na(bpdnvq00) ~ bmdnvq00)) %>% 
+  mutate(paternal_education_age3 = case_when(!is.na(partner_education) ~ partner_education, 
+                                             is.na(partner_education) ~ main_education)) %>% 
   select(mcsid, paternal_education_age3)
 
 #original families - parent NVQ at 9 months 
-mcs1_derived$amdnvq00[mcs1_derived$amdnvq00==-1] <- NA
-mcs1_derived$amdnvq00[mcs1_derived$amdnvq00==-1] <- NA
-mcs1_derived$amdnvq00[mcs1_derived$amdnvq00==95] <- 0 #overseas qual only - convert into an NVQ level 0
-mcs1_derived$amdnvq00[mcs1_derived$amdnvq00==96] <- 0
-#partner
-mcs1_derived$apdnvq00[mcs1_derived$apdnvq00==-1] <- NA
-mcs1_derived$apdnvq00[mcs1_derived$apdnvq00==-1] <- NA
-mcs1_derived$apdnvq00[mcs1_derived$apdnvq00==95] <- 0 #overseas qual only - convert into an NVQ level 0
-mcs1_derived$apdnvq00[mcs1_derived$apdnvq00==96] <- 0
+mcs1_derived$addnvq00[mcs1_derived$addnvq00==-1] <- NA
+mcs1_derived$addnvq00[mcs1_derived$addnvq00==-1] <- NA
+mcs1_derived$addnvq00[mcs1_derived$addnvq00==95] <- 0 #overseas qual only - convert into an NVQ level 0
+mcs1_derived$addnvq00[mcs1_derived$addnvq00==96] <- 0
+
 #mother
-maternal_NVQ_9months_main = mcs1_derived %>% select(mcsid, amdnvq00) %>% 
-  filter(mcsid %in% mother_respondent_main$mcsid)
-maternal_NVQ_9months_partner = mcs1_derived %>% select(mcsid, apdnvq00) %>% 
-  filter(mcsid %in% mother_respondent_partner$mcsid) 
+maternal_NVQ_9months_main = mcs1_derived %>% select(mcsid, addnvq00, aelig00) %>% 
+  filter(aelig00 == 1 &(mcsid %in% mother_respondent_main$mcsid)) %>% 
+  select(mcsid, addnvq00) %>% 
+  rename("main_education" = addnvq00)
+maternal_NVQ_9months_partner = mcs1_derived %>% select(mcsid, addnvq00, aelig00) %>% 
+  filter((aelig00 == 2 | aelig00 == 3) & (mcsid %in% mother_respondent_partner$mcsid)) %>%
+  select(mcsid, addnvq00) %>% 
+  rename("partner_education" = addnvq00)
 maternal_NVQ_9months = merge(all=TRUE, maternal_NVQ_9months_main, maternal_NVQ_9months_partner, by="mcsid") %>% 
-  mutate(maternal_education_9months = case_when(!is.na(amdnvq00) ~ amdnvq00, 
-                                                is.na(amdnvq00) ~ apdnvq00)) %>% 
+  mutate(maternal_education_9months = case_when(!is.na(main_education) ~ main_education, 
+                                                is.na(main_education) ~ partner_education)) %>% 
   select(mcsid, maternal_education_9months)
 #father
-paternal_NVQ_9months_main = mcs1_derived %>% select(mcsid, amdnvq00) %>% 
-  filter(mcsid %in% father_respondent_main$mcsid) 
-paternal_NVQ_9months_partner = mcs1_derived %>% select(mcsid, apdnvq00) %>% 
-  filter(mcsid %in% father_respondent_partner$mcsid) 
+paternal_NVQ_9months_main = mcs1_derived %>% select(mcsid, addnvq00, aelig00) %>% 
+  filter(aelig00 == 1 & (mcsid %in% father_respondent_main$mcsid)) %>% 
+  select(mcsid, addnvq00) %>% 
+  rename("main_education" = addnvq00)
+paternal_NVQ_9months_partner = mcs1_derived %>% select(mcsid, addnvq00, aelig00) %>% 
+  filter((aelig00 == 2 | aelig00 == 3) & (mcsid %in% father_respondent_partner$mcsid)) %>% 
+  select(mcsid, addnvq00) %>% 
+  rename("partner_education" = addnvq00)
 paternal_NVQ_9months = merge(all=TRUE,paternal_NVQ_9months_main, paternal_NVQ_9months_partner, by="mcsid") %>% 
-  mutate(paternal_education_9months = case_when(!is.na(apdnvq00) ~ apdnvq00, 
-                                                is.na(apdnvq00) ~ amdnvq00)) %>% 
+  mutate(paternal_education_9months = case_when(!is.na(partner_education) ~ partner_education, 
+                                                is.na(partner_education) ~ main_education)) %>% 
   select(mcsid, paternal_education_9months)
 
 #merge and replace NA at age 3 with response at 9 months instead
@@ -318,22 +331,30 @@ paternal_original_nvq = merge(all=TRUE, paternal_NVQ_age3_original, paternal_NVQ
 
 #families who joined in sweep 2 - NVQ for new families
 
-maternal_NVQ_age3_new_main = mcs2_derived %>% select(mcsid, bmdnvq00) %>% 
-  filter(mcsid %in% mother_respondent_main_sweep2_new$mcsid)
-maternal_NVQ_age3_partner = mcs2_derived %>% select(mcsid,  bpdnvq00) %>% 
-  filter(mcsid %in% mother_respondent_partner_sweep2_new$mcsid) 
+maternal_NVQ_age3_new_main = mcs2_derived %>% select(mcsid, bddnvq00, belig00) %>% 
+  filter(belig00 ==1 &(mcsid %in% mother_respondent_main_sweep2_new$mcsid)) %>% 
+  select(mcsid, bddnvq00) %>% 
+  rename("main_education" = bddnvq00)
+maternal_NVQ_age3_partner = mcs2_derived %>% select(mcsid,  bddnvq00, belig00) %>% 
+  filter((belig00 == 2 | belig00 == 3) & (mcsid %in% mother_respondent_partner_sweep2_new$mcsid)) %>% 
+  select(mcsid, bddnvq00) %>% 
+  rename("partner_education" = bddnvq00)
 maternal_NVQ_age3_new = merge(all=TRUE, maternal_NVQ_age3_new_main, maternal_NVQ_age3_partner, by="mcsid") %>% 
-  mutate(maternal_education_age3_new = case_when(!is.na(bmdnvq00) ~ bmdnvq00, 
-                                                 is.na(bmdnvq00) ~ bpdnvq00)) %>% 
+  mutate(maternal_education_age3_new = case_when(!is.na(main_education) ~ main_education, 
+                                                 is.na(main_education) ~ partner_education)) %>% 
   select(mcsid, maternal_education_age3_new)
 #father
-paternal_NVQ_age3_new_main = mcs2_derived %>%  select(mcsid, bmdnvq00) %>% 
-  filter(mcsid %in% father_respondent_main_sweep2_new$mcsid) 
-paternal_NVQ_age3_new_partner = mcs2_derived %>%  select(mcsid,bpdnvq00) %>% 
-  filter(mcsid %in% father_respondent_partner_sweep2_new$mcsid)
+paternal_NVQ_age3_new_main = mcs2_derived %>%  select(mcsid, bddnvq00, belig00) %>% 
+  filter(belig00 ==1 &(mcsid %in% father_respondent_main_sweep2_new$mcsid)) %>% 
+  select(mcsid, bddnvq00) %>% 
+  rename("main_education" = bddnvq00)
+paternal_NVQ_age3_new_partner = mcs2_derived %>%  select(mcsid,bddnvq00, belig00) %>% 
+  filter((belig00 == 2 | belig00 == 3) & (mcsid %in% father_respondent_partner_sweep2_new$mcsid))%>% 
+  select(mcsid, bddnvq00) %>% 
+  rename("partner_education" = bddnvq00)
 paternal_NVQ_age3_new = merge(all=TRUE, paternal_NVQ_age3_new_main, paternal_NVQ_age3_new_partner, by="mcsid") %>% 
-  mutate(paternal_education_age3_new = case_when(!is.na(bpdnvq00) ~ bpdnvq00, 
-                                                 is.na(bpdnvq00) ~ bmdnvq00)) %>% 
+  mutate(paternal_education_age3_new = case_when(!is.na(partner_education) ~ partner_education, 
+                                                 is.na(partner_education) ~ main_education)) %>% 
   select(mcsid, paternal_education_age3_new)
 
 #combine original and new families together to give 1 overall variable 
@@ -352,6 +373,8 @@ paternal_nvq = merge(all=TRUE, paternal_original_nvq, paternal_NVQ_age3_new, by 
 parent_nvq = merge(all=TRUE, maternal_nvq, paternal_nvq, by="mcsid") %>% 
   mutate(highest_nvq =pmax(maternal_nvq_variable, paternal_nvq_variable, na.rm=TRUE)) %>% 
   select(mcsid, highest_nvq)
+
+
 
 
 #WEALTH ####
