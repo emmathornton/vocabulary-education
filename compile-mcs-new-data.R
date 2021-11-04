@@ -41,20 +41,7 @@ names(mcs6_parent_assessment) <- tolower(names(mcs6_parent_assessment))
 sweep_entry <- c("mcsid", "sentry")
 sweep_entry <- mcs_family[sweep_entry]
 sweep_entry$sentry = as.character(sweep_entry$sentry)
-#create mcsid number so can pull out first CM later ####
-mcsid_number_age9mo <- c("mcsid", "ahcnuma0")
-mcsid_number_age9mo <- mcs1_parent[mcsid_number_age9mo]
-mcsid_number_age9mo$ahcnuma0 = as.character(mcsid_number_age9mo$ahcnuma0)
 
-mcsid_number_age3 <- c("mcsid", "bhcnuma0")
-mcsid_number_age3 <- mcs2_parent[mcsid_number_age3]
-mcsid_number_age3$bhcnuma0 = as.character (mcsid_number_age3$bhcnuma0)
-
-#create respondent variable so can pull out correct respondent later####
-respondent1 <- c("mcsid", "amdres00", "apdres00")
-respondent1<-mcs1_derived[respondent1]
-respondent2 <- c("mcsid", "bmdres00", "bpdres00")
-respondent2<-mcs2_derived[respondent2]
 
 #create weight variable####
 #attrition and sample weight age 9 months sweep 
@@ -158,9 +145,9 @@ occupational_status = merge(all=TRUE, age3_occupation, months9_occupation, by = 
 #income####
 #INCOME AT AGE 3. OECD weighted quintiles
 #oecd income at age 3
-oecd_income = mcs2_derived %>% select(mcsid, boecduk0)
+oecd_income = mcs2_derived_family %>% select(mcsid, boecduk0)
 #oecd income at 9 months to replace NA
-oecd_income_9months = mcs1_derived %>% select(mcsid, aoecduk0)
+oecd_income_9months = mcs1_derived_family %>% select(mcsid, aoecduk0)
 #combine together
 income = merge(all=TRUE, oecd_income, oecd_income_9months, by="mcsid") %>% 
   mutate(oecd_income = case_when(!is.na(boecduk0) ~ boecduk0, 
