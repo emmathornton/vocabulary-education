@@ -9,7 +9,7 @@ library(tidyr)
 library(tidyverse)
 #load in data####
 mcs3_child_assessment <- read_sav("mcs3_cm_cognitive_assessment.sav")
-mcs2_child_assessment <- read_sav("mcs2_cm_cognitive_assessment.sav")
+#mcs2_child_assessment <- read_sav("mcs2_cm_cognitive_assessment.sav")
 mcs1_hh <- read_sav("mcs1_hhgrid.sav")
 mcs2_hh <- read_sav("mcs2_hhgrid.sav")
 mcs_family <- read_sav("mcs_longitudinal_family_file.sav")
@@ -20,14 +20,18 @@ mcs2_derived_family <- read_sav("mcs2_family_derived.sav")
 mcs1_derived_family <- read_sav("mcs1_family_derived.sav")
 mcs1_derived <- read_sav("mcs1_parent_derived.sav")
 mcs5_parent<- read_sav("mcs5_parent_interview.sav")
+mcs5_family<- read_sav("mcs5_family_derived.sav")
 mcs2_geography <- read_sav("mcs2_geographically_linked_data.sav")
 mcs1_geography <- read_sav("mcs1_geographically_linked_data.sav")
 mcs6_parent_assessment <- read_sav("mcs6_parent_assessment.sav")
 mcs3_cm_derived = read_sav("mcs3_cm_derived.sav")
+mcs1_cm_derived = read_sav("mcs1_cm_derived.sav")
+mcs2_cm_derived = read_sav("mcs2_cm_derived.sav")
 #convert all to lowercase####
 names(mcs3_child_assessment) <- tolower(names(mcs3_child_assessment))
-names(mcs2_child_assessment) <- tolower(names(mcs2_child_assessment))
+#names(mcs2_child_assessment) <- tolower(names(mcs2_child_assessment))
 names(mcs_family) <- tolower(names(mcs_family))
+names(mcs5_family) <- tolower(names(mcs5_family))
 names(mcs5_parent) <- tolower(names(mcs5_parent))
 names(mcs1_parent) <- tolower(names(mcs1_parent))
 names(mcs2_parent) <- tolower(names(mcs2_parent))
@@ -41,6 +45,8 @@ names(mcs2_geography) <- tolower(names(mcs2_geography))
 names(mcs1_geography) <- tolower(names(mcs1_geography))
 names(mcs6_parent_assessment) <- tolower(names(mcs6_parent_assessment))
 names(mcs3_cm_derived) <- tolower(names(mcs3_cm_derived))
+names(mcs2_cm_derived) <- tolower(names(mcs2_cm_derived))
+names(mcs1_cm_derived) <- tolower(names(mcs1_cm_derived))
 #create sweep entry variable to identify second entry families later####
 sweep_entry <- c("mcsid", "sentry")
 sweep_entry <- mcs_family[sweep_entry]
@@ -377,8 +383,8 @@ parent_nvq = merge(all=TRUE, maternal_nvq, paternal_nvq, by="mcsid") %>%
 
 
 
-#WEALTH ####
-wealth_variables <- c("mcsid", "eresp00", "epmopa00", "ephval00", "epinvt00", "epdeba00")
+#WEALTH #### - debt seems to be missing from mcs5 new datasets? 
+wealth_variables <- mcs5_parent%>%  select(mcsid, eresp00, epmopa00, ephval00, epinvt00, epdeba00)
 wealth_variables <- mcs5_parent[wealth_variables]
 wealth_variables$eresp00 = as.character(wealth_variables$eresp00)
 wealth1 <- wealth_variables[which(wealth_variables$eresp00 == "1"),]
@@ -433,48 +439,22 @@ debt$debt_combine<- ifelse(!is.na(debt$epdeba00.x), debt$epdeba00.x,debt$epdeba0
 total_debt <- c("mcsid", "debt_combine")
 total_debt<-debt[total_debt]
 
-#INDICES OF MULTIPLE DEPRIVATION (DECILES) (AGE 3, 9 MONTHS IF MISSING)####
-imd_variables_sweep2_1 <- c("mcsid",  "bimdscoe", "biwimdsc", "bisimdsc", "bimdscon")
-imd_variables_sweep2_1 <- mcs2_geography[imd_variables_sweep2_1]
-imd_s2_1<- imd_variables_sweep2_1[which(mcsid_number_age3$bhcnuma0=="1"),]
-new_imd_s2_1 <- merge (all=TRUE, imd_s2_1, sweep_entry, by="mcsid")
-imdsweep2_1<- new_imd_s2_1[which(new_imd_s2_1$sentry == "1"),]
-imd_sweep2_1 <- transform(imdsweep2_1, imd2_1 = pmax(bimdscoe, biwimdsc, bisimdsc, bimdscon,  na.rm = TRUE))
-IMD_sweep2_1<- c("mcsid",  "imd2_1")
-IMD_sweep2_1 <- imd_sweep2_1[IMD_sweep2_1]
-#second entry families sweep 2 IMD
-imd_variables_sweep2_2 <- c("mcsid",  "bimdscoe", "biwimdsc", "bisimdsc", "bimdscon")
-imd_variables_sweep2_2 <- mcs2_geography[imd_variables_sweep2_2]
-imd_s2_2<- imd_variables_sweep2_2[which(mcsid_number_age3$bhcnuma0=="1"),]
-new_imd_s2_2 <- merge (all=TRUE, imd_s2_2, sweep_entry, by="mcsid")
-imdsweep2_2<- new_imd_s2_2[which(new_imd_s2_2$sentry == "2"),]
-imd_sweep2_2 <- transform(imdsweep2_2, imd2_2 = pmax(bimdscoe, biwimdsc, bisimdsc, bimdscon,  na.rm = TRUE))
-IMD_sweep2_2<- c("mcsid",  "imd2_2")
-IMD_sweep2_2 <- imd_sweep2_2[IMD_sweep2_2]
-#combine sweeps
-imd_sweep2 <- merge(all=TRUE, IMD_sweep2_1, IMD_sweep2_2, by="mcsid")
-imd_sweep2$sweep2_IMD <- ifelse(!is.na(imd_sweep2$imd2_1), imd_sweep2$imd2_1, imd_sweep2$imd2_2)
-IMD_sweep2 <- c("mcsid","sweep2_IMD")
-IMD_sweep2 <- imd_sweep2[IMD_sweep2]
+#IMD at age 3, 9 months if missing
+imd_sweep2 = mcs2_geography %>% select(mcsid, bimdscoe, biwimdsc, bisimdsc,bimdscon) %>% 
+  mutate(imd_sweep2 =  pmax(bimdscoe, biwimdsc, bisimdsc, bimdscon,  na.rm = TRUE))
 
-#IMD at sweep 1
-imd_variables_sweep1 <- c("mcsid",  "aimdscoe", "aiwimdsc", "aisimdsc", "aimdscon")
-imd_variables_sweep1 <- mcs1_geography[imd_variables_sweep1]
-imd_s1<- imd_variables_sweep1[which(mcsid_number_age9mo$ahcnuma0=="1"),]
-new_imd_s1 <- merge (all=TRUE, imd_s1, sweep_entry, by="mcsid")
-imdsweep1<- new_imd_s1[which(new_imd_s1$sentry == "1"),]
-imd_sweep1 <- transform(imdsweep1, imd1 = pmax(aimdscoe, aiwimdsc, aisimdsc, aimdscon,  na.rm = TRUE))
-IMD_sweep1<- c("mcsid",  "imd1")
-IMD_sweep1 <- imd_sweep1[IMD_sweep1]
+imd_sweep1 = mcs1_geography %>% select(mcsid, aimdscoe, aiwimdsc, aisimdsc, aimdscon) %>% 
+  mutate(imd_sweep1 =  pmax(aimdscoe, aiwimdsc, aisimdsc, aimdscon,  na.rm = TRUE))
 
 #IMD at age 3 and if NA, replace with 9 months.
-imd_combined_sweeps <- merge(all=TRUE, IMD_sweep2, IMD_sweep1, by="mcsid")
-imd_combined_sweeps$IMD <- ifelse(!is.na(imd_combined_sweeps$sweep2_IMD), imd_combined_sweeps$sweep2_IMD, imd_combined_sweeps$imd1)
-IMD_variables <- c("mcsid",  "IMD")
-IMD_variables <- imd_combined_sweeps[IMD_variables]
+imd = merge(all=TRUE, imd_sweep2, imd_sweep1, by="mcsid") %>% 
+  select(mcsid, imd_sweep2, imd_sweep1) %>% 
+  mutate(imd = case_when(!is.na(imd_sweep2) ~ imd_sweep2, 
+                         is.na(imd_sweep2) ~imd_sweep1)) %>% 
+  select(mcsid, imd)
 
 #creating potential confounders ####
-#language spoken at home####
+#language spoken at home#### - can't find this variable at all in new dataset for sweep1. 
 language_home1<- c("mcsid", "bhhlan00")
 language_home1 <- mcs2_parent[language_home1]
 language_home1[language_home1==-1]<-NA
@@ -506,52 +486,36 @@ language_used <- new_language[language_used]
 
 #ethnicity####
 #ethnicity single births mcs1
-ethnicity1 <- c("mcsid", "adc06ea0")
-ethnicity1 <- mcs1_derived[ethnicity1]
-ethnicity1[ethnicity1==-1:-9] <- NA
-ethnicity<- ethnicity1[which(mcsid_number_age9mo$ahcnuma0=="1"),]
-
-#ethnicity sweep 2 new families
-ethnicity2 <- c("mcsid", "bdc06ea0")
-ethnicity2 <- mcs2_derived[ethnicity2]
-ethnicity2[ethnicity2==-1:-9] <- NA
-ethnicity_2<- ethnicity2[which(mcsid_number_age3$bhcnuma0=="1"),]
-new_ethnicity2 <- merge (all=TRUE, ethnicity_2 , sweep_entry, by="mcsid")
-ethnic2<- new_ethnicity2[which(new_ethnicity2$sentry == "2"),]
-#combine
-new_ethnicity <- merge(all=TRUE, ethnicity, ethnic2,by="mcsid")
-#merge together so that only one value for standardised score
-ethnic_combine<- ifelse(!is.na(new_ethnicity$adc06ea0), new_ethnicity$adc06ea0,new_ethnicity$bdc06ea0)
-#create dataframe so also have mcsid 
-new_ethnic<- data.frame(ethnic_combine, new_ethnicity)
-#subset data so just have 1 score and mcsid for the variable
-cm_ethnicity <- c("mcsid", "ethnic_combine" )
-cm_ethnicity <- new_ethnic[cm_ethnicity]
+ethnicity_sweep1 = mcs1_cm_derived %>% select(mcsid, adc06e00, acnum00) %>% 
+  filter(acnum00==1) %>% 
+  select(mcsid, adc06e00)
+ethnicity_sweep2 = mcs2_cm_derived %>% select(mcsid, bdc06e00, bcnum00) %>% 
+  filter(bcnum00==1) %>% 
+  merge(all=TRUE,  sweep_entry, by="mcsid") %>% 
+  filter(sentry == 2) %>% 
+  select(mcsid, bdc06e00) %>% 
+  merge(all= TRUE, ethnicity, by = "mcsid") %>% 
+  mutate(ethnicity = case_when(!is.na(adc06e00) ~ adc06e00, 
+                               is.na(adc06e00) ~ bdc06e00))
+ethnicity = ethnicity_sweep2 %>% select(mcsid, ethnicity)
 
 
 #gender####
-sex1 <- c("mcsid", "ahcsexa0")
-sex1 <- mcs1_parent[sex1]
-sex1[sex1==-1] <- NA
-sex_1<- sex1[which(mcsid_number_age9mo$ahcnuma0=="1"),]
-new_sex1 <- merge (all=TRUE, sex_1 , sweep_entry, by="mcsid")
-sex_1<- new_sex1[which(new_sex1$sentry == "1"),]
+sex_sweep1 = mcs1_hh %>% select(mcsid, ahcsex00,acnum00) %>% 
+  filter(acnum00 ==1) %>% 
+  select(mcsid, ahcsex00)
 
-sex2 <- c("mcsid", "bhcsexa0")
-sex2 <- mcs2_parent[sex2]
-sex2[sex2==-1] <- NA
-sex_2<- sex2[which(mcsid_number_age9mo$ahcnuma0=="1"),]
-new_sex2 <- merge (all=TRUE, sex_2 , sweep_entry, by="mcsid")
-sex_2<- new_sex2[which(new_sex2$sentry == "2"),]
-#combine
-new_sex <- merge(all=TRUE, sex_1, sex_2,by="mcsid")
-#merge together so that only one value for standardised score
-sex_combine<- ifelse(!is.na(new_sex$ahcsexa0), new_sex$ahcsexa0,new_sex$bhcsexa0)
-#create dataframe so also have mcsid 
-new_sex1<- data.frame(sex_combine, new_sex)
-#subset data so just have 1 score and mcsid for the variable
-cm_sex<- c("mcsid", "sex_combine" )
-cm_sex <- new_sex1[cm_sex]
+sex_sweep2 = mcs2_hh %>% select(mcsid, bhcsex00, bcnum00) %>% 
+  filter(bcnum00 == 1) %>% 
+  select(mcsid, bhcsex00) %>% 
+  merge(all=TRUE, sweep_entry, by="mcsid") %>% 
+  filter(sentry == 2) %>% 
+  select(mcsid, bhcsex00) %>% 
+  merge(all=TRUE, sex_sweep1, by = "mcsid") %>% 
+  mutate(sex = case_when(!is.na(ahcsex00) ~ ahcsex00,
+                         is.na(ahcsex00) ~ bhcsex00))
+
+sex = sex_sweep2 %>% select(mcsid, sex)
 
 #caregiver vocabulary ####
 #main respondent word activity test
@@ -563,66 +527,111 @@ main_vocabTest = mcs6_parent_assessment %>% select(mcsid, fresp00, fpmcog0a:fpmc
 #recode so that correct answer = 1 and incorrect answer = 0 for each item (consult data dictionary for correct answers)
 main_vocabTest = main_vocabTest %>%  mutate(item1 = case_when(is.na(fpmcog0a) ~ NA_real_, 
                                                               fpmcog0a == 1 ~ 1,
+                                                              fpmcog0a == 6 ~ 0,
+                                                              fpmcog0a == 7 ~ NA_real_,
                                                               TRUE ~ 0)) %>% 
   mutate(item2 = case_when(is.na(fpmcog0b) ~ NA_real_,
                            fpmcog0b == 5 ~ 1, 
+                           fpmcog0b == 6 ~ 0,
+                           fpmcog0b == 7 ~ NA_real_,
                            TRUE ~ 0)) %>% 
   mutate(item3 = case_when(is.na(fpmcog0c) ~ NA_real_,
-                           fpmcog0c == 5 ~ 1, 
+                           fpmcog0c == 5 ~ 1,
+                           fpmcog0c == 6 ~ 0,
+                           fpmcog0c == 7 ~ NA_real_,
                            TRUE ~ 0)) %>% 
   mutate(item4 = case_when(is.na(fpmcog0d) ~ NA_real_,
                            fpmcog0d == 1 ~ 1, 
+                           fpmcog0d == 6 ~ 0,
+                           fpmcog0d == 7 ~ NA_real_,
                            TRUE ~ 0)) %>% 
   mutate(item5 = case_when(is.na(fpmcog0e) ~ NA_real_,
                            fpmcog0e == 1 ~1, 
+                           fpmcog0e == 6 ~ 0,
+                           fpmcog0e == 7 ~ NA_real_,
                            TRUE ~ 0 )) %>% 
   mutate(item6 = case_when(is.na(fpmcog0f) ~ NA_real_,
                            fpmcog0f == 4 ~1, 
+                           fpmcog0f == 6 ~ 0,
+                           fpmcog0f == 7 ~ NA_real_,
                            TRUE ~ 0 )) %>% 
   mutate(item7 = case_when(is.na(fpmcog0g) ~ NA_real_,
                            fpmcog0g == 4 ~1, 
+                           fpmcog0g == 6 ~ 0,
+                           fpmcog0g == 7 ~ NA_real_,
                            TRUE ~ 0 )) %>% 
   mutate(item8 = case_when(is.na(fpmcog0h) ~ NA_real_,
                            fpmcog0h == 3 ~1, 
+                           fpmcog0h == 6 ~ 0,
+                           fpmcog0h == 7 ~ NA_real_,
                            TRUE ~ 0 )) %>% 
   mutate(item9 = case_when(is.na(fpmcog0i) ~ NA_real_,
                            fpmcog0i == 2 ~1, 
+                           fpmcog0i == 6 ~ 0,
+                           fpmcog0i == 7 ~ NA_real_,
                            TRUE ~ 0 )) %>% 
   mutate(item10 = case_when(is.na(fpmcog0j) ~ NA_real_,
                             fpmcog0j == 1 ~1, 
+                            fpmcog0j == 6 ~ 0,
+                            fpmcog0j == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item11 = case_when(is.na(fpmcog0k) ~ NA_real_,
                             fpmcog0k == 2 ~1, 
+                            fpmcog0k == 6 ~ 0,
+                            fpmcog0k == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item12 = case_when(is.na(fpmcog0l) ~ NA_real_,
                             fpmcog0l == 1 ~1, 
+                            fpmcog0l == 6 ~ 0,
+                            fpmcog0l == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item13 = case_when(is.na(fpmcog0m) ~ NA_real_,
                             fpmcog0m == 2 ~1, 
+                            fpmcog0m == 6 ~ 0,
+                            fpmcog0m == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item14 = case_when(is.na(fpmcog0n) ~ NA_real_,
                             fpmcog0n == 4 ~1, 
+                            fpmcog0n == 6 ~ 0,
+                            fpmcog0n == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item15 = case_when(is.na(fpmcog0o) ~ NA_real_,
                             fpmcog0o == 2 ~1, 
+                            fpmcog0o == 6 ~ 0,
+                            fpmcog0o == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item16 = case_when(is.na(fpmcog0p) ~ NA_real_,
                             fpmcog0p == 4 ~1, 
+                            fpmcog0p == 6 ~ 0,
+                            fpmcog0p == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item17 = case_when(is.na(fpmcog0q) ~ NA_real_,
                             fpmcog0q == 1 ~1, 
+                            fpmcog0q == 6 ~ 0,
+                            fpmcog0q == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item18 = case_when(is.na(fpmcog0r) ~ NA_real_,
                             fpmcog0r == 3 ~1, 
+                            fpmcog0r == 6 ~ 0,
+                            fpmcog0r == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item19 = case_when(is.na(fpmcog0s) ~ NA_real_,
                             fpmcog0s == 1 ~1, 
+                            fpmcog0s == 6 ~ 0,
+                            fpmcog0s == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item20 = case_when(is.na(fpmcog0t) ~ NA_real_,
                             fpmcog0t == 2 ~1, 
+                            fpmcog0t == 6 ~ 0,
+                            fpmcog0t == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   rowwise(mcsid) %>% 
   mutate(main_totalScore = sum(c_across(item1:item20)))
+#mutate(main_totalScore = item1 + item2 + item3 + item4 + item5 +
+# item6 + item7 + item8 + item9 + item10 +
+#item11 +item12 +item13 +item14 +item15 +
+# item16 +item17 + item18 + item19 + item20, .after = 1)
+
 
 #partner vocab test 
 partner_vocabTest = mcs6_parent_assessment %>% select(mcsid, fresp00, fppcog0a:fppcog0t) %>% 
@@ -631,207 +640,163 @@ partner_vocabTest = mcs6_parent_assessment %>% select(mcsid, fresp00, fppcog0a:f
 #recode so that correct answer = 1 and incorrect answer = 0 for each item (consult data dictionary for correct answers)
 partner_vocabTest = partner_vocabTest %>%  mutate(item1 = case_when(is.na(fppcog0a) ~ NA_real_, 
                                                                     fppcog0a == 5 ~ 1,
+                                                                    fppcog0a == 6 ~ 0,
+                                                                    fppcog0a == 7 ~ NA_real_,
+                                                                    
                                                                     TRUE ~ 0)) %>% 
   mutate(item2 = case_when(is.na(fppcog0b) ~ NA_real_,
                            fppcog0b == 3 ~ 1, 
+                           fppcog0b == 6 ~ 0,
+                           fppcog0b == 7 ~ NA_real_,
                            TRUE ~ 0)) %>% 
   mutate(item3 = case_when(is.na(fppcog0c) ~ NA_real_,
                            fppcog0c == 3 ~ 1, 
+                           fppcog0c == 6 ~ 0,
+                           fppcog0c == 7 ~ NA_real_,
                            TRUE ~ 0)) %>% 
   mutate(item4 = case_when(is.na(fppcog0d) ~ NA_real_,
                            fppcog0d == 5 ~ 1, 
+                           fppcog0d == 6 ~ 0,
+                           fppcog0d == 7 ~ NA_real_,
                            TRUE ~ 0)) %>% 
   mutate(item5 = case_when(is.na(fppcog0e) ~ NA_real_,
                            fppcog0e == 5 ~1, 
+                           fppcog0e == 6 ~ 0,
+                           fppcog0e == 7 ~ NA_real_,
                            TRUE ~ 0 )) %>% 
   mutate(item6 = case_when(is.na(fppcog0f) ~ NA_real_,
                            fppcog0f == 4 ~1, 
+                           fppcog0f == 6 ~ 0,
+                           fppcog0f == 7 ~ NA_real_,
                            TRUE ~ 0 )) %>% 
   mutate(item7 = case_when(is.na(fppcog0g) ~ NA_real_,
                            fppcog0g == 4 ~1, 
+                           fppcog0g == 6 ~ 0,
+                           fppcog0g == 7 ~ NA_real_,
                            TRUE ~ 0 )) %>% 
   mutate(item8 = case_when(is.na(fppcog0h) ~ NA_real_,
                            fppcog0h == 5 ~1, 
+                           fppcog0h == 6 ~ 0,
+                           fppcog0h == 7 ~ NA_real_,
                            TRUE ~ 0 )) %>% 
   mutate(item9 = case_when(is.na(fppcog0i) ~ NA_real_,
                            fppcog0i == 2 ~1, 
+                           fppcog0i == 6 ~ 0,
+                           fppcog0i == 7 ~ NA_real_,
                            TRUE ~ 0 )) %>% 
   mutate(item10 = case_when(is.na(fppcog0j) ~ NA_real_,
                             fppcog0j == 3 ~1, 
+                            fppcog0j == 6 ~ 0,
+                            fppcog0j == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item11 = case_when(is.na(fppcog0k) ~ NA_real_,
-                            fppcog0k == 4 ~1, 
+                            fppcog0k == 4 ~1,
+                            fppcog0k == 6 ~ 0,
+                            fppcog0k == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item12 = case_when(is.na(fppcog0l) ~ NA_real_,
                             fppcog0l == 2 ~1, 
+                            fppcog0l == 6 ~ 0,
+                            fppcog0l == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item13 = case_when(is.na(fppcog0m) ~ NA_real_,
                             fppcog0m == 4 ~1, 
+                            fppcog0m == 6 ~ 0,
+                            fppcog0m == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item14 = case_when(is.na(fppcog0n) ~ NA_real_,
-                            fppcog0n == 3 ~1, 
+                            fppcog0n == 3 ~1,
+                            fppcog0n == 6 ~ 0,
+                            fppcog0n == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item15 = case_when(is.na(fppcog0o) ~ NA_real_,
                             fppcog0o == 2 ~1, 
+                            fppcog0o == 6 ~ 0,
+                            fppcog0o == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item16 = case_when(is.na(fppcog0p) ~ NA_real_,
                             fppcog0p == 4 ~1, 
+                            fppcog0p == 6 ~ 0,
+                            fppcog0p == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item17 = case_when(is.na(fppcog0q) ~ NA_real_,
                             fppcog0q == 3 ~1, 
+                            fppcog0q == 6 ~ 0,
+                            fppcog0q == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item18 = case_when(is.na(fppcog0r) ~ NA_real_,
                             fppcog0r == 4 ~1, 
+                            fppcog0r == 6 ~ 0,
+                            fppcog0r == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item19 = case_when(is.na(fppcog0s) ~ NA_real_,
                             fppcog0s == 2 ~1, 
+                            fppcog0s == 6 ~ 0,
+                            fppcog0s == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   mutate(item20 = case_when(is.na(fppcog0t) ~ NA_real_,
                             fppcog0t == 4 ~1, 
+                            fppcog0t == 6 ~ 0,
+                            fppcog0t == 7 ~ NA_real_,
                             TRUE ~ 0 )) %>% 
   rowwise(mcsid) %>% 
   mutate(partner_totalScore = sum(c_across(item1:item20)))
+#mutate(partner_totalScore = item1 + item2 + item3 + item4 + item5 +
+#item6 + item7 + item8 + item9 + item10 +
+#item11 +item12 +item13 +item14 +item15 +
+#item16 +item17 + item18 + item19 + item20, .after = 1) 
+
 
 #combine together to get the mean 
 main_vocabTotal = main_vocabTest %>% select(mcsid, main_totalScore)
 partner_vocabTotal = partner_vocabTest %>% select(mcsid, partner_totalScore)
-caregiver_vocabTotal = merge(all=TRUE, main_vocabTotal, partner_vocabTotal, by="mcsid")
 #calculate mean across main and partner
-caregiver_vocabTotal = caregiver_vocabTotal %>% mutate (caregiver_vocab = rowMeans(.[-1], na.rm = TRUE), .after = 1) 
+caregiver_vocabTotal = merge(all=TRUE, main_vocabTotal, partner_vocabTotal, by="mcsid") %>% 
+ mutate (caregiver_vocab = rowMeans(.[-1], na.rm = TRUE), .after = 1) 
 #convert NaN to NA
 caregiver_vocabTotal$caregiver_vocab[is.nan(caregiver_vocabTotal$caregiver_vocab)]<-NA
 
 #auxiliary variables for imputation####
 #mother's age at birth of CM####
 #sweep 1 - creating mother respondent variables
-mother_main_birth <- MAINrespondent[MAINrespondent$amdres00 == 1 | MAINrespondent$amdres00 == 11 | MAINrespondent$amdres00 == 15 ,]
-mother_partner_birth <- PARTNERrespondent[PARTNERrespondent$apdres00 == 1 |PARTNERrespondent$apdres00 == 11| PARTNERrespondent$apdres00 == 15,]
-mother_partner_birth <- mother_partner_birth[!is.na(mother_partner_birth$mcsid),] 
-mother_main_sweep1_birth <- merge (all=TRUE, mother_main_birth, sweep_entry, by="mcsid")
-mother_main_sweep1_1_birth<- mother_main_sweep1_birth[which(mother_main_sweep1_birth$sentry == "1"),]
-sweep1_main_mother_birth <- c("mcsid", "amdres00")
-sweep1_main_mother_birth <-mother_main_sweep1_1_birth[sweep1_main_mother_birth]
-sweep1_main_mother_birth  <- sweep1_main_mother_birth[!is.na(sweep1_main_mother_birth$amdres00),] 
-mother_partner_sweep1_birth <- merge (all=TRUE, mother_partner_birth, sweep_entry, by="mcsid")
-mother_partner_sweep1_1_birth<- mother_partner_sweep1_birth[which(mother_partner_sweep1_birth$sentry == "1"),]
-sweep1_partner_mother_birth <- c("mcsid", "apdres00")
-sweep1_partner_mother_birth <-mother_partner_sweep1_1_birth[sweep1_partner_mother_birth]
-sweep1_partner_mother_birth  <- sweep1_partner_mother_birth[!is.na(sweep1_partner_mother_birth$apdres00),] 
+age_atBirth_sweep2 = mcs2_derived %>% select(mcsid, bddagb00, bddres00) %>% 
+  filter(bddres00 == 1 | bddres00 == 3 |bddres00 ==5|
+           bddres00==7 | bddres00 == 9 | bddres00 == 11 |
+           bddres00 == 13 |bddres00 == 15) 
 
-#mother sweep 2 - new families 
-mother_main2_birth <- MAINrespondent2[MAINrespondent2$bmdres00 == 1 | MAINrespondent2$bmdres00 == 11 | MAINrespondent2$bmdres00 == 15 ,]
-mother_partner2_birth <- PARTNERrespondent2[PARTNERrespondent2$bpdres00 == 1 | PARTNERrespondent2$bpdres00 == 11 | PARTNERrespondent2$bpdres00 == 15 ,]
-mother_partner2_birth <- mother_partner2_birth[!is.na(mother_partner2_birth$mcsid),] 
-mum_main_sweep2_1st_birth <- merge (all=TRUE, mother_main2_birth, sweep_entry, by="mcsid")
-mum_main_sweep2_1_birth<- mum_main_sweep2_1st_birth[which(mum_main_sweep2_1st_birth$sentry == "2"),]
-sweep2_main_mum1_birth <- c("mcsid", "bmdres00")
-sweep2_main_mum1_birth <- mum_main_sweep2_1_birth[sweep2_main_mum1_birth]
-sweep2_main_mum1_birth <- sweep2_main_mum1_birth[!is.na(sweep2_main_mum1_birth$bmdres00),] 
-mum_partner_sweep2_1st_birth <- merge (all=TRUE, mother_partner2_birth, sweep_entry, by="mcsid")
-mum_partner_sweep2_1_birth<- mum_partner_sweep2_1st_birth[which(mum_partner_sweep2_1st_birth$sentry == "2"),]
-sweep2_partner_mum1_birth <- c("mcsid", "bpdres00")
-sweep2_partner_mum1_birth <- mum_partner_sweep2_1_birth[sweep2_partner_mum1_birth]
-sweep2_partner_mum1_birth <- sweep2_partner_mum1_birth[!is.na(sweep2_partner_mum1_birth$bpdres00),] 
-#sweep 1
-MAINbirth_age <- c("mcsid", "amdagb00")
-MAINbirth_age <- mcs1_derived[MAINbirth_age]
-MAINbirth_age[MAINbirth_age==-2:-1] <- NA
-
-PARTNERbirth_age <- c("mcsid", "apdagb00")
-PARTNERbirth_age <- mcs1_derived[PARTNERbirth_age]
-PARTNERbirth_age[PARTNERbirth_age==-2:-1] <- NA
-#PARTNERbirth_age1 <- PARTNERbirth_age[which(mcsid_number_age9mo$ahcnuma0=="1"),]
-
-MAIN_mother_age<- MAINbirth_age[MAINbirth_age$mcsid %in% sweep1_main_mother_birth$mcsid,]
-PARTNER_mother_age<- PARTNERbirth_age[PARTNERbirth_age$mcsid %in% sweep1_partner_mother_birth$mcsid,]
-
-maternal_age<- merge(all=TRUE,MAIN_mother_age, PARTNER_mother_age, by="mcsid")
-mum_age <- ifelse(!is.na(maternal_age$amdagb00), maternal_age$amdagb00, maternal_age$apdagb00)
-mum_age1 <- data.frame(maternal_age, mum_age)
-MATERNAL_AGEsweep1<- c("mcsid", "mum_age")
-MATERNAL_AGEsweep1 <- mum_age1[MATERNAL_AGEsweep1]
-
-#sweep 2 - original families
-MAINbirth_age2 <- c("mcsid", "bmdagb00")
-MAINbirth_age2 <- mcs2_derived[MAINbirth_age2]
-MAINbirth_age2[MAINbirth_age2==-2:-1] <- NA
-#MAINbirth_age_2<-MAINbirth_age2[which(mcsid_number_age3$bhcnuma0=="1"),]
-
-PARTNERbirth_age2 <- c("mcsid", "bpdagb00")
-PARTNERbirth_age2 <- mcs2_derived[PARTNERbirth_age2]
-PARTNERbirth_age2[PARTNERbirth_age2==-2:-1] <- NA
-#PARTNERbirth_age_2 <- PARTNERbirth_age2[which(mcsid_number_age3$bhcnuma0=="1"),]
-
-MAIN_mother_age2<- MAINbirth_age2[MAINbirth_age2$mcsid %in% sweep2_main_mum1_birth$mcsid,]
-PARTNER_mother_age2<- PARTNERbirth_age2[PARTNERbirth_age2$mcsid %in% sweep2_partner_mum1_birth$mcsid,]
-
-
-
-maternal_age2<- merge(all=TRUE,MAIN_mother_age2, PARTNER_mother_age2, by="mcsid")
-mum_age2 <- ifelse(!is.na(maternal_age2$bmdagb00), maternal_age2$bmdagb00, maternal_age2$bpdagb00)
-mum_age_2 <- data.frame(maternal_age2, mum_age2)
-MATERNAL_AGEsweep2<- c("mcsid", "mum_age2")
-MATERNAL_AGEsweep2 <- mum_age_2[MATERNAL_AGEsweep2]
-
-mother_age <- merge(all=TRUE, MATERNAL_AGEsweep1, MATERNAL_AGEsweep2, by="mcsid")
-mother_age$mothers_age <- ifelse(!is.na(mother_age$mum_age), mother_age$mum_age, mother_age$mum_age2)
-mother_birth_age <- c("mcsid", "mothers_age")
-mother_birth_age<- mother_age[mother_birth_age]
-
+age_atBirth = mcs1_derived %>% select(mcsid, addagb00, addres00) %>% 
+  filter(addres00 == 1 | addres00 == 3 |addres00 ==5|
+           addres00==7 | addres00 == 9 | addres00 == 11 |
+           addres00 == 13 |addres00 == 15) %>% 
+  merge(all=TRUE, age_atBirth_sweep2, by="mcsid") %>% 
+  merge(all=TRUE, sweep_entry, by="mcsid") %>% 
+  mutate(mum_ageAtBirth = case_when(!is.na(bddagb00) ~ bddagb00,
+                                    is.na(bddagb00) ~ addagb00)) %>% 
+  select(mcsid, mum_ageAtBirth )
 
 #housing tenure at age 3####
-housing_tenure <- c("mcsid", "bdroow00")
-housing_tenure <- mcs2_derived[housing_tenure]
-housing_tenure[housing_tenure==-9] <- NA
-housing_tenure[housing_tenure==-8] <- NA
-housing_tenure[housing_tenure==-1] <- NA
-
-
-tenure<-housing_tenure[which(mcsid_number_age3$bhcnuma0=="1"),]
-new_tenure1<- merge (all=TRUE, tenure, sweep_entry, by="mcsid")
-tenure1<- new_tenure1[which(new_tenure1$sentry == "1"),]
-
-
-#sweep 2 entry families
-housing_tenure2 <- c("mcsid", "bdroow00")
-housing_tenure2 <- mcs2_derived[housing_tenure2]
-housing_tenure2[housing_tenure2==-9] <- NA
-housing_tenure2[housing_tenure2==-8] <- NA
-housing_tenure2[housing_tenure2==-1] <- NA
-tenure2<-housing_tenure2[which(mcsid_number_age3$bhcnuma0=="1"),]
-new_tenure2<- merge (all=TRUE, tenure2, sweep_entry, by="mcsid")
-tenure_2<- new_tenure2[which(new_tenure2$sentry == "2"),]
-
-house_tenure <- merge(all=TRUE, tenure1, tenure_2,by="mcsid")
-house_tenure$tenure_combine <- ifelse(!is.na(house_tenure$bdroow00.x), house_tenure$bdroow00.x, house_tenure$bdroow00.y)
-
-#subset data so just have 1 entry and mcsid for the variable
-tenure_house <- c("mcsid", "tenure_combine")
-tenure_house<- house_tenure[tenure_house]
-
-#sweep 1 - replace remaining NA values. 
-housing_tenure_sweep1 <- c("mcsid", "adroow00")
-housing_tenure_sweep1 <- mcs1_derived[housing_tenure_sweep1]
-housing_tenure_sweep1[housing_tenure_sweep1==-9] <- NA
-housing_tenure_sweep1[housing_tenure_sweep1==-8] <- NA
-housing_tenure_sweep1[housing_tenure_sweep1==-1] <- NA
-tenure_sweep1<-housing_tenure_sweep1[which(mcsid_number_age9mo$ahcnuma0=="1"),]
-
-tenure_1 <- merge(all=TRUE, tenure_house,tenure_sweep1, by="mcsid")
-tenure_1$tenure_type_combined <- ifelse(!is.na(tenure_1$tenure_combine), tenure_1$tenure_combine, tenure_1$adroow00)
-TENURE <- c("mcsid", "tenure_type_combined")
-TENURE<- tenure_1[TENURE]
-
-TENURE[TENURE==1] <-1
-TENURE[TENURE==2] <-1
-TENURE[TENURE==3] <-2
-TENURE[TENURE==4] <-2
-TENURE[TENURE==5] <-2
-TENURE[TENURE==6] <-2
-TENURE[TENURE==7] <-3
-TENURE[TENURE==8] <-4
-TENURE[TENURE==9] <-5
-TENURE[TENURE==10] <-5
+BDROOW00
+#housing tenure at age 3, replace with 9 months if missing
+tenure_sweep1 = mcs1_derived_family %>% select(mcsid, adroow00) 
+tenure_sweep2 = mcs2_derived_family %>% select(mcsid, bdroow00) %>% 
+  merge(all=TRUE, tenure_sweep1, by="mcsid") %>% 
+  mutate(housing_tenure = case_when(!is.na(bdroow00) ~ bdroow00,
+                                    is.na(bdroow00) ~ adroow00)) %>% 
+  merge(all=TRUE, sweep_entry,by="mcsid") %>% 
+  
+#tenure key
+  
+tenure = tenure_sweep2 %>% select(mcsid, housing_tenure)
+tenure[tenure==1] <-1
+tenure[tenure==2] <-1
+tenure[tenure==3] <-2
+tenure[tenure==4] <-2
+tenure[tenure==5] <-2
+tenure[tenure==6] <-2
+tenure[tenure==7] <-3
+tenure[tenure==8] <-4
+tenure[tenure==9] <-5
+tenure[tenure==10] <-5
 
 #accommodation type at age 3####
 accommodation <-c ("mcsid", "bmmoty00")
