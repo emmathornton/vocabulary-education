@@ -229,7 +229,7 @@ igcse_subject_key <- c(`1`	 = "Accounting",
 # `-9`	 = "Refusal
 # `-8`	 = "Do not know
 # `-1`	 = "Not applicable
-
+#those who said yes to having iGCSE qualifications
 Igcse = qualifications1 %>% filter(gc_s_qual_igcs == 1) # be careful here as for rest of rows per cm, this will be NA.
 Igcse = qualifications1[qualifications1$mcsid %in% Igcse$mcsid,] 
 Igcse = Igcse %>% select(mcsid, gcnum00, gc_rowid, gc_s_qual_igsn_rec,
@@ -255,7 +255,7 @@ Igcse$subject_grade  = recode(Igcse$subject_grade, `1` = 9, `2` = 8, `3` = 7, `4
 #binary variable of who got above benchmark in core subjects at gcse
 #core subjects = maths, english (lang and/or lit), science
 #for science, any form of science as due to self reports these may be reported differently 
-
+#either GCSE or iGCSE
 #could put into wide format where the column names are subject name and column values are subject grade? 
 gcse_grades <- gcse %>% select(mcsid, row_id,  subject_name, subject_grade)
 gcse_grades$subject_name = as.character(gcse_grades$subject_name)
@@ -692,7 +692,7 @@ btec_subject_key <- c(`1`	= "3D Design",
                       `524`	= "Other",
                       `526`	= "Recoded due to low counts - check SA")
 
-btec = qualifications1 %>%  filter(gc_s_qual_btec == 1)
+btec = qualifications1 %>%  filter(gc_s_qual_btec == 1) #those who said yes to having BTECs
 btec = qualifications1[qualifications1$mcsid %in% btec$mcsid,]
 btec_subjects = btec %>%  select(mcsid, gcnum00, gc_rowid, gc_s_qual_btcn_rec,
                                  gc_l_btec_name_r30,gc_l_btlv, gc_l_btgd)
@@ -731,7 +731,8 @@ btec_only = qualifications1 %>% filter(gc_s_qual_btec== 1)
 btec_only = btec_only %>% select(mcsid, gc_s_qual_btec, gc_s_qual_five, gc_s_qual_gcse, gc_s_qual_igcs)
 btec_only = merge(btec_only, country, by = "mcsid")
 btec_only = btec_only %>%  filter(country !=3)
-btec_only = btec_only %>% mutate(btec_only1 = case_when((gc_s_qual_btec == 1) & (gc_s_qual_five == 1) | (gc_s_qual_gcse == 1)  |(gc_s_qual_igcs == 1) ~  2, (gc_s_qual_btec == 1) |(gc_s_qual_five == 2) | (gc_s_qual_gcse == 2) |(gc_s_qual_igcs == 2) ~ 1))
+btec_only = btec_only %>% mutate(btec_only1 = case_when((gc_s_qual_btec == 1) & (gc_s_qual_five == 1) | (gc_s_qual_gcse == 1)  |(gc_s_qual_igcs == 1) ~  2, 
+                                                        (gc_s_qual_btec == 1) |(gc_s_qual_five == 2) | (gc_s_qual_gcse == 2) |(gc_s_qual_igcs == 2) ~ 1))
 btec_only = btec_only %>% filter(btec_only1 == 1)
 btec_only = btec_only %>% select(mcsid,btec_only1)
 
@@ -849,7 +850,7 @@ wide_n5_grades = wide_n5_grades %>%
 core_n5_grades <- wide_n5_grades %>% select(mcsid, c("Language: English",  contains("math"), "Computing Science", "Biology", "Chemistry", "Physics"))
 names(core_n5_grades) <- c("mcsid", "english", "maths","computer_science", "biology", "chemistry", "physics")
 
-
+#those who have only n4 quals = will be 0 in binary variable (dont have core subjects grade 4 and above)
 n4_only = qualifications1 %>% filter(gc_s_qual_four == 1 & gc_s_qual_five == 2) #n4 = yes, n5 = no
 #n4_only = n4_only %>% select(mcsid, gc_s_qual_four, gc_s_qual_five)
 #n4_only = n4_only %>% filter(gc_s_qual_four == 1)
@@ -884,7 +885,7 @@ core_grades_scotland = merge(all = TRUE, core_n5_grades, n4_only, by = "mcsid")
 core_grades_scotland = merge(all = TRUE, core_grades_scotland, no_quals_scotland, by = "mcsid")
 core_grades_scotland = merge(all = TRUE, core_grades_scotland, btec_only_scotland, by = "mcsid")
 
-
+#grade c or above (coded as 3 in N5 data)
 core_grades_n5 <-  core_grades_scotland %>%  mutate(benchmarkN5 = case_when((english >= 3 )  & 
                                                                       (maths >= 3 )  &
                                                                       (computer_science >=3 |
