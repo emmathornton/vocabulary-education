@@ -26,7 +26,11 @@ mcs1_geography <- read_sav("mcs1_geographically_linked_data.sav")
 mcs6_parent_assessment <- read_sav("mcs6_parent_assessment.sav")
 mcs3_cm_derived = read_sav("mcs3_cm_derived.sav")
 mcs1_cm_derived = read_sav("mcs1_cm_derived.sav")
+mcs1_cm_parent = read_sav("mcs1_parent_cm_interview.sav")
+mcs2_cm_parent = read_sav("mcs2_parent_cm_interview.sav")
 mcs2_cm_derived = read_sav("mcs2_cm_derived.sav")
+mcs2_family_derived = read_sav("mcs2_family_derived.sav")
+mcs1_family_derived = read_sav("mcs1_family_derived.sav")
 #convert all to lowercase####
 names(mcs3_child_assessment) <- tolower(names(mcs3_child_assessment))
 #names(mcs2_child_assessment) <- tolower(names(mcs2_child_assessment))
@@ -46,7 +50,11 @@ names(mcs1_geography) <- tolower(names(mcs1_geography))
 names(mcs6_parent_assessment) <- tolower(names(mcs6_parent_assessment))
 names(mcs3_cm_derived) <- tolower(names(mcs3_cm_derived))
 names(mcs2_cm_derived) <- tolower(names(mcs2_cm_derived))
+names(mcs2_family_derived) <- tolower(names(mcs2_family_derived))
 names(mcs1_cm_derived) <- tolower(names(mcs1_cm_derived))
+names(mcs1_cm_parent) <- tolower(names(mcs1_cm_parent))
+names(mcs2_cm_parent) <- tolower(names(mcs2_cm_parent))
+names(mcs1_family_derived) <- tolower(names(mcs1_family_derived))
 #create sweep entry variable to identify second entry families later####
 sweep_entry <- c("mcsid", "sentry")
 sweep_entry <- mcs_family[sweep_entry]
@@ -468,7 +476,7 @@ EAL_home<- EAL_sweep1[which(mcsid_number_age9mo$ahcnuma0=="1"),]
 EAL_sentry1 <- merge(all=TRUE, new_language_home, EAL_home, by="mcsid")
 EAL_sentry1$EAL <- ifelse(!is.na(EAL_sentry1$bhhlan00), EAL_sentry1$bhhlan00 ,EAL_sentry1$ahlang00)
 
-language_home2<- c("mcsid", "bhhlan00")
+language_home2<- c("mcsid","bdhlan00")
 language_home2 <- mcs2_parent[language_home2]
 language_home2[language_home2==-1]<-NA
 language_home22<- language_home2[which(mcsid_number_age3$bhcnuma0=="1"),]
@@ -772,19 +780,18 @@ age_atBirth = mcs1_derived %>% select(mcsid, addagb00, addres00) %>%
   merge(all=TRUE, sweep_entry, by="mcsid") %>% 
   mutate(mum_ageAtBirth = case_when(!is.na(bddagb00) ~ bddagb00,
                                     is.na(bddagb00) ~ addagb00)) %>% 
-  select(mcsid, mum_ageAtBirth )
+  select(mcsid, mum_ageAtBirth ) #some duplicates - check what is going on here! 
 
 #housing tenure at age 3####
-BDROOW00
 #housing tenure at age 3, replace with 9 months if missing
 tenure_sweep1 = mcs1_derived_family %>% select(mcsid, adroow00) 
 tenure_sweep2 = mcs2_derived_family %>% select(mcsid, bdroow00) %>% 
   merge(all=TRUE, tenure_sweep1, by="mcsid") %>% 
   mutate(housing_tenure = case_when(!is.na(bdroow00) ~ bdroow00,
                                     is.na(bdroow00) ~ adroow00)) %>% 
-  merge(all=TRUE, sweep_entry,by="mcsid") %>% 
+  merge(all=TRUE, sweep_entry,by="mcsid") 
   
-#tenure key
+
   
 tenure = tenure_sweep2 %>% select(mcsid, housing_tenure)
 tenure[tenure==1] <-1
@@ -798,89 +805,65 @@ tenure[tenure==8] <-4
 tenure[tenure==9] <-5
 tenure[tenure==10] <-5
 
-#accommodation type at age 3####
-accommodation <-c ("mcsid", "bmmoty00")
-accommodation <- mcs2_parent[accommodation]
+#accommodation type at age 3, replace with sweep 1 if NA####
+accommodation_sweep2 = mcs2_parent %>% select(mcsid, bpmotm00, belig00) %>% 
+  filter (belig00 == 1)
+
+accommodation_sweep1 = mcs1_parent %>% select(mcsid, apmoty00, aelig00) %>% 
+  filter (aelig00 == 1) %>% 
+  merge(all=TRUE, accommodation_sweep2, by="mcsid") %>% 
+  merge(all=TRUE, sweep_entry, by="mcsid") 
+accommodation_sweep1$accommodation_type = 
+  ifelse(!is.na(accommodation_sweep1$apmoty00),accommodation_sweep1$apmoty00, accommodation_sweep1$bpmotm00)  
+
+accommodation = accommodation_sweep1  %>% select(mcsid, accommodation_type)
+#recode values 
+accommodation[accommodation == 85] <- NA
+accommodation[accommodation == 86] <- NA  
 accommodation[accommodation ==-1:-9] <- NA
+accommodation[accommodation == 98] <- NA
+accommodation[accommodation == 99] <- NA
 accommodation[accommodation == 95] <- NA
-accommodation <- accommodation[which(mcsid_number_age3$bhcnuma0=="1"),]
-new_accommodation <- merge (all=TRUE,accommodation, sweep_entry, by="mcsid")
-new_accommodation1<- new_accommodation[which(new_accommodation$sentry == "1"),]
-#new families
-accommodation2 <-c ("mcsid", "bmmoty00")
-accommodation2 <- mcs2_parent[accommodation2]
-accommodation2[accommodation2 ==-1:-9] <- NA
-accommodation2[accommodation2 == 95] <- NA
-accommodation2 <- accommodation2[which(mcsid_number_age3$bhcnuma0=="1"),] 
-new_accommodation2 <- merge (all=TRUE,accommodation2, sweep_entry, by="mcsid")
-new_accommodation2<- new_accommodation2[which(new_accommodation2$sentry == "2"),]
-accomm <- merge(all=TRUE, new_accommodation1, new_accommodation2,by="mcsid")
-accomm_combine <- ifelse(!is.na(accomm$bmmoty00.x), accomm$bmmoty00.x, accomm$bmmoty00.y)
-#create dataframe so also have mcsid 
-new_accommodation<- data.frame(accomm_combine, accomm)
-#subset data so just have 1 standard score and mcsid for the variable
-accommodation_type <- c("mcsid", "accomm_combine")
-accommodation_type <- new_accommodation[accommodation_type ]
 
-#accommodation type at sweep 1 to fill in missing values
-accommodation_sweep1 <-c ("mcsid", "ammoty00")
-accommodation_sweep1 <- mcs1_parent[accommodation_sweep1]
-accommodation_sweep1[accommodation_sweep1 ==-1:-9] <- NA
-accommodation_sweep1[accommodation_sweep1 == 98] <- NA
-accommodation_sweep1[accommodation_sweep1 == 99] <- NA
-accommodation_sweep1[accommodation_sweep1 == 95] <- NA
-accommodation_sweep1[accommodation_sweep1 == 85] <- NA
-accommodation_sweep1[accommodation_sweep1 == 86] <- NA
-accommodation_sweep1 <- accommodation_sweep1[which(mcsid_number_age9mo$ahcnuma0=="1"),]
-
-accomm_type <- merge(all=TRUE, accommodation_type, accommodation_sweep1, by="mcsid")
-accomm_type$accommodation_type_combined <- ifelse(!is.na(accomm_type$accomm_combine), accomm_type$accomm_combine, accomm_type$ammoty00)
-ACCOMMODATION <- c("mcsid", "accommodation_type_combined")
-ACCOMMODATION<- accomm_type[ACCOMMODATION]
-
-ACCOMMODATION[ACCOMMODATION==1] <-1
-ACCOMMODATION[ACCOMMODATION==2] <-2
-ACCOMMODATION[ACCOMMODATION==3] <-2
-ACCOMMODATION[ACCOMMODATION==4] <-3
+accommodation[accommodation==1] <-1
+accommodation[accommodation==2] <-2
+accommodation[accommodation==3] <-2
+accommodation[accommodation==4] <-3
 
 #whether CM breastfed####
-breastfed <-c("mcsid", "ambfeva0")
-breastfed <- mcs1_parent[breastfed]
-breastfed[breastfed == -1:-9]<- NA
-breastfed <- breastfed[which(mcsid_number_age9mo$ahcnuma0=="1"),]
+breastfed_sweep1 = mcs1_cm_parent %>% select(mcsid, acbfev00, acbfem00,aelig00, acnum00) %>% 
+  filter(acnum00 == 1) %>% 
+  filter(aelig00 == 1) %>% 
+  merge(all=TRUE, sweep_entry, by="mcsid") %>% 
+  filter(sentry ==1) %>% 
+  select(mcsid, acbfev00, acbfem00)
+
+breastfed_sweep2 = mcs2_cm_parent %>% select(mcsid, bpbfmt00, belig00, bcnum00) %>% 
+  filter(bcnum00 ==1) %>% 
+  filter(belig00 ==1) %>% 
+  merge(all=TRUE, sweep_entry, by="mcsid") %>% 
+  filter(sentry ==2) %>% 
+  select(mcsid, bpbfmt00) %>% 
+  merge(all=TRUE, breastfed_sweep1, by="mcsid") %>% 
+  mutate(cm_breastfed = case_when(acbfev00 == 1 ~ 1, 
+                                  acbfev00 == 2 ~ 2, 
+                                  bpbfmt00 == 0 ~ 2, 
+                                  bpbfmt00 > 0 ~ 1,
+                                  is.na(acbfev00)  ~ NA_real_,
+                                  is.na(bpbfmt00) ~ NA_real_))
+#ACBFEV00 ==1, breastfed = 1 (yes)
+#ACBFEV00 ==2, breastfed = 2 (no)
+#bpbfmt00 ==0, breastfed = 2 (no) as month last breastfed = 0
+#bpbfmt00 = any other number, breastfed = 1
+#bpbfmt00 = NA, breastfed = NA
 
 
-#number of parents present in household at age 3####
-household <-c ("mcsid", "bdhtys00")
-household <- mcs2_derived[household]
-household[household ==-1:-9] <- NA
-household <-household[which(mcsid_number_age3$bhcnuma0=="1"),]
-new_household <- merge (all=TRUE,household, sweep_entry, by="mcsid")
-new_household1<- new_household[which(new_household$sentry == "1"),]
+#number of parents present in household at age 3; replace with 9 months if NA####
+carers_in_hh_s1 = mcs1_family_derived %>% select(mcsid,adhtys00)
+carers_in_hh = mcs2_family_derived %>% select(mcsid,bdhtys00) %>% 
+  merge(all=TRUE, carers_in_hh_s1, by="mcsid") %>% 
+  mutate(carers_in_hh = case_when(!is.na(bdhtys00)~bdhtys00,
+                                  is.na(bdhtys00)~adhtys00)) %>% 
+  select(mcsid, carers_in_hh)
 
-household2 <-c ("mcsid", "bdhtys00")
-household2 <- mcs2_derived[household2]
-household2[household2 ==-1:-9] <- NA
-household2 <-household2[which(mcsid_number_age3$bhcnuma0=="1"),]
-new_household2 <- merge (all=TRUE,household2, sweep_entry, by="mcsid")
-new_household_2<- new_household2[which(new_household2$sentry == "2"),]
-
-
-house <- merge(all=TRUE, new_household1, new_household_2,by="mcsid")
-house_combine <- ifelse(!is.na(house$bdhtys00.x), house$bdhtys00.x, house$bdhtys00.y)
-#create dataframe so also have mcsid 
-new_household<- data.frame(house_combine,house)
-#subset data so just have 1 standard score and mcsid for the variable
-parents_in_hh <- c("mcsid", "house_combine")
-parents_in_hh <- new_household[parents_in_hh ]
-
-#replace NA with sweep1 responses
-household_sweep1 <-c ("mcsid", "adhtys00")
-household_sweep1 <- mcs1_derived[household_sweep1]
-household_sweep1[household_sweep1 ==-1:-9] <- NA
-household_sweep1<-household_sweep1[which(mcsid_number_age9mo$ahcnuma0=="1"),]
-parents_home <- merge(all=TRUE, household_sweep1, parents_in_hh,by="mcsid")
-parents_home$parents_in_household <- ifelse(!is.na(parents_home$house_combine), parents_home$house_combine, parents_home$adhtys00)
-PARENTS_IN_HH <- c("mcsid", "parents_in_household")
-PARENTS_IN_HH <- parents_home[PARENTS_IN_HH]
 
