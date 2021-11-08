@@ -20,7 +20,7 @@ mcs2_derived_family <- read_sav("mcs2_family_derived.sav")
 mcs1_derived_family <- read_sav("mcs1_family_derived.sav")
 mcs1_derived <- read_sav("mcs1_parent_derived.sav")
 mcs5_parent<- read_sav("mcs5_parent_interview.sav")
-mcs5_family<- read_sav("mcs5_family_derived.sav")
+mcs5_family<- read_sav("mcs5_family_derived.sav") #2018 version
 mcs2_geography <- read_sav("mcs2_geographically_linked_data.sav")
 mcs1_geography <- read_sav("mcs1_geographically_linked_data.sav")
 mcs6_parent_assessment <- read_sav("mcs6_parent_assessment.sav")
@@ -468,7 +468,8 @@ imd = merge(all=TRUE, imd_sweep2, imd_sweep1, by="mcsid") %>%
   select(mcsid, imd)
 
 #creating potential confounders ####
-#language spoken at home#### - can't find this variable at all in new dataset for sweep1. use from old version of data. 
+#language spoken at home#### - can't find this variable at all in new dataset for sweep1. 
+#use from old version of data. 2017? 
 language_home1<- c("mcsid", "bhhlan00")
 language_home1 <- mcs2_parent[language_home1]
 language_home1[language_home1==-1]<-NA
