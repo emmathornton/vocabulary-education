@@ -173,7 +173,8 @@ oecd_income_9months = mcs1_derived_family %>% select(mcsid, aoecduk0)
 #combine together
 income = merge(all=TRUE, oecd_income, oecd_income_9months, by="mcsid") %>% 
   mutate(oecd_income = case_when(!is.na(boecduk0) ~ boecduk0, 
-                                 is.na(boecduk0) ~ aoecduk0))
+                                 is.na(boecduk0) ~ aoecduk0)) %>% 
+  select(mcsid, oecd_income)
 
 #NVQ education variable####
 #NVQ qualifications
@@ -395,8 +396,9 @@ parent_nvq = merge(all=TRUE, maternal_nvq, paternal_nvq, by="mcsid") %>%
 
 
 
-#WEALTH #### - debt seems to be missing from mcs5 new datasets? 
-wealth_variables <- mcs5_parent%>%  select(mcsid, eresp00, epmopa00, ephval00, epinvt00, epdeba00)
+#WEALTH #### 
+#debt seems to be missing from mcs5 new datasets? from 2018 (check) release of the data
+wealth_variables <- mcs5_parent%>%  select(mcsid, eresp00, epmopa00, ephval00, epinvt00, epdeba00, eelig00)
 wealth_variables <- mcs5_parent[wealth_variables]
 wealth_variables$eresp00 = as.character(wealth_variables$eresp00)
 wealth1 <- wealth_variables[which(wealth_variables$eresp00 == "1"),]
@@ -466,7 +468,7 @@ imd = merge(all=TRUE, imd_sweep2, imd_sweep1, by="mcsid") %>%
   select(mcsid, imd)
 
 #creating potential confounders ####
-#language spoken at home#### - can't find this variable at all in new dataset for sweep1. 
+#language spoken at home#### - can't find this variable at all in new dataset for sweep1. use from old version of data. 
 language_home1<- c("mcsid", "bhhlan00")
 language_home1 <- mcs2_parent[language_home1]
 language_home1[language_home1==-1]<-NA
@@ -506,7 +508,7 @@ ethnicity_sweep2 = mcs2_cm_derived %>% select(mcsid, bdc06e00, bcnum00) %>%
   merge(all=TRUE,  sweep_entry, by="mcsid") %>% 
   filter(sentry == 2) %>% 
   select(mcsid, bdc06e00) %>% 
-  merge(all= TRUE, ethnicity, by = "mcsid") %>% 
+  merge(all= TRUE, ethnicity_sweep1, by = "mcsid") %>% 
   mutate(ethnicity = case_when(!is.na(adc06e00) ~ adc06e00, 
                                is.na(adc06e00) ~ bdc06e00))
 ethnicity = ethnicity_sweep2 %>% select(mcsid, ethnicity)
@@ -764,27 +766,80 @@ main_vocabTotal = main_vocabTest %>% select(mcsid, main_totalScore)
 partner_vocabTotal = partner_vocabTest %>% select(mcsid, partner_totalScore)
 #calculate mean across main and partner
 caregiver_vocabTotal = merge(all=TRUE, main_vocabTotal, partner_vocabTotal, by="mcsid") %>% 
- mutate (caregiver_vocab = rowMeans(.[-1], na.rm = TRUE), .after = 1) 
+ mutate (caregiver_vocab = rowMeans(.[-1], na.rm = TRUE), .after = 1) %>% 
+  select(mcsid, caregiver_vocab)
 #convert NaN to NA
 caregiver_vocabTotal$caregiver_vocab[is.nan(caregiver_vocabTotal$caregiver_vocab)]<-NA
 
 #auxiliary variables for imputation####
 #mother's age at birth of CM####
 #sweep 1 - creating mother respondent variables
-age_atBirth_sweep2 = mcs2_derived %>% select(mcsid, bddagb00, bddres00) %>% 
-  filter(bddres00 == 1 | bddres00 == 3 |bddres00 ==5|
-           bddres00==7 | bddres00 == 9 | bddres00 == 11 |
-           bddres00 == 13 |bddres00 == 15) 
+age_atBirth_sweep2_motherMain = mcs2_derived %>% select(mcsid, bddagb00, bddres00,belig00) %>% 
+  filter(belig00 == 1 & (mcsid %in% mother_respondent_main_sweep2_original$mcsid)) %>% 
+  select(mcsid, bddagb00) %>% 
+  rename("main_birthAge" = bddagb00)
 
-age_atBirth = mcs1_derived %>% select(mcsid, addagb00, addres00) %>% 
-  filter(addres00 == 1 | addres00 == 3 |addres00 ==5|
-           addres00==7 | addres00 == 9 | addres00 == 11 |
-           addres00 == 13 |addres00 == 15) %>% 
-  merge(all=TRUE, age_atBirth_sweep2, by="mcsid") %>% 
-  merge(all=TRUE, sweep_entry, by="mcsid") %>% 
-  mutate(mum_ageAtBirth = case_when(!is.na(bddagb00) ~ bddagb00,
-                                    is.na(bddagb00) ~ addagb00)) %>% 
-  select(mcsid, mum_ageAtBirth ) #some duplicates - check what is going on here! 
+
+age_atBirth_sweep2_motherPartner = mcs2_derived %>% select(mcsid, bddagb00, bddres00,belig00) %>% 
+  filter((belig00 == 2 |belig00 == 3) & (mcsid %in% mother_respondent_partner_sweep2_original$mcsid)) %>% 
+  select(mcsid, bddagb00) %>% 
+  rename("partner_birthAge" = bddagb00)
+
+age_atBirth_sweep2_original = merge(all=TRUE, age_atBirth_sweep2_motherMain, age_atBirth_sweep2_motherPartner, by="mcsid") %>% 
+  mutate(age_atBirth_sweep2 = case_when(!is.na(main_birthAge) ~main_birthAge, 
+                                        is.na(main_birthAge) ~ partner_birthAge))
+
+#new families
+age_atBirth_sweep2_motherMain_new = mcs2_derived %>% select(mcsid, bddagb00, bddres00,belig00) %>% 
+  filter(belig00 == 1 & (mcsid %in% mother_respondent_main_sweep2_new$mcsid)) %>% 
+  select(mcsid, bddagb00) %>% 
+  rename("main_birthAge_new" = bddagb00)
+
+
+age_atBirth_sweep2_motherPartner_new = mcs2_derived %>% select(mcsid, bddagb00, bddres00,belig00) %>% 
+  filter((belig00 == 2 |belig00 == 3) & (mcsid %in% mother_respondent_partner_sweep2_new$mcsid)) %>% 
+  select(mcsid, bddagb00) %>% 
+  rename("partner_birthAge_new" = bddagb00)
+
+age_atBirth_sweep2_newFamilies = merge(all=TRUE, age_atBirth_sweep2_motherMain_new, age_atBirth_sweep2_motherPartner_new, by="mcsid") %>% 
+  mutate(age_atBirth_sweep2_new = case_when(!is.na(main_birthAge_new) ~main_birthAge_new, 
+                                            is.na(main_birthAge_new) ~ partner_birthAge_new))
+
+#combine new entry families with original families
+age_atBirth_sweep2 = merge(all=TRUE, age_atBirth_sweep2_original, age_atBirth_sweep2_newFamilies, by="mcsid") %>% 
+  mutate(sweep2_birthAge = case_when(!is.na(age_atBirth_sweep2) ~ age_atBirth_sweep2, 
+                                     is.na(age_atBirth_sweep2) ~age_atBirth_sweep2_new)) %>% 
+  select(mcsid, sweep2_birthAge)
+
+
+
+#sweep 1
+#main
+age_atBirth_main_sweep1 = mcs1_derived %>% select(mcsid, addagb00, addres00, aelig00) %>% 
+  filter(aelig00 == 1 & (mcsid %in% mother_respondent_main$mcsid)) %>% 
+  select(mcsid, addagb00) %>% 
+  rename("main_birthAge" = addagb00)
+
+#partner
+age_atBirth_partner_sweep1 = mcs1_derived %>% select(mcsid, addagb00, addres00, aelig00) %>% 
+  filter((aelig00 == 2 | aelig00 == 3) & (mcsid %in% mother_respondent_partner$mcsid)) %>% 
+  select(mcsid, addagb00) %>% 
+  rename("partner_birthAge" = addagb00)
+#merge
+age_atBirth_sweep1 = merge(all=TRUE, age_atBirth_main_sweep1, age_atBirth_partner_sweep1, by="mcsid") %>% 
+  mutate(age_atBirth_sweep1 = case_when(!is.na(main_birthAge) ~ main_birthAge,
+                                        is.na(main_birthAge) ~partner_birthAge)) %>% 
+  select(mcsid,age_atBirth_sweep1 )
+
+#combine sweeps
+age_atBirth = merge(all=TRUE, age_atBirth_sweep1, age_atBirth_sweep2, by="mcsid") %>% 
+  mutate(age_atBirth = case_when(!is.na(age_atBirth_sweep1) ~ age_atBirth_sweep1,
+                                 is.na(age_atBirth_sweep1) ~ sweep2_birthAge, 
+                                 is.na(sweep2_birthAge) ~ age_atBirth_sweep1, 
+                                 TRUE ~ NA_real_)) %>% 
+  select(mcsid, age_atBirth)
+
+! 
 
 #housing tenure at age 3####
 #housing tenure at age 3, replace with 9 months if missing
@@ -842,7 +897,7 @@ breastfed_sweep1 = mcs1_cm_parent %>% select(mcsid, acbfev00, acbfem00,aelig00, 
   filter(sentry ==1) %>% 
   select(mcsid, acbfev00, acbfem00)
 
-breastfed_sweep2 = mcs2_cm_parent %>% select(mcsid, bpbfmt00, belig00, bcnum00) %>% 
+breastfed = mcs2_cm_parent %>% select(mcsid, bpbfmt00, belig00, bcnum00) %>% 
   filter(bcnum00 ==1) %>% 
   filter(belig00 ==1) %>% 
   merge(all=TRUE, sweep_entry, by="mcsid") %>% 
@@ -854,7 +909,8 @@ breastfed_sweep2 = mcs2_cm_parent %>% select(mcsid, bpbfmt00, belig00, bcnum00) 
                                   bpbfmt00 == 0 ~ 2, 
                                   bpbfmt00 > 0 ~ 1,
                                   is.na(acbfev00)  ~ NA_real_,
-                                  is.na(bpbfmt00) ~ NA_real_))
+                                  is.na(bpbfmt00) ~ NA_real_)) %>% 
+  select(mcsid, cm_breastfed)
 #ACBFEV00 ==1, breastfed = 1 (yes)
 #ACBFEV00 ==2, breastfed = 2 (no)
 #bpbfmt00 ==0, breastfed = 2 (no) as month last breastfed = 0
@@ -1825,3 +1881,29 @@ n5_core_subjects_score$average_grade_n5 = round(n5_core_subjects_score$average_g
 
 education_main_outcomes = merge(all=TRUE, core_grades_binary, core_subjects_score, by = "mcsid")
 education_main_outcomes = merge(all=TRUE, education_main_outcomes, n5_core_subjects_score, by="mcsid")
+
+
+#VARIABLES FOR IMPUTATION/ANALYSIS - COMBINE INTO ONE DATAFRAME.####
+#change order of these so auxiliary and SES variables first - for order of imputation
+#also add wealth and EAL when resolved these issues.
+analysis_data = merge(all=TRUE, sex, ethnicity, by = "mcsid")
+#EAL here
+analysis_data = merge(all=TRUE, analysis_data, age_atBirth, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, tenure, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, accommodation, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, parent_nvq, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, breastfed, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, carers_in_hh, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, income, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, imd, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, occupational_status, by = "mcsid")
+#wealth variables here
+analysis_data = merge(all=TRUE, analysis_data, caregiver_vocabTotal, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, age5_vocab, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, education_main_outcomes, by = "mcsid")
+
+#save analysis data as a csv file ####
+write.csv(mcs_analysis, file = "education_data.csv")
+#select sample - those with a response on age 5 vocabulary test? <check>
+mcs_analysis = analysis_data %>% filter(!is.na(age5_vocab))
+#mcs_analysis = analysis_data[!is.na(analysis_data$age5_vocab),]
