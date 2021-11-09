@@ -1845,7 +1845,7 @@ analysis_data = merge(all=TRUE, analysis_data, age5_vocab, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, education_main_outcomes, by = "mcsid")
 
 #select sample - those with a response on age 5 vocabulary test OR an educaion outcome
-mcs_analysis = analysis_data %>% filter(!is.na(age5_vocab | benchmark_binary))
+mcs_analysis = analysis_data %>% filter(!is.na(age5_vocab))
 
 #save analysis data as a csv file ####
 write.csv(mcs_analysis, file = "education_data.csv")
