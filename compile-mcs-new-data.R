@@ -166,7 +166,8 @@ occupational_status = merge(all=TRUE, age3_occupation, months9_occupation, by = 
   rec(highest_household_occupation,  rec = "1=4; 2=3; 3=2; 4=1", #reverse code variable
       as.num = TRUE, var.label = NULL, 
       val.labels = NULL, append = TRUE, suffix = "_r") %>% 
-  select(mcsid, highest_household_occupation_r)
+  select(mcsid, highest_household_occupation_r) %>% 
+  rename("occupational_status" = highest_household_occupation_r)
 
 #income####
 #INCOME AT AGE 3. OECD weighted quintiles
@@ -456,8 +457,8 @@ ethnicity_sweep1 = mcs1_cm_derived %>% select(mcsid, adc06e00, acnum00) %>%
   select(mcsid, adc06e00)
 ethnicity_sweep2 = mcs2_cm_derived %>% select(mcsid, bdc06e00, bcnum00) %>% 
   filter(bcnum00==1) %>% 
-  merge(all=TRUE,  sweep_entry, by="mcsid") %>% 
-  filter(sentry == 2) %>% #check if want to do this or just replace sweep 1 NA with sweep 2 responses regardless of sweep entry
+  #merge(all=TRUE,  sweep_entry, by="mcsid") %>% 
+  #filter(sentry == 2) %>% #check if want to do this or just replace sweep 1 NA with sweep 2 responses regardless of sweep entry
   select(mcsid, bdc06e00) %>% 
   merge(all= TRUE, ethnicity_sweep1, by = "mcsid") %>% 
   mutate(ethnicity = case_when(!is.na(adc06e00) ~ adc06e00, 
@@ -465,7 +466,7 @@ ethnicity_sweep2 = mcs2_cm_derived %>% select(mcsid, bdc06e00, bcnum00) %>%
 ethnicity = ethnicity_sweep2 %>% select(mcsid, ethnicity)
 
 
-#gender####
+#sex at birth####
 sex_sweep1 = mcs1_hh %>% select(mcsid, ahcsex00,acnum00) %>% 
   filter(acnum00 ==1) %>% 
   select(mcsid, ahcsex00)
@@ -473,14 +474,15 @@ sex_sweep1 = mcs1_hh %>% select(mcsid, ahcsex00,acnum00) %>%
 sex_sweep2 = mcs2_hh %>% select(mcsid, bhcsex00, bcnum00) %>% 
   filter(bcnum00 == 1) %>% 
   select(mcsid, bhcsex00) %>% 
-  merge(all=TRUE, sweep_entry, by="mcsid") %>% 
-  filter(sentry == 2) %>% 
+  #merge(all=TRUE, sweep_entry, by="mcsid") %>% 
+  #filter(sentry == 2) %>% 
   select(mcsid, bhcsex00) %>% 
   merge(all=TRUE, sex_sweep1, by = "mcsid") %>% 
   mutate(sex = case_when(!is.na(ahcsex00) ~ ahcsex00,
                          is.na(ahcsex00) ~ bhcsex00))
 
 sex = sex_sweep2 %>% select(mcsid, sex)
+
 
 #caregiver vocabulary ####
 #main respondent word activity test
@@ -790,7 +792,7 @@ age_atBirth = merge(all=TRUE, age_atBirth_sweep1, age_atBirth_sweep2, by="mcsid"
                                  TRUE ~ NA_real_)) %>% 
   select(mcsid, age_atBirth)
 
-! 
+
 
 #housing tenure at age 3####
 #housing tenure at age 3, replace with 9 months if missing
@@ -800,10 +802,9 @@ tenure_sweep2 = mcs2_derived_family %>% select(mcsid, bdroow00) %>%
   mutate(housing_tenure = case_when(!is.na(bdroow00) ~ bdroow00,
                                     is.na(bdroow00) ~ adroow00)) %>% 
   merge(all=TRUE, sweep_entry,by="mcsid") 
-  
 
-  
 tenure = tenure_sweep2 %>% select(mcsid, housing_tenure)
+
 tenure[tenure==1] <-1
 tenure[tenure==2] <-1
 tenure[tenure==3] <-2
@@ -1838,7 +1839,7 @@ education_main_outcomes = merge(all=TRUE, education_main_outcomes, n5_core_subje
 #change order of these so auxiliary and SES variables first - for order of imputation
 #also add wealth and EAL when resolved these issues.
 analysis_data = merge(all=TRUE, sex, ethnicity, by = "mcsid")
-#EAL here
+analysis_data = merge(all=TRUE, analysis_data, EAL, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, age_atBirth, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, tenure, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, accommodation, by = "mcsid")
