@@ -70,20 +70,9 @@ sweep_entry$sentry = as.character(sweep_entry$sentry)
 
 
 #create weight variable####
-#attrition and sample weight age 9 months sweep 
-mcs1_weight <- c("mcsid", "aovwt2")
-mcs1_weight <- mcs_family[mcs1_weight]
-mcs1_weight [mcs1_weight  ==-1] <- NA
-#attrition and sample weight age 3 sweep 
-mcs2_weight <- c("mcsid", "bovwt2")
-mcs2_weight <- mcs_family[mcs2_weight]
-mcs2_weight [mcs2_weight  ==-1] <- NA
-#mcs2_weight1<- merge (all=TRUE, mcs2_weight, sweep_entry, by="mcsid")
-#mcs2_weight2<- mcs2_weight1[which(mcs2_weight1$sentry == "2"),]
-weight <- merge(all=TRUE, mcs1_weight, mcs2_weight,by="mcsid")
-weight$weight1 <- ifelse(!is.na(weight$bovwt2), weight$bovwt2, weight$aovwt2)
-mcs_weight <- c("mcsid", "weight1")
-mcs_weight <- weight[mcs_weight] #check which weight need here when meet
+#attrition and sample weight age 5 sweep - as this is where exposure was measured. 
+age5_weight = mcs_family %>% select(mcsid, covwt2)
+
 
 respondent_key = c(`1` = "main",
                    `2` = "partner", 
@@ -1838,7 +1827,8 @@ education_main_outcomes = merge(all=TRUE, education_main_outcomes, n5_core_subje
 #VARIABLES FOR IMPUTATION/ANALYSIS - COMBINE INTO ONE DATAFRAME.####
 #change order of these so auxiliary and SES variables first - for order of imputation
 #also add wealth and EAL when resolved these issues.
-analysis_data = merge(all=TRUE, sex, ethnicity, by = "mcsid")
+analysis_data = merge(all=TRUE, age5_weight, sex, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, ethnicity, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, EAL, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, age_atBirth, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, tenure, by = "mcsid")
@@ -1854,8 +1844,10 @@ analysis_data = merge(all=TRUE, analysis_data, caregiver_vocabTotal, by = "mcsid
 analysis_data = merge(all=TRUE, analysis_data, age5_vocab, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, education_main_outcomes, by = "mcsid")
 
+#select sample - those with a response on age 5 vocabulary test OR an educaion outcome
+mcs_analysis = analysis_data %>% filter(!is.na(age5_vocab | benchmark_binary))
+
 #save analysis data as a csv file ####
 write.csv(mcs_analysis, file = "education_data.csv")
-#select sample - those with a response on age 5 vocabulary test? <check>
-mcs_analysis = analysis_data %>% filter(!is.na(age5_vocab))
+
 #mcs_analysis = analysis_data[!is.na(analysis_data$age5_vocab),]
