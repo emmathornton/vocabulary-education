@@ -282,27 +282,27 @@ wide_grades = wide_grades %>%
 
 
 #wide_grades = wide_grades %>% rename(english_lit = "Language: English Literature", 
- #                                    english = "Language: English", 
-  #                                   english_lang = "Language: English Language", 
-   #                                  maths = "Mathematics", 
- #                                    maths_linear = "Mathematics - Linear", 
-  #                                   maths_numeracy = "Mathematics - Numeracy", 
-   #                                  further_maths = "Further Mathematics", 
-    #                                 additional_maths =  " Additional Mathematics", 
-     #                                biology = "Biology", 
-      #                               chemistry = "Chemistry", 
-       #                              physics = "Physics",
-        #                             additional_science = "Additional Science", 
-         #                            science = "Science", 
-          #                           applied_science = "Applied Science", 
-           #                          combined_science = `Combined Science `,
-            #                         modular_science = "Science (Modular)",
-             #                        further_additional_science = `Further Additional Science`,
-              #                       computer_science = `Computer Science`,
-               #                      additional_applied_science = `Additional Applied Science`,
-                #                     additional_science_modular = `Additional Science (Modular)`,
-                 #                    human_biology = `Biology (Human)`)
-                                    
+#                                    english = "Language: English", 
+#                                   english_lang = "Language: English Language", 
+#                                  maths = "Mathematics", 
+#                                    maths_linear = "Mathematics - Linear", 
+#                                   maths_numeracy = "Mathematics - Numeracy", 
+#                                  further_maths = "Further Mathematics", 
+#                                 additional_maths =  " Additional Mathematics", 
+#                                biology = "Biology", 
+#                               chemistry = "Chemistry", 
+#                              physics = "Physics",
+#                             additional_science = "Additional Science", 
+#                            science = "Science", 
+#                           applied_science = "Applied Science", 
+#                          combined_science = `Combined Science `,
+#                         modular_science = "Science (Modular)",
+#                        further_additional_science = `Further Additional Science`,
+#                       computer_science = `Computer Science`,
+#                      additional_applied_science = `Additional Applied Science`,
+#                     additional_science_modular = `Additional Science (Modular)`,
+#                    human_biology = `Biology (Human)`)
+
 
 #select core subjects from this wide dataset
 
@@ -750,7 +750,7 @@ core_grades <- combined_core_grades %>%  mutate(benchmark = case_when(
     (maths >= 4 | maths_linear >= 4 | maths_numeracy >= 4 | further_maths >= 4 | additional_maths >= 4 | maths_I >= 4) &
     (biology >= 4 | chemistry >= 4 | physics >= 4 | additional_science >= 4 | science >= 4 | applied_science >= 4 |
        combined_science >= 4 | modular_science >= 4 | further_additional_science >= 4 |computer_science >=4 |
-     additional_applied_science >= 4 | additional_science_modular >= 4 |human_biology >= 4 | 
+       additional_applied_science >= 4 | additional_science_modular >= 4 |human_biology >= 4 | 
        biology_I >= 4 | chemistry_I >= 4 | physics_I >= 4 | science_I >= 4 | science_btec == 3 | applied_science_btec == 3) ~ 1,
   TRUE ~ 0))
 
@@ -856,8 +856,8 @@ n4_only = qualifications1 %>% filter(gc_s_qual_four == 1 & gc_s_qual_five == 2) 
 #n4_only = n4_only %>% filter(gc_s_qual_four == 1)
 #n4_only = qualifications1[qualifications1$mcsid %in% n4_only$mcsid,] 
 #n4_only = n4_only %>% mutate(national_4_only = case_when(gc_s_qual_four == 1 & 
-                                           #                gc_s_qual_five == 2 ~ 1, 
-                                                 #        TRUE ~ 0 ))
+#                gc_s_qual_five == 2 ~ 1, 
+#        TRUE ~ 0 ))
 
 n4_only = n4_only %>% select(mcsid, gc_s_qual_four)
 
@@ -887,10 +887,10 @@ core_grades_scotland = merge(all = TRUE, core_grades_scotland, btec_only_scotlan
 
 #grade c or above (coded as 3 in N5 data)
 core_grades_n5 <-  core_grades_scotland %>%  mutate(benchmarkN5 = case_when((english >= 3 )  & 
-                                                                      (maths >= 3 )  &
-                                                                      (computer_science >=3 |
-                                                                         biology >= 3 | chemistry >= 3 | physics >= 3 ) ~ 1,
-                                                                    TRUE ~ 0))
+                                                                              (maths >= 3 )  &
+                                                                              (computer_science >=3 |
+                                                                                 biology >= 3 | chemistry >= 3 | physics >= 3 ) ~ 1,
+                                                                            TRUE ~ 0))
 
 #combine N5 and GCSE core grades into one variable
 #first combine the dataframes
@@ -901,13 +901,13 @@ core_grades_binary = core_grades_binary %>% select(mcsid, benchmark, benchmarkN5
 
 
 core_grades_binary= core_grades_binary %>% mutate(benchmark_binary = 
-                                                         case_when(benchmark == 0 & benchmarkN5 == 1 ~  1, 
-                                                                   benchmark == 1 & benchmarkN5 == 1 ~ 1,
-                                                                   benchmark == 0 & benchmarkN5 == 0 ~ 0,
-                                                                   benchmark == 1 & benchmarkN5 == 0 ~ 1,
-                                                                   is.na(benchmarkN5) ~ benchmark, 
-                                                                   is.na(benchmark) ~ benchmarkN5, 
-                                                  TRUE ~ 0)) %>% 
+                                                    case_when(benchmark == 0 & benchmarkN5 == 1 ~  1, 
+                                                              benchmark == 1 & benchmarkN5 == 1 ~ 1,
+                                                              benchmark == 0 & benchmarkN5 == 0 ~ 0,
+                                                              benchmark == 1 & benchmarkN5 == 0 ~ 1,
+                                                              is.na(benchmarkN5) ~ benchmark, 
+                                                              is.na(benchmark) ~ benchmarkN5, 
+                                                              TRUE ~ 0)) %>% 
   select(mcsid, benchmark_binary)
 
 
@@ -951,7 +951,7 @@ core_subjects_score = merge(all=TRUE, core_subjects_score, science_score, by = "
 
 #get mean of these scores. need to have a response for english, maths and science score
 core_subjects_score = core_subjects_score %>% mutate(average_grade = rowMeans(.[-1]), 
-                                                           .after = 1) %>% 
+                                                     .after = 1) %>% 
   select(mcsid, average_grade)
 core_subjects_score$average_grade = round(core_subjects_score$average_grade, 2)
 
@@ -970,18 +970,18 @@ n5_core_subjects_score = merge(all= TRUE, n5_core_subjects_score, n5_science_sco
 
 #get mean of these scores. need to have a response for english, maths and science score
 n5_core_subjects_score = n5_core_subjects_score %>% mutate(average_grade_n5 = rowMeans(.[-1]), 
-                                                     .after = 1) %>% 
+                                                           .after = 1) %>% 
   select(mcsid, average_grade_n5)
 n5_core_subjects_score$average_grade_n5 = round(n5_core_subjects_score$average_grade_n5, 2)
 
 education_main_outcomes = merge(all=TRUE, core_grades_binary, core_subjects_score, by = "mcsid")
 education_main_outcomes = merge(all=TRUE, education_main_outcomes, n5_core_subjects_score, by="mcsid")
-  
+
 #continous score version 2 - average of highest grade for each subject ####
 
 english_subjects_highest = english_subjects_gcse %>% select(!english_score) %>% 
   mutate(highest_english = pmax(english,english_lang,english_lit,
-  english_first_lang_I,english_lit_I, na.rm= TRUE), .after = 1) #get this to give the highest per row without having to name each column??
+                                english_first_lang_I,english_lit_I, na.rm= TRUE), .after = 1) #get this to give the highest per row without having to name each column??
 
 
 #merge into one variable
@@ -989,12 +989,12 @@ english_subjects_highest = english_subjects_gcse %>% select(!english_score) %>%
 # core_grades_combined$benchmark, core_grades_combined$benchmarkN5)
 
 #core_grades_combined = core_grades_combined %>% mutate(benchmark_binary = 
-   #                                                      case_when(benchmark == 0 & benchmarkN5 == 1 ~  1, 
-   #                                                                benchmark == 1 & benchmarkN5 == 1 ~ 1,
-    #                                                               benchmark == 0 & benchmarkN5 == 0 ~ 0,
-     #                                                              benchmark == 1 & benchmarkN5 == 0 ~ 1,
-     #                                                              is.na(benchmarkN5) ~ benchmark, 
-        #                                                           is.na(benchmark) ~ benchmarkN5))
+#                                                      case_when(benchmark == 0 & benchmarkN5 == 1 ~  1, 
+#                                                                benchmark == 1 & benchmarkN5 == 1 ~ 1,
+#                                                               benchmark == 0 & benchmarkN5 == 0 ~ 0,
+#                                                              benchmark == 1 & benchmarkN5 == 0 ~ 1,
+#                                                              is.na(benchmarkN5) ~ benchmark, 
+#                                                           is.na(benchmark) ~ benchmarkN5))
 
 #take those who sat the core subjects  - so binary variable here will be those who got 4 and above but only for those who took the subjects in the first place. 
 
