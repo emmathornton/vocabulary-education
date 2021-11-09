@@ -14,12 +14,14 @@ mcs1_hh <- read_sav("mcs1_hhgrid.sav")
 mcs2_hh <- read_sav("mcs2_hhgrid.sav")
 mcs_family <- read_sav("mcs_longitudinal_family_file.sav")
 mcs1_parent <- read_sav("mcs1_parent_interview.sav")
+mcs1_parent_12thEd <- read_sav("mcs1_parent_interview_12thEd.sav")
 mcs2_parent <- read_sav("mcs2_parent_interview.sav")
+mcs2_parent_9thEd <- read_sav("mcs2_parent_interview_9thEd.sav")
 mcs2_derived <- read_sav("mcs2_parent_derived.sav")
 mcs2_derived_family <- read_sav("mcs2_family_derived.sav")
 mcs1_derived_family <- read_sav("mcs1_family_derived.sav")
 mcs1_derived <- read_sav("mcs1_parent_derived.sav")
-mcs5_parent<- read_sav("mcs5_parent_interview.sav")
+mcs5_parent<- read_sav("mcs5_parent_interview_4thEd.sav")
 mcs5_family<- read_sav("mcs5_family_derived.sav") #2018 version
 mcs2_geography <- read_sav("mcs2_geographically_linked_data.sav")
 mcs1_geography <- read_sav("mcs1_geographically_linked_data.sav")
@@ -40,7 +42,9 @@ names(mcs_family) <- tolower(names(mcs_family))
 names(mcs5_family) <- tolower(names(mcs5_family))
 names(mcs5_parent) <- tolower(names(mcs5_parent))
 names(mcs1_parent) <- tolower(names(mcs1_parent))
+names(mcs1_parent_12thEd) <- tolower(names(mcs1_parent_12thEd))
 names(mcs2_parent) <- tolower(names(mcs2_parent))
+names(mcs2_parent_9thEd) <- tolower(names(mcs2_parent_9thEd))
 names(mcs2_derived) <- tolower(names(mcs2_derived))
 names(mcs2_derived_family) <- tolower(names(mcs2_derived_family))
 names(mcs1_derived_family) <- tolower(names(mcs1_derived_family))
@@ -397,61 +401,17 @@ parent_nvq = merge(all=TRUE, maternal_nvq, paternal_nvq, by="mcsid") %>%
 
 
 #WEALTH #### 
-#debt seems to be missing from mcs5 new datasets? from 2018 (check) release of the data
-wealth_variables <- mcs5_parent%>%  select(mcsid, eresp00, epmopa00, ephval00, epinvt00, epdeba00, eelig00)
-wealth_variables <- mcs5_parent[wealth_variables]
-wealth_variables$eresp00 = as.character(wealth_variables$eresp00)
-wealth1 <- wealth_variables[which(wealth_variables$eresp00 == "1"),]
+#debt seems to be missing from mcs5 new datasets? from 2017 release of the data.
+#University of London. Institute of Education. Centre for Longitudinal Studies. (2017). Millennium Cohort Study: Fifth Survey, 2012. [data collection]. 4th Edition. UK Data Service. SN: 7464, http://doi.org/10.5255/UKDA-SN-7464-4
 
-#3 mcsids from respondent 4
-wealth4 <- wealth_variables[which(wealth_variables$eresp00 == "4"),]
-wealth4 = wealth4[!is.na(wealth4$epmopa00) | !is.na(wealth4$ephval00) | !is.na(wealth4$epinvt00) | !is.na(wealth4$epdeba00) ,]
-#mortgage
-mortgage1 <-c ("mcsid", "epmopa00")
-mortgage1 <- wealth1[mortgage1]
-mortgage1[mortgage1 ==-1:-9] <- NA
-mortgage4 <-c ("mcsid", "epmopa00")
-mortgage4 <- wealth4[mortgage4]
-mortgage4[mortgage4 ==-1:-9] <- NA
-mortgage <- merge(all=TRUE, mortgage1, mortgage4,by="mcsid")
-mortgage$mortgage_combine<- ifelse(!is.na(mortgage$epmopa00.x), mortgage$epmopa00.x,mortgage$epmopa00.y)
-mortgage_outstanding <- c("mcsid", "mortgage_combine")
-mortgage_outstanding<-mortgage[mortgage_outstanding]
+wealth_variables <- mcs5_parent%>%  select(mcsid, eresp00, epmopa00, ephval00, epinvt00, epdeba00, eelig00) %>% 
+  filter(eelig00 == 1) %>% 
+  select(mcsid, epmopa00, ephval00, epinvt00, epdeba00) %>% 
+  rename("mortgage" = epmopa00,
+         "houseValue" = ephval00, 
+         "savings" = epinvt00, 
+         "debt" = epdeba00)
 
-value1 <-c ("mcsid", "ephval00")
-value1 <- wealth1[value1]
-value1[value1 ==-1:-9] <- NA
-value4 <-c ("mcsid", "ephval00")
-value4 <- wealth4[value4]
-value4[value4 ==-1:-9] <- NA
-value <- merge(all=TRUE, value1, value4,by="mcsid")
-value$value_combine<- ifelse(!is.na(value$ephval00.x), value$ephval00.x,value$ephval00.y)
-house_value <- c("mcsid", "value_combine")
-house_value<-value[house_value]
-
-
-savings1 <-c ("mcsid", "epinvt00")
-savings1 <- wealth1[savings1]
-savings1[savings1 ==-1:-9] <- NA
-savings4 <-c ("mcsid", "epinvt00")
-savings4 <- wealth4[savings4]
-savings4[savings4 ==-1:-9] <- NA
-savings <- merge(all=TRUE, savings1, savings4,by="mcsid")
-savings$savings_combine<- ifelse(!is.na(savings$epinvt00.x), savings$epinvt00.x,savings$epinvt00.y)
-total_savings <- c("mcsid", "savings_combine")
-total_savings<-savings[total_savings]
-
-
-debt1 <-c ("mcsid", "epdeba00")
-debt1 <- wealth1[debt1]
-debt1[debt1 ==-1:-9] <- NA
-debt4 <-c ("mcsid", "epdeba00")
-debt4 <- wealth4[debt4]
-debt4[debt4 ==-1:-9] <- NA
-debt <- merge(all=TRUE, debt1, debt4,by="mcsid")
-debt$debt_combine<- ifelse(!is.na(debt$epdeba00.x), debt$epdeba00.x,debt$epdeba00.y)
-total_debt <- c("mcsid", "debt_combine")
-total_debt<-debt[total_debt]
 
 #IMD at age 3, 9 months if missing
 imd_sweep2 = mcs2_geography %>% select(mcsid, bimdscoe, biwimdsc, bisimdsc,bimdscon) %>% 
@@ -468,36 +428,26 @@ imd = merge(all=TRUE, imd_sweep2, imd_sweep1, by="mcsid") %>%
   select(mcsid, imd)
 
 #creating potential confounders ####
-#language spoken at home#### - can't find this variable at all in new dataset for sweep1. 
-#use from old version of data. 2017? 
-language_home1<- c("mcsid", "bhhlan00")
-language_home1 <- mcs2_parent[language_home1]
-language_home1[language_home1==-1]<-NA
-language_home<- language_home1[which(mcsid_number_age3$bhcnuma0=="1"),]
-language_home_1 <- merge (all=TRUE, language_home , sweep_entry, by="mcsid")
-new_language_home<- language_home_1[which(language_home_1$sentry == "1"),]
-EAL_sweep1 <- c("mcsid", "ahlang00")
-EAL_sweep1 <- mcs1_parent[EAL_sweep1]
-EAL_sweep1[EAL_sweep1==-9:-1] <- NA
-EAL_home<- EAL_sweep1[which(mcsid_number_age9mo$ahcnuma0=="1"),]
-EAL_sentry1 <- merge(all=TRUE, new_language_home, EAL_home, by="mcsid")
-EAL_sentry1$EAL <- ifelse(!is.na(EAL_sentry1$bhhlan00), EAL_sentry1$bhhlan00 ,EAL_sentry1$ahlang00)
+#language spoken at home#### 
+#University of London. Institute of Education. Centre for Longitudinal Studies. (2017). Millennium Cohort Study: First Survey, 2001-2003. [data collection]. 12th Edition. UK Data Service. SN: 4683, http://doi.org/10.5255/UKDA-SN-4683-4
+#University of London. Institute of Education. Centre for Longitudinal Studies. (2017). Millennium Cohort Study: Second Survey, 2003-2005. [data collection]. 9th Edition. UK Data Service. SN: 5350, http://doi.org/10.5255/UKDA-SN-5350-4
+EAL_sweep1 = mcs1_parent_12thEd %>% select(mcsid, ahlang00) 
 
-language_home2<- c("mcsid","bdhlan00")
-language_home2 <- mcs2_parent[language_home2]
-language_home2[language_home2==-1]<-NA
-language_home22<- language_home2[which(mcsid_number_age3$bhcnuma0=="1"),]
-new_lang2 <- merge (all=TRUE, language_home22 , sweep_entry, by="mcsid")
-lang2<- new_lang2[which(new_lang2$sentry == "2"),]
-new_language <- merge(all=TRUE, EAL_sentry1, lang2,by="mcsid")
+EAL_sweep2_original = mcs2_parent_9thEd %>% select(mcsid, bhhlan00) %>% 
+  merge(all =TRUE, sweep_entry, by = "mcsid") %>% 
+  filter(sentry == 1) %>% 
+  merge(all=TRUE, EAL_sweep1, by ="mcsid") %>% 
+  mutate(EAL_sentry1 = case_when(!is.na(bhhlan00) ~ bhhlan00, #language spoken at home at age 3, if missing, at 9 months. 
+                                 is.na(bhhlan00) ~ ahlang00)) %>% 
+  select(mcsid, EAL_sentry1)
 
-#merge together so that only one value 
-new_language$new_langcombine<- ifelse(!is.na(new_language$EAL), new_language$EAL ,new_language$bhhlan00.y)
-#create dataframe so also have mcsid 
-#lang_home <- data.frame(language_combine, new_langcombine)
-#subset data so just have 1 score and mcsid for the variable. may need recoding as all 0s seem to be 1 and all 1s coming up as 2?
-language_used <- c("mcsid", "new_langcombine" )
-language_used <- new_language[language_used]
+EAL = mcs2_parent_9thEd %>% select(mcsid, bhhlan00) %>% 
+  merge(all =TRUE, sweep_entry, by = "mcsid") %>% 
+  filter(sentry == 2) %>% 
+  merge(all=TRUE, EAL_sweep2_original, by="mcsid") %>% 
+  mutate(EAL = case_when(!is.na(EAL_sentry1) ~ EAL_sentry1, 
+                         is.na(EAL_sentry1) ~ bhhlan00)) %>% 
+  select(mcsid, EAL) 
 
 #ethnicity####
 #ethnicity single births mcs1
@@ -507,7 +457,7 @@ ethnicity_sweep1 = mcs1_cm_derived %>% select(mcsid, adc06e00, acnum00) %>%
 ethnicity_sweep2 = mcs2_cm_derived %>% select(mcsid, bdc06e00, bcnum00) %>% 
   filter(bcnum00==1) %>% 
   merge(all=TRUE,  sweep_entry, by="mcsid") %>% 
-  filter(sentry == 2) %>% 
+  filter(sentry == 2) %>% #check if want to do this or just replace sweep 1 NA with sweep 2 responses regardless of sweep entry
   select(mcsid, bdc06e00) %>% 
   merge(all= TRUE, ethnicity_sweep1, by = "mcsid") %>% 
   mutate(ethnicity = case_when(!is.na(adc06e00) ~ adc06e00, 
@@ -1898,7 +1848,7 @@ analysis_data = merge(all=TRUE, analysis_data, carers_in_hh, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, income, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, imd, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, occupational_status, by = "mcsid")
-#wealth variables here
+analysis_data = merge(all=TRUE, analysis_data, wealth_variables, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, caregiver_vocabTotal, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, age5_vocab, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, education_main_outcomes, by = "mcsid")
