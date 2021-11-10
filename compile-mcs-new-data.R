@@ -1832,7 +1832,8 @@ education_main_outcomes = education_main_outcomes %>%
   mutate(standardised_core_subjects = case_when(!is.na(standardised_gcse)~standardised_gcse, 
                                                 is.na(standardised_gcse) ~ standardised_n5, 
                                                 !is.na(standardised_n5) ~standardised_n5,
-                                                is.na(standardised_n5) ~ standardised_gcse))
+                                                is.na(standardised_n5) ~ standardised_gcse)) %>% 
+  select(mcsid, benchmark_binary, standardised_core_subjects)
 
 #VARIABLES FOR IMPUTATION/ANALYSIS - COMBINE INTO ONE DATAFRAME.####
 #change order of these so auxiliary and SES variables first - for order of imputation
