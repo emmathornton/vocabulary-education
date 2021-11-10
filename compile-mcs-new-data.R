@@ -1826,7 +1826,7 @@ education_main_outcomes = merge(all=TRUE, education_main_outcomes, n5_core_subje
 #convert gcse and n5 score into z scores and then combine into one variable
 education_main_outcomes = education_main_outcomes %>% 
   mutate(standardised_gcse = scale(average_grade, 
-                                   center = TRUE, scale = TRUE)) %>% 
+                                   center = TRUE, scale = TRUE)) %>% #standardised within the relevant population
   mutate(standardised_n5 =  scale(average_grade_n5, 
                                   center = TRUE, scale = TRUE)) %>% 
   mutate(standardised_core_subjects = case_when(!is.na(standardised_gcse)~standardised_gcse, 
