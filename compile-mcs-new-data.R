@@ -1823,6 +1823,16 @@ n5_core_subjects_score$average_grade_n5 = round(n5_core_subjects_score$average_g
 education_main_outcomes = merge(all=TRUE, core_grades_binary, core_subjects_score, by = "mcsid")
 education_main_outcomes = merge(all=TRUE, education_main_outcomes, n5_core_subjects_score, by="mcsid")
 
+#convert gcse and n5 score into z scores and then combine into one variable
+education_main_outcomes = education_main_outcomes %>% 
+  mutate(standardised_gcse = scale(average_grade, 
+                                   center = TRUE, scale = TRUE)) %>% 
+  mutate(standardised_n5 =  scale(average_grade_n5, 
+                                  center = TRUE, scale = TRUE)) %>% 
+  mutate(standardised_core_subjects = case_when(!is.na(standardised_gcse)~standardised_gcse, 
+                                                is.na(standardised_gcse) ~ standardised_n5, 
+                                                !is.na(standardised_n5) ~standardised_n5,
+                                                is.na(standardised_n5) ~ standardised_gcse))
 
 #VARIABLES FOR IMPUTATION/ANALYSIS - COMBINE INTO ONE DATAFRAME.####
 #change order of these so auxiliary and SES variables first - for order of imputation
