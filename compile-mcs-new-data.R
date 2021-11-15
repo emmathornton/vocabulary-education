@@ -35,6 +35,8 @@ mcs2_family_derived = read_sav("mcs2_family_derived.sav")
 mcs1_family_derived = read_sav("mcs1_family_derived.sav")
 mcs7_qualifications = read_sav("mcs7_cm_qualifications.sav")
 mcs7_hh_grid = read_sav("mcs7_hhgrid.sav")
+mcs6_hh_grid = read_sav("mcs6_hhgrid.sav")
+mcs6_family_derived = read_sav("mcs6_family_derived.sav")
 #convert all to lowercase####
 names(mcs3_child_assessment) <- tolower(names(mcs3_child_assessment))
 #names(mcs2_child_assessment) <- tolower(names(mcs2_child_assessment))
@@ -62,6 +64,8 @@ names(mcs1_cm_parent) <- tolower(names(mcs1_cm_parent))
 names(mcs2_cm_parent) <- tolower(names(mcs2_cm_parent))
 names(mcs1_family_derived) <- tolower(names(mcs1_family_derived))
 names(mcs7_hh_grid) <- tolower(names(mcs7_hh_grid))
+names(mcs6_hh_grid) <- tolower(names(mcs6_hh_grid))
+names(mcs6_family_derived) <- tolower(names(mcs6_family_derived))
 names(mcs7_qualifications) <- tolower(names(mcs7_qualifications))
 #create sweep entry variable to identify second entry families later####
 sweep_entry <- c("mcsid", "sentry")
@@ -72,6 +76,11 @@ sweep_entry$sentry = as.character(sweep_entry$sentry)
 #create weight variable####
 #attrition and sample weight age 5 sweep - as this is where exposure was measured. 
 age5_weight = mcs_family %>% select(mcsid, covwt2)
+age17_weight = mcs_family %>% select(mcsid, govwt2)
+weight = merge(all=TRUE, age5_weight, age17_weight, by="mcsid") %>% 
+  mutate(weight = case_when(!is.na(covwt2) ~ covwt2, 
+                            is.na(covwt2) ~ govwt2)) %>% 
+  select(mcsid, weight)
 
 
 respondent_key = c(`1` = "main",
@@ -712,6 +721,19 @@ caregiver_vocabTotal = merge(all=TRUE, main_vocabTotal, partner_vocabTotal, by="
   select(mcsid, caregiver_vocab)
 #convert NaN to NA
 caregiver_vocabTotal$caregiver_vocab[is.nan(caregiver_vocabTotal$caregiver_vocab)]<-NA
+
+#country (at time of GCSE/N5 exams - age 17 or age 14 if age 17 missing) ####
+#sweep 7
+sweep7_country = mcs7_hh_grid %>% select(mcsid, gactry00, gcnum00) %>% 
+  filter(gcnum00 == 1) %>% 
+  select(mcsid, gactry00)
+
+sweep6_country = mcs6_family_derived %>% select(mcsid, factry00)
+
+country_17 = merge(all=TRUE, sweep7_country, sweep6_country, by= "mcsid") %>% 
+  mutate(country = case_when(!is.na(gactry00)~ gactry00, 
+                             is.na(gactry00)~factry00)) %>% 
+  select(mcsid, country)
 
 #auxiliary variables for imputation####
 #mother's age at birth of CM####
@@ -1838,7 +1860,7 @@ education_main_outcomes = education_main_outcomes %>%
 #VARIABLES FOR IMPUTATION/ANALYSIS - COMBINE INTO ONE DATAFRAME.####
 #change order of these so auxiliary and SES variables first - for order of imputation
 #also add wealth and EAL when resolved these issues.
-analysis_data = merge(all=TRUE, age5_weight, sex, by = "mcsid")
+analysis_data = merge(all=TRUE, weight, sex, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, ethnicity, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, EAL, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, age_atBirth, by = "mcsid")
@@ -1851,6 +1873,7 @@ analysis_data = merge(all=TRUE, analysis_data, income, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, imd, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, occupational_status, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, wealth_variables, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, country_17, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, caregiver_vocabTotal, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, age5_vocab, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, education_main_outcomes, by = "mcsid")
