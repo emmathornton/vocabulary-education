@@ -1857,6 +1857,33 @@ education_main_outcomes = education_main_outcomes %>%
                                                 is.na(standardised_n5) ~ standardised_gcse)) %>% 
   select(mcsid, benchmark_binary, standardised_core_subjects)
 
+#continous score version 2 - average of highest grade for each subject ####
+
+#english_subjects_highest = english_subjects_gcse %>% select(!english_score) %>% 
+  #mutate(highest_english = pmax(english,english_lang,english_lit,
+                                #english_first_lang_I,english_lit_I, na.rm= TRUE), .after = 1) #get this to give the highest per row without having to name each column??
+
+english_cols = english_subjects_gcse %>% select(english:english_lit_I) %>% names()
+
+english_subjects_highest = english_subjects_gcse %>% select(!english_score) %>% 
+  mutate(highest_english = pmax(!!!rlang::syms(english_cols), na.rm= TRUE), .after = 1) %>% 
+  select(mcsid, highest_english)
+
+maths_cols = maths_subjects_gcse %>% select(maths:maths_I) %>% names()
+maths_subjects_highest = maths_subjects_gcse %>% select(!maths_score) %>% 
+  mutate(highest_maths = pmax(!!!rlang::syms(maths_cols), na.rm= TRUE), .after = 1) %>% 
+  select(mcsid, highest_maths)
+
+science_cols = science_subjects_gcse %>% select(biology:science_I) %>% names()
+science_subjects_highest = science_subjects_gcse %>% select(!science_score) %>% 
+  mutate(highest_science = pmax(!!!rlang::syms(science_cols), na.rm= TRUE), .after = 1) %>% 
+  select(mcsid, highest_science)
+
+highest_average_grade = merge(all=TRUE, english_subjects_highest, maths_subjects_highest, by="mcsid")
+highest_average_grade = merge(all=TRUE, highest_average_grade, science_subjects_highest, by="mcsid") %>% 
+  mutate(highest_grade = rowMeans(.[-1]), 
+         .after = 1)
+
 #VARIABLES FOR IMPUTATION/ANALYSIS - COMBINE INTO ONE DATAFRAME.####
 #change order of these so auxiliary and SES variables first - for order of imputation
 #also add wealth and EAL when resolved these issues.
