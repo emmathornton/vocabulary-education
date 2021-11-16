@@ -1921,7 +1921,7 @@ write.csv(mcs_analysis, file = "education_data.csv")
 core_subjects_grades_WELSH <- wide_grades %>% select(mcsid, c("Language: English", "Language: English Language", "Language: English Literature",
                                                               "Mathematics", "Mathematics - Linear", "Mathematics - Numeracy", contains("math"), "Biology", "Chemistry", "Physics"), #include additional mathematics?
                                                      contains("science"), contains("biology"), contains("welsh")) %>% 
-  merge(all=TRUE, country, by = "mcsid") 
+  merge(country, by = "mcsid") 
 # filter(country == 2) %>% 
 #select(!country)
 
@@ -1942,21 +1942,23 @@ combined_core_grades_WELSH = merge(all=TRUE, combined_core_grades_WELSH, wide_bt
 
 #create binary variable. those who score >=4 on at least an english subject, at least one maths subject and at least 1 science subject = 1. else = 0. 
 #where country == 2 (i.e. welsh, also need >=4 on at least one welsh subject. )
-core_grades_WELSH <- combined_core_grades_WELSH %>% mutate(benchmark_WELSH = case_when((country == 2) & #wales
-                                                                                         (english >= 4  | english_lang >= 4  | english_lit >= 4 | english_first_lang_I >= 4 |english_lit_I >= 4 ) & 
-                                                                                         (maths >= 4 | maths_linear >= 4 | maths_numeracy >= 4 | further_maths >= 4 | additional_maths >= 4 | maths_I >= 4) &
-                                                                                         (biology >= 4 | chemistry >= 4 | physics >= 4 | additional_science >= 4 | science >= 4 | applied_science >= 4 |
-                                                                                            combined_science >= 4 | modular_science >= 4 | further_additional_science >= 4 |computer_science >=4 |
-                                                                                            additional_applied_science >= 4 | additional_science_modular >= 4 |human_biology >= 4 | 
-                                                                                            biology_I >= 4 | chemistry_I >= 4 | physics_I >= 4 | science_I >= 4 | science_btec == 3 | applied_science_btec == 3) &
-                                                                                         (welsh_literature >=4 | welsh_first_language >= 4 | welsh_second_language >= 4 | welsh >= 4 | welsh_second_language_short >=4) ~1, 
-                                                                                       (country != 2) & (english >= 4  | english_lang >= 4  | english_lit >= 4 | english_first_lang_I >= 4 |english_lit_I >= 4 ) & #not wales
-                                                                                         (maths >= 4 | maths_linear >= 4 | maths_numeracy >= 4 | further_maths >= 4 | additional_maths >= 4 | maths_I >= 4) &
-                                                                                         (biology >= 4 | chemistry >= 4 | physics >= 4 | additional_science >= 4 | science >= 4 | applied_science >= 4 |
-                                                                                            combined_science >= 4 | modular_science >= 4 | further_additional_science >= 4 |computer_science >=4 |
-                                                                                            additional_applied_science >= 4 | additional_science_modular >= 4 |human_biology >= 4 | 
-                                                                                            biology_I >= 4 | chemistry_I >= 4 | physics_I >= 4 | science_I >= 4 | science_btec == 3 | applied_science_btec == 3)  ~ 1,
-                                                                                       TRUE ~ 0)) 
+
+core_grades_WELSH <- combined_core_grades_WELSH %>% 
+  mutate(benchmark_WELSH = case_when((country == 2) & #wales
+                                       (english >= 4  | english_lang >= 4  | english_lit >= 4 | english_first_lang_I >= 4 |english_lit_I >= 4 ) & 
+                                       (maths >= 4 | maths_linear >= 4 | maths_numeracy >= 4 | further_maths >= 4 | additional_maths >= 4 | maths_I >= 4) &
+                                       (biology >= 4 | chemistry >= 4 | physics >= 4 | additional_science >= 4 | science >= 4 | applied_science >= 4 |
+                                          combined_science >= 4 | modular_science >= 4 | further_additional_science >= 4 |computer_science >=4 |
+                                          additional_applied_science >= 4 | additional_science_modular >= 4 |human_biology >= 4 | 
+                                          biology_I >= 4 | chemistry_I >= 4 | physics_I >= 4 | science_I >= 4 | science_btec == 3 | applied_science_btec == 3) &
+                                       (welsh_literature >=4 | welsh_first_language >= 4 | welsh_second_language >= 4 | welsh >= 4 | welsh_second_language_short >=4) ~1, 
+                                     (country != 2) & (english >= 4  | english_lang >= 4  | english_lit >= 4 | english_first_lang_I >= 4 |english_lit_I >= 4 ) & #not wales
+                                       (maths >= 4 | maths_linear >= 4 | maths_numeracy >= 4 | further_maths >= 4 | additional_maths >= 4 | maths_I >= 4) &
+                                       (biology >= 4 | chemistry >= 4 | physics >= 4 | additional_science >= 4 | science >= 4 | applied_science >= 4 |
+                                          combined_science >= 4 | modular_science >= 4 | further_additional_science >= 4 |computer_science >=4 |
+                                          additional_applied_science >= 4 | additional_science_modular >= 4 |human_biology >= 4 | 
+                                          biology_I >= 4 | chemistry_I >= 4 | physics_I >= 4 | science_I >= 4 | science_btec == 3 | applied_science_btec == 3)  ~ 1,
+                                     TRUE ~ 0)) 
 
 #combine N5 and GCSE core grades into one variable
 #first combine the dataframes
@@ -1994,7 +1996,7 @@ welsh_score = welsh_subjects_gcse %>% select(mcsid, welsh_score)
 core_subjects_score_welsh = merge(all=TRUE, english_score, maths_score, by = "mcsid")
 core_subjects_score_welsh = merge(all=TRUE, core_subjects_score_welsh, science_score, by = "mcsid")
 core_subjects_score_welsh = merge(all=TRUE, core_subjects_score_welsh, welsh_score, by = "mcsid")
-core_subjects_score_welsh = merge(all=TRUE, core_subjects_score_welsh, country, by = "mcsid")
+core_subjects_score_welsh = merge(core_subjects_score_welsh, country, by = "mcsid")
 
 #get mean of these scores. need to have a response for english, maths and science score (and welsh score if welsh)
 
@@ -2012,7 +2014,7 @@ notWales_core_subjects = core_subjects_score_welsh %>% filter(country!=2) %>%
 
 #combine welsh and not welsh 
 welsh_core_subjectsContinuous = merge(all=TRUE, wales_core_subjects, notWales_core_subjects, by = "mcsid")
-welsh_core_subjectsContinuous = merge(all=TRUE, welsh_core_subjectsContinuous, country, by = "mcsid")
+welsh_core_subjectsContinuous = merge(welsh_core_subjectsContinuous, country, by = "mcsid")
 
 welsh_core_subjectsContinuous = welsh_core_subjectsContinuous %>% 
   mutate(welsh_averageScore = case_when(!is.na(average_grade) ~ average_grade, 
