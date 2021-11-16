@@ -1912,3 +1912,152 @@ mcs_analysis = analysis_data %>% filter((!is.na(age5_vocab)) | (!is.na(benchmark
 write.csv(mcs_analysis, file = "education_data.csv")
 
 #mcs_analysis = analysis_data[!is.na(analysis_data$age5_vocab),]
+
+
+# outcome variable sensitivity check - welsh included as a core variable for those in Wales. ####
+
+#add Welsh as a core subject for GCSE
+
+core_subjects_grades_WELSH <- wide_grades %>% select(mcsid, c("Language: English", "Language: English Language", "Language: English Literature",
+                                                              "Mathematics", "Mathematics - Linear", "Mathematics - Numeracy", contains("math"), "Biology", "Chemistry", "Physics"), #include additional mathematics?
+                                                     contains("science"), contains("biology"), contains("welsh")) %>% 
+  merge(all=TRUE, country, by = "mcsid") 
+# filter(country == 2) %>% 
+#select(!country)
+
+names(core_subjects_grades_WELSH) <- c("mcsid", "english", "english_lang", "english_lit",
+                                       "maths", "maths_linear", "maths_numeracy", "further_maths", "additional_maths", "biology", "chemistry", "physics", 
+                                       "additional_science", "science", "applied_science", "combined_science", "modular_science", "further_additional_science", "computer_science", 
+                                       "additional_applied_science", "additional_science_modular", "human_biology", 
+                                       "welsh_literature", "welsh_first_language", "welsh_second_language", "welsh", 
+                                       "welsh_second_language_short", "country")
+
+
+#combine core grades together into one dataframe (for GCSE and iGCSE)
+combined_core_grades_WELSH = merge(all=TRUE, core_subjects_grades_WELSH, core_iGCSE_subjects_grades, by = "mcsid")
+combined_core_grades_WELSH = merge(all=TRUE, combined_core_grades_WELSH, no_quals, by="mcsid")
+combined_core_grades_WELSH = merge(all=TRUE, combined_core_grades_WELSH, btec_only, by="mcsid")
+combined_core_grades_WELSH = merge(all=TRUE, combined_core_grades_WELSH, wide_btec_science, by = "mcsid")
+
+
+#create binary variable. those who score >=4 on at least an english subject, at least one maths subject and at least 1 science subject = 1. else = 0. 
+#where country == 2 (i.e. welsh, also need >=4 on at least one welsh subject. )
+core_grades_WELSH <- combined_core_grades_WELSH %>% mutate(benchmark_WELSH = case_when((country == 2) & #wales
+                                                                                         (english >= 4  | english_lang >= 4  | english_lit >= 4 | english_first_lang_I >= 4 |english_lit_I >= 4 ) & 
+                                                                                         (maths >= 4 | maths_linear >= 4 | maths_numeracy >= 4 | further_maths >= 4 | additional_maths >= 4 | maths_I >= 4) &
+                                                                                         (biology >= 4 | chemistry >= 4 | physics >= 4 | additional_science >= 4 | science >= 4 | applied_science >= 4 |
+                                                                                            combined_science >= 4 | modular_science >= 4 | further_additional_science >= 4 |computer_science >=4 |
+                                                                                            additional_applied_science >= 4 | additional_science_modular >= 4 |human_biology >= 4 | 
+                                                                                            biology_I >= 4 | chemistry_I >= 4 | physics_I >= 4 | science_I >= 4 | science_btec == 3 | applied_science_btec == 3) &
+                                                                                         (welsh_literature >=4 | welsh_first_language >= 4 | welsh_second_language >= 4 | welsh >= 4 | welsh_second_language_short >=4) ~1, 
+                                                                                       (country != 2) & (english >= 4  | english_lang >= 4  | english_lit >= 4 | english_first_lang_I >= 4 |english_lit_I >= 4 ) & #not wales
+                                                                                         (maths >= 4 | maths_linear >= 4 | maths_numeracy >= 4 | further_maths >= 4 | additional_maths >= 4 | maths_I >= 4) &
+                                                                                         (biology >= 4 | chemistry >= 4 | physics >= 4 | additional_science >= 4 | science >= 4 | applied_science >= 4 |
+                                                                                            combined_science >= 4 | modular_science >= 4 | further_additional_science >= 4 |computer_science >=4 |
+                                                                                            additional_applied_science >= 4 | additional_science_modular >= 4 |human_biology >= 4 | 
+                                                                                            biology_I >= 4 | chemistry_I >= 4 | physics_I >= 4 | science_I >= 4 | science_btec == 3 | applied_science_btec == 3)  ~ 1,
+                                                                                       TRUE ~ 0)) 
+
+#combine N5 and GCSE core grades into one variable
+#first combine the dataframes
+#replace is/na with the other one 
+core_grades_binary_WELSH= merge (all=TRUE, core_grades_WELSH, core_grades_n5, by="mcsid")
+core_grades_binary_WELSH = core_grades_binary_WELSH %>% select(mcsid, benchmark_WELSH, benchmarkN5) %>%  
+  mutate(benchmark_binary_welsh = 
+           case_when(benchmark_WELSH == 0 & benchmarkN5 == 1 ~  1, 
+                     benchmark_WELSH == 1 & benchmarkN5 == 1 ~ 1,
+                     benchmark_WELSH == 0 & benchmarkN5 == 0 ~ 0,
+                     benchmark_WELSH == 1 & benchmarkN5 == 0 ~ 1,
+                     is.na(benchmarkN5) ~ benchmark_WELSH, 
+                     is.na(benchmark_WELSH) ~ benchmarkN5, 
+                     TRUE ~ 0)) %>% 
+  select(mcsid, benchmark_binary_welsh)
+
+#continuous variable sensitivity check - including score for welsh grades ####
+
+
+#merge together core subejcts for GCSE and iGCSE
+core_subjects_continuous_WELSH = merge(all=TRUE, core_subjects_grades_WELSH, core_iGCSE_subjects_grades, by = "mcsid")
+#create welsh data. 
+#welsh
+welsh_subjects_gcse = core_subjects_continuous_WELSH %>% select(mcsid, contains("welsh")) %>% 
+  mutate (welsh_score =
+            rowMeans(.[-1], na.rm = TRUE), .after = 1) #calculate means across rows excluding row 1 (mcsid)
+#convert NaN to NA
+welsh_subjects_gcse$welsh_score[is.nan(welsh_subjects_gcse$welsh_score)]<-NA
+
+
+#pull out welsh score
+welsh_score = welsh_subjects_gcse %>% select(mcsid, welsh_score)
+
+#combine english, maths and science score together
+core_subjects_score_welsh = merge(all=TRUE, english_score, maths_score, by = "mcsid")
+core_subjects_score_welsh = merge(all=TRUE, core_subjects_score_welsh, science_score, by = "mcsid")
+core_subjects_score_welsh = merge(all=TRUE, core_subjects_score_welsh, welsh_score, by = "mcsid")
+core_subjects_score_welsh = merge(all=TRUE, core_subjects_score_welsh, country, by = "mcsid")
+
+#get mean of these scores. need to have a response for english, maths and science score (and welsh score if welsh)
+
+wales_core_subjects = core_subjects_score_welsh %>% filter(country==2) %>% 
+  select(!country) %>% 
+  mutate(average_grade_welsh = rowMeans(.[-1]), 
+         .after = 1) %>% 
+  select(mcsid, average_grade_welsh)
+
+notWales_core_subjects = core_subjects_score_welsh %>% filter(country!=2) %>% 
+  select(mcsid, english_score, maths_score, science_score) %>% 
+  mutate(average_grade = rowMeans(.[-1]), 
+         .after = 1) %>% 
+  select(mcsid, average_grade)
+
+#combine welsh and not welsh 
+welsh_core_subjectsContinuous = merge(all=TRUE, wales_core_subjects, notWales_core_subjects, by = "mcsid")
+welsh_core_subjectsContinuous = merge(all=TRUE, welsh_core_subjectsContinuous, country, by = "mcsid")
+
+welsh_core_subjectsContinuous = welsh_core_subjectsContinuous %>% 
+  mutate(welsh_averageScore = case_when(!is.na(average_grade) ~ average_grade, 
+                                        is.na(average_grade) ~ average_grade_welsh)) %>% 
+  select(mcsid, welsh_averageScore)
+
+welsh_core_subjectsContinuous = merge(all=TRUE, welsh_core_subjectsContinuous, n5_core_subjects_score, by = "mcsid")
+
+
+welsh_core_subjectsContinuous = welsh_core_subjectsContinuous  %>% 
+  mutate(standardised_gcseWelsh = scale(welsh_averageScore, 
+                                        center = TRUE, scale = TRUE)) %>% #standardised within the relevant population
+  mutate(standardised_n5 =  scale(average_grade_n5, 
+                                  center = TRUE, scale = TRUE)) %>% 
+  mutate(standardised_core_subjectsWelsh = case_when(!is.na(standardised_gcseWelsh)~standardised_gcseWelsh, 
+                                                     is.na(standardised_gcseWelsh) ~ standardised_n5, 
+                                                     !is.na(standardised_n5) ~standardised_n5,
+                                                     is.na(standardised_n5) ~ standardised_gcseWelsh)) %>% 
+  select(mcsid, standardised_core_subjectsWelsh)
+
+education_outcomesWelsh = merge(all=TRUE, core_grades_binary_WELSH, welsh_core_subjectsContinuous, by = "mcsid")
+
+#VARIABLES FOR IMPUTATION/ANALYSIS - COMBINE INTO ONE DATAFRAME - WELSH INCLUDED SENSITIVITY CHECK.####
+#change order of these so auxiliary and SES variables first - for order of imputation
+#also add wealth and EAL when resolved these issues.
+analysis_dataWelsh = merge(all=TRUE, weight, sex, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, ethnicity, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, EAL, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, age_atBirth, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, tenure, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, accommodation, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, parent_nvq, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, breastfed, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, carers_in_hh, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, income, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, imd, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, occupational_status, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, wealth_variables, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, country_17, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, caregiver_vocabTotal, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, age5_vocab, by = "mcsid")
+analysis_dataWelsh = merge(all=TRUE, analysis_dataWelsh, education_outcomesWelsh, by = "mcsid")
+
+#select sample - those with a response on age 5 vocabulary test OR an educaion outcome
+mcs_analysisWelsh = analysis_dataWelsh %>% filter((!is.na(age5_vocab)) | (!is.na(benchmark_binary_welsh)))
+
+#save analysis data as a csv file ####
+write.csv(mcs_analysisWelsh, file = "education_dataWelsh.csv")
