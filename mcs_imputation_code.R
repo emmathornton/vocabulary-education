@@ -11,7 +11,7 @@ library(glue)
 library(lubridate)
 
 #open mcs data####
-vocabulary_education<-read.csv("vocabulary_education_data.csv")
+vocabulary_education<-read.csv("education_data.csv")
 vocabulary_education[,1]<- NULL
 
 #multiple imputation####
@@ -31,7 +31,7 @@ predM = init$predictorMatrix
 #Keep in mind that this variable will be used for prediction.
 
 meth[c("mcsid")]=""
-meth[c("mcs2_weight")]=""
+meth[c("weight")]=""
 
 
 #Now let specify the methods for imputing the missing values. 
@@ -50,6 +50,7 @@ vocabulary_education$cm_breastfed=as.factor(vocabulary_education$cm_breastfed)
 vocabulary_education$accommodation_type=as.factor(vocabulary_education$accommodation_type)
 vocabulary_education$housing_tenure=as.factor(vocabulary_education$housing_tenure)
 vocabulary_education$benchmark_binary=as.factor(vocabulary_education$benchmark_binary)
+vocabulary_education$country=as.factor(vocabulary_education$country)
 methods(mice)
 
 # define methods for imputation
@@ -73,11 +74,12 @@ meth[c("mortgage")]="cart"
 meth[c("houseValue")]="cart"
 meth[c("savings")]="cart"
 meth[c("debt")]="cart"
+meth[c("country")]="polyreg"
 meth[c("caregiver_vocab")]="cart"
 meth[c("age5_vocab")]="cart" 
 meth[c("benchmark_binary")]="logreg"
-meth[c("average_grade")]="cart" 
-meth[c("average_grade_n5")]="cart" 
+meth[c("standardised_core_subjects")]="cart" 
+
 #now lets run the imputation (m=20) imputations
 
 blocksvec=names(meth)
@@ -85,15 +87,20 @@ blocksvec=names(meth)
 # predM=0 --> variable not used to form imputation 
 predM = predM[blocksvec,]
 predM[,c("mcsid")]=0
+
+
 imputed_mcs2 = mice(vocabulary_education, blocks=blocksvec, method=meth, seed = 1895, predictorMatrix=predM, m=25) #can change this to a smaller numebr so runs quicker when figuring out. 
 
 #deriving post imputation variables####
 long_format_mcs <- mice::complete(imputed_mcs2, "long", include=TRUE)
 
 long_format_mcs$age5_standardised <- with(long_format_mcs, scale(age5_vocab, center=TRUE, scale=TRUE))
-
 long_format_mcs$age5_standardised <- as.numeric(long_format_mcs$age5_standardised)
 
+long_format_mcs$caregiver_vocabStandardised <- with(long_format_mcs, scale(caregiver_vocab, center=TRUE, scale=TRUE))
+long_format_mcs$caregiver_vocabStandardised <- as.numeric(long_format_mcs$caregiver_vocabStandardised)
+
+#add in standardised caregiver vocab
 
 #deriving  wealth variable
 long_format_mcs$housing_wealth <- with(long_format_mcs, houseValue - mortgage)
