@@ -90,9 +90,11 @@ respondent_key = c(`1` = "main",
 
 
 #PREDICTOR VARIABLE _AGE 5 VOCAB ####
+#nb this sample size different from previous chapters as triplet families now unavailable under EUL. 
 
-age5_vocab = mcs3_child_assessment %>% select(mcsid, ccnvtscore, ccnum00) %>% 
+age5_vocab = mcs3_child_assessment %>% select(mcsid, ccnvtscore, ccnum00, ccstnv00) %>% 
   filter(ccnum00 == 1) %>% 
+  filter(!ccstnv00 == 2) %>% #filter out those who didnt start vocab test and were given incorrect score of 20 in data
   select(mcsid, ccnvtscore) %>% 
   filter(!is.na(ccnvtscore)) %>% 
   rename(age5_vocab = ccnvtscore)
