@@ -12,8 +12,7 @@ library(lavaan)
 library(mice)
 library(miceadds)
 #load in imputed data
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-11-18_vocabulary_education_imputed_test/2021-11-18_vocabulary_education_imputed_test.Rdata") 
-imputed_mcs2=mi.res
+#load imputed dataset code here
 
 #RQ1 & 2 - DOES VOCAB PREDICT EDUCATIONAL ATTAINMENT?
 
