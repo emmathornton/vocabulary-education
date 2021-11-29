@@ -750,7 +750,7 @@ country_17 = merge(all= TRUE, country_17, sweep3_country, by = "mcsid") %>%
   mutate(country3 = case_when (!is.na(country2) ~ country2, 
                               is.na(country2) ~ dactry00)) %>% 
   mutate(country = case_when(!is.na(country3) ~ country3, 
-                             is.na(country3) ~ cactry00))
+                             is.na(country3) ~ cactry00)) %>% 
   select(mcsid, country)
 
 #auxiliary variables for imputation####
