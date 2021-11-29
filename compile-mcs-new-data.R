@@ -23,6 +23,7 @@ mcs1_derived_family <- read_sav("mcs1_family_derived.sav")
 mcs1_derived <- read_sav("mcs1_parent_derived.sav")
 mcs5_parent<- read_sav("mcs5_parent_interview_4thEd.sav")
 mcs5_family<- read_sav("mcs5_family_derived.sav") #2018 version
+mcs4_family<- read_sav("mcs4_family_derived.sav")
 mcs2_geography <- read_sav("mcs2_geographically_linked_data.sav")
 mcs1_geography <- read_sav("mcs1_geographically_linked_data.sav")
 mcs6_parent_assessment <- read_sav("mcs6_parent_assessment.sav")
@@ -37,11 +38,13 @@ mcs7_qualifications = read_sav("mcs7_cm_qualifications.sav")
 mcs7_hh_grid = read_sav("mcs7_hhgrid.sav")
 mcs6_hh_grid = read_sav("mcs6_hhgrid.sav")
 mcs6_family_derived = read_sav("mcs6_family_derived.sav")
+mcs3_family = read_sav("mcs3_family_derived.sav")
 #convert all to lowercase####
 names(mcs3_child_assessment) <- tolower(names(mcs3_child_assessment))
 #names(mcs2_child_assessment) <- tolower(names(mcs2_child_assessment))
 names(mcs_family) <- tolower(names(mcs_family))
 names(mcs5_family) <- tolower(names(mcs5_family))
+names(mcs4_family) <- tolower(names(mcs4_family))
 names(mcs5_parent) <- tolower(names(mcs5_parent))
 names(mcs1_parent) <- tolower(names(mcs1_parent))
 names(mcs1_parent_12thEd) <- tolower(names(mcs1_parent_12thEd))
@@ -66,6 +69,7 @@ names(mcs1_family_derived) <- tolower(names(mcs1_family_derived))
 names(mcs7_hh_grid) <- tolower(names(mcs7_hh_grid))
 names(mcs6_hh_grid) <- tolower(names(mcs6_hh_grid))
 names(mcs6_family_derived) <- tolower(names(mcs6_family_derived))
+names(mcs3_family) <- tolower(names(mcs3_family))
 names(mcs7_qualifications) <- tolower(names(mcs7_qualifications))
 #create sweep entry variable to identify second entry families later####
 sweep_entry <- c("mcsid", "sentry")
@@ -724,17 +728,29 @@ caregiver_vocabTotal = merge(all=TRUE, main_vocabTotal, partner_vocabTotal, by="
 #convert NaN to NA
 caregiver_vocabTotal$caregiver_vocab[is.nan(caregiver_vocabTotal$caregiver_vocab)]<-NA
 
-#country (at time of GCSE/N5 exams - age 17 or age 14 if age 17 missing) ####
+#country (at time of GCSE/N5 exams - age 17 or age 14 if age 17 missing, age 11 if age 14 missing etc) ####
 #sweep 7
 sweep7_country = mcs7_hh_grid %>% select(mcsid, gactry00, gcnum00) %>% 
   filter(gcnum00 == 1) %>% 
   select(mcsid, gactry00)
 
 sweep6_country = mcs6_family_derived %>% select(mcsid, factry00)
+sweep5_country = mcs5_family %>% select(mcsid,eactry00)
+sweep4_country = mcs4_family %>% select(mcsid, dactry00)
+sweep3_country = mcs3_family %>% select(mcsid, cactry00)
 
-country_17 = merge(all=TRUE, sweep7_country, sweep6_country, by= "mcsid") %>% 
-  mutate(country = case_when(!is.na(gactry00)~ gactry00, 
-                             is.na(gactry00)~factry00)) %>% 
+country_17 = merge(all=TRUE,  sweep7_country, sweep6_country, by= "mcsid")  
+country_17 = merge(all=TRUE, country_17, sweep5_country, by = "mcsid")
+country_17 = merge(all = TRUE, country_17, sweep4_country, by = "mcsid")
+country_17 = merge(all= TRUE, country_17, sweep3_country, by = "mcsid") %>% 
+  mutate(country1 = case_when(!is.na(gactry00) ~ gactry00, 
+                             is.na(gactry00) ~ factry00)) %>% 
+  mutate(country2 = case_when(!is.na(country1) ~ country1, 
+                             is.na(country1) ~ eactry00)) %>% 
+  mutate(country3 = case_when (!is.na(country2) ~ country2, 
+                              is.na(country2) ~ dactry00)) %>% 
+  mutate(country = case_when(!is.na(country3) ~ country3, 
+                             is.na(country3) ~ cactry00))
   select(mcsid, country)
 
 #auxiliary variables for imputation####
