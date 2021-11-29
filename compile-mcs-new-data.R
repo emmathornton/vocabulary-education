@@ -76,10 +76,10 @@ sweep_entry$sentry = as.character(sweep_entry$sentry)
 #create weight variable####
 #attrition and sample weight age 5 sweep - as this is where exposure was measured. 
 age5_weight = mcs_family %>% select(mcsid, covwt2)
-age17_weight = mcs_family %>% select(mcsid, govwt2)
-weight = merge(all=TRUE, age5_weight, age17_weight, by="mcsid") %>% 
+sample_weight = mcs_family %>% select(mcsid, weight2)
+weight = merge(all=TRUE, age5_weight, sample_weight, by="mcsid") %>% 
   mutate(weight = case_when(!is.na(covwt2) ~ covwt2, 
-                            is.na(covwt2) ~ govwt2)) %>% 
+                            is.na(covwt2) ~ weight2)) %>% 
   select(mcsid, weight)
 
 
