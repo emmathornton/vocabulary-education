@@ -220,7 +220,7 @@ imputed_mcs2<-as.mids(long_format_mcs)
 
 #save mids object to working directory####
 
-write.mice.imputation(mi.res=imputed_mcs2, name = glue("{today()}_vocabulary_education_imputedRQ1"), long=TRUE,dattype = "csv")
+write.mice.imputation(mi.res=imputed_mcs2, name = glue("{today()}_vocabulary_education_imputedRQ1"),include.varnames = TRUE, long=TRUE,dattype = "csv", mids2spss = FALSE)
 
 #get each individual imputed dataset#####
 imputed_mcs2_0 <- complete(imputed_mcs2)
