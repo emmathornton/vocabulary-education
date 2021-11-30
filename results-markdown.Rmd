@@ -28,6 +28,7 @@ library(ggplot2)
 library(ggpubr)
 library(officer)
 library(flextable)
+library(ftExtra)
 
 #this will take a float (e.g. a p value) and return a string with 3 digits and no leading 0
 
@@ -114,9 +115,9 @@ continuous_model2Results = summary(pool(continuous_model2), conf.int = TRUE)
 continuous_model3Results = summary(pool(continuous_model3), conf.int = TRUE)
 
 round(pool.r.squared(continuous_unadjusted),4)*100
-round(pool.r.squared(continuous_model1),4)*100
-round(pool.r.squared(continuous_model2),4)*100
-round(pool.r.squared(continuous_model3),4)*100
+cont_model1R2 = as.data.frame(round(pool.r.squared(continuous_model1),4)*100)
+cont_model2R2 = as.data.frame(round(pool.r.squared(continuous_model2),4)*100)
+cont_model3R2 = as.data.frame(round(pool.r.squared(continuous_model3),4)*100)
 ```
 
 2b. does vocabulary predict level of achievement in core subjects above and beyond SEC/caregiver vocab factors?
@@ -188,6 +189,7 @@ continuous_model2Results$p1 = paste0(continuous_model2Results$p.value1, "")
 continuous_model2Results$p = paste0("p", continuous_model2Results$p1)
 continuous_model2Results$new_coef = paste0(continuous_model2Results$coefficient, continuous_model2Results$stars)  #combine coefficients and stars into column.
 
+
 #model 3 for continuous outcome
 continuous_model3Results$estimate = bv(continuous_model3Results$estimate) #no leading 0 
 continuous_model3Results$`2.5 %` = bv(continuous_model3Results$`2.5 %`)
@@ -198,6 +200,7 @@ continuous_model3Results$stars = add.significance.stars(continuous_model3Results
 continuous_model3Results$p1 = paste0(continuous_model3Results$p.value1, "")
 continuous_model3Results$p = paste0("p", continuous_model3Results$p1)
 continuous_model3Results$new_coef = paste0(continuous_model3Results$coefficient, continuous_model3Results$stars)  #combine coefficients and stars into column.
+
 
 #get odds ratios and 95% CIs for table: logistic regression
 binary_model1Results = binary_model1Results %>% select(term, new_coef, p)
@@ -222,7 +225,8 @@ binary_outcomeResults = binary_outcomeResults %>% select(!3 & !5)
 
 binary_outcomeResults = binary_outcomeResults %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
   add_row(term = "Caregiver vocabulary", .before = 39) %>% 
-  add_row(term = "Cohort member vocabulary", .before  = 41)
+  add_row(term = "Cohort member vocabulary", .before  = 41) %>% 
+  add_row(term = "R2", .after = 43)
 
 #get coefficients and 95% CIs for table: linear regression
 continuous_model1Results = continuous_model1Results %>% select(term, new_coef, p)
@@ -237,10 +241,15 @@ continuous_model1Results = continuous_model1Results %>% select(term, model1_b)
 continuous_model2Results = continuous_model2Results %>% select(term, model2_b)
 continuous_model3Results = continuous_model3Results %>% select(term, model3_b)
 
+
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
 continuous_model1Results = continuous_model1Results %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised")
-continuous_model2Results = continuous_model2Results %>% add_row(term = "age5_standardised")
+  add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model1_b =paste0(cont_model1R2$est,"[", cont_model1R2$`lo 95`, ";", cont_model1R2$`hi 95`,"]"), .after = 39)
+continuous_model2Results = continuous_model2Results %>% add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model2_b =paste0(cont_model2R2$est,"[", cont_model2R2$`lo 95`, ";", cont_model2R2$`hi 95`,"]"), .after = 39)
+continuous_model3Results = continuous_model3Results %>% 
+  add_row(term = "R2", model3_b =paste0(cont_model3R2$est,"[", cont_model3R2$`lo 95`, ";", cont_model3R2$`hi 95`,"]"), .after = 39)
 
 continuous_outcomeResults = cbind(continuous_model1Results, continuous_model2Results, continuous_model3Results)
 continuous_outcomeResults = continuous_outcomeResults %>% select(!3 & !5)
@@ -249,12 +258,89 @@ continuous_outcomeResults = continuous_outcomeResults %>% add_row(term = "Sociod
   add_row(term = "Caregiver vocabulary", .before = 39) %>% 
   add_row(term = "Cohort member vocabulary", .before  = 41)
 
+
 regression_resultsTable = cbind(binary_outcomeResults, continuous_outcomeResults)
-regression_resultsTable = regression_resultsTable %>% select(!5)
+regression_resultsTable [is.na(regression_resultsTable )] <- "  "
+regression_resultsTable = regression_resultsTable %>% select(!5) %>%  
+  slice(-(1)) %>% #remove intercept row
+  add_row(term = "sex1", .after = 1) %>% #add in reference categories for factor variables
+  add_row(term = "ethnicity1", .after = 3) %>% 
+  add_row(term = "EAL1", .after = 9) %>% 
+  add_row(term = "country1", .after =  12) %>% 
+  add_row(term = "highest_nvq1", .after = 16) %>% 
+  add_row(term = "oecd_income1", .after = 22) %>% 
+  add_row(term = "occupational_status2", .after = 27) %>% 
+  add_row(term = "wealth_quintiles1", .after = 31) %>% 
+  add_row(term = "imd1", .after = 36 )
+regression_resultsTable [is.na(regression_resultsTable )] <- "REFERENCE"
+  
+#rename variables column 
+
+regression_resultsTable$term <- c("Sociodemographic confounders", "Sex (male)", "Sex (female)", 
+                                  "Ethnicity \n (White)", "Ethnicity \n (mixed)", "Ethnicity \n (Indian)", "Ethnicity \n (Pakistani & Bangladeshi)", "Ethnicity \n (Black/ Black British)", "Ethnicity \n (other incl. Chinese)", 
+                                  "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)", 
+                                  "Country \n (England)", "Country \n (Wales)", "Country \n (Scotland)", "Country \n (Northern Ireland)",
+                                  "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", 
+                           "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
+                          "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5", "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",  
+                          "Relative Neighbourhood \n Deprivation \n (most deprived decile)", "Relative Neighbourhood \n Deprivation \n (10 - <20%)", "Relative Neighbourhood \n Deprivation \n (20 - <30%)", "Relative Neighbourhood \n Deprivation \n (30 - <40%)", "Relative Neighbourhood \n Deprivation \n (40 - <50%)", "Relative Neighbourhood \n Deprivation \n (50 - <60%)", "Relative Neighbourhood \n Deprivation \n (60 - <70%)", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)", "Relative Neighbourhood \n Deprivation \n (80 - <90%)", "Relative Neighbourhood \n Deprivation \n (least deprived decile)", "Caregiver Vocabulary", "Caregiver Vocabulary \n (Word Activity Test Score)", "Cohort Member Vocabulary", "Cohort Member Vocabulary \n (Naming Vocabulary Score)", "R2 (%)")
+                          
+
 
 ```
 
 
+Create results table using flextable package - this can be exported straight into word. 
+
+```{r}
+#define border
+my_border = border= fp_border(color="black", width=1)
+results_Rq1Rq2 <- regression_resultsTable %>% 
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=11, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2:7, align="center", part="all") %>% 
+  color(j=1:7, color="black", part="all") %>% 
+  width(j=1, width=0.5) %>% 
+  width(j=2, width=1.5) %>% 
+  width(j=2:7, width=1.9) %>% 
+  line_spacing(j=2:7, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:7, part="all", border=my_border) %>% 
+  hline_bottom(j=1:7,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable",model1_OR= "Model 1",
+                    model2_OR= "Model 2",model3_OR = "Model 3", 
+                    model1_b="Model 1", model2_b = "Model 2", model3_b = "Model 3") %>% 
+ add_header_row(values = c(" ", "Binary Outcome (OR[95% CIs]", "Continuous Outcome (B[95% CIs]"), colwidths = c(1, 3, 3)) %>% 
+  font(fontname = "Times New Roman", part="header") %>% 
+  align(align="center", part="header") %>% 
+  hline_top(j = 2:7, part = "all", border = my_border) %>% 
+  bold(j = 1, i = c(1,47, 49), bold = TRUE) %>% 
+  italic(j = 1, i = c(1,47, 49), italic = TRUE) 
+  
+  
+  
+
+  merge_at(j=1, i = 1:6) %>% 
+  merge_at(j=1, i=7:11) %>% 
+  merge_at(j=1, i = 12:16) %>%
+  merge_at(j=1, i = 17:20) %>% 
+  merge_at(j=1, i=21:30) %>% 
+  rotate(i=1:6, j=1, rotation="btlr", align="center") %>% 
+  rotate(i=7:11, j=1, rotation="btlr", align="center") %>% 
+  rotate(i=12:16, j=1, rotation="btlr", align="center") %>% 
+  rotate(i=17:20, j=1, rotation="btlr", align="center") %>% 
+  rotate(i=21:30, j=1, rotation="btlr", align="center") %>% 
+  rotate(i=31, j=1, rotation="btlr", align="center") %>% 
+  align(j=1, align="center", part="all") %>% 
+  
+  
+  
+ print( preview = "docx") 
+
+```
 
 
 
