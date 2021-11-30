@@ -927,7 +927,7 @@ wealthModerator_table <- wealth_moderatorResults1 %>%
 
 results for IMD moderator - made with flextable
 ```{r}
-imdModerator_table <- imd_moderatorResults1 %>% 
+imdModerator_table <- imd_moderatorResults1 %>%
   flextable() %>% 
   font(fontname = "Times New Roman", part="all") %>% #
   fontsize(size=10, part = "all") %>% #
@@ -945,3 +945,89 @@ imdModerator_table <- imd_moderatorResults1 %>%
 
  print(imdModerator_table, preview = "docx") 
 ```
+
+try and put moderator results all into one table? 
+```{r}
+moderator_results = full_join(moderator_composite1,NVQ_moderatorResults1, keep = TRUE, by = "term") %>% 
+  mutate(term = case_when(!is.na(term.x)~term.x, 
+                              is.na(term.x)~term.y)) %>% 
+  select(term, composite_secMod, nvq_secMod) %>% 
+  full_join(income_moderatorResults1, keep = TRUE) %>% 
+  mutate(term = case_when(!is.na(term.x)~term.x, 
+                          is.na(term.x)~term.y)) %>% 
+  select(term, composite_secMod, nvq_secMod, income_secMod) %>% 
+  full_join(occupation_moderatorResults1, keep =TRUE) %>% 
+  mutate(term = case_when(!is.na(term.x)~term.x, 
+                          is.na(term.x)~term.y)) %>% 
+  select(term, composite_secMod, nvq_secMod, income_secMod, occupation_secMod) %>% 
+  full_join(wealth_moderatorResults1, keep =TRUE) %>% 
+  mutate(term = case_when(!is.na(term.x)~term.x, 
+                          is.na(term.x)~term.y)) %>% 
+  select(term, composite_secMod, nvq_secMod, income_secMod, occupation_secMod, wealth_secMod) %>%
+  full_join(imd_moderatorResults1, keep =TRUE) %>% 
+  mutate(term = case_when(!is.na(term.x)~term.x, 
+                          is.na(term.x)~term.y)) %>% 
+  select(term, composite_secMod, nvq_secMod, income_secMod, occupation_secMod, wealth_secMod, imd_secMod) 
+```
+
+put into flextable
+```{r}
+moderator_table <- moderator_results %>%
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2, align="center", part="all") %>% 
+  color(j=1:2, color="black", part="all") %>% 
+  width(j=1, width=1) %>% 
+  width(j=2, width=1.4) %>% 
+  line_spacing(j=2, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:2, part="all", border=my_border) %>% 
+  hline_bottom(j=1:2,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable", imd_secMod= "Relative neighbourhood deprivation moderator \n (OR[95% CIs]") 
+
+ print(imdModerator_table, preview = "docx") 
+```
+
+or, could have this table so that it is just the main effects and interaction terms, and not the confounding variables? so would be SEC composite, language, parent education, income, occupation, wealth, imd?
+```{r}
+moderator_composite2 = moderator_composite1[17:19,]
+moderator_composite2 = moderator_composite2 %>% select(term, composite_secMod)
+NVQ_moderatorResults2 = NVQ_moderatorResults1 [41:53,]
+NVQ_moderatorResults2  = NVQ_moderatorResults2  %>% select(term, nvq_secMod)
+income_moderatorResults2 = income_moderatorResults1[42:52,]
+income_moderatorResults2  = income_moderatorResults2  %>% select(term, income_secMod)
+occupation_moderatorResults2 = occupation_moderatorResults1[43:51,]
+occupation_moderatorResults2  = occupation_moderatorResults2  %>% select(term, occupation_secMod)
+wealth_moderatorResults2 = wealth_moderatorResults1[42:52,]
+wealth_moderatorResults2  = wealth_moderatorResults2  %>% select(term, wealth_secMod)
+imd_moderatorResults2 = imd_moderatorResults1[37:57,]
+imd_moderatorResults2  = imd_moderatorResults2  %>% select(term, imd_secMod)
+
+moderator_results2 = full_join(moderator_composite2,NVQ_moderatorResults2, keep = TRUE, by = "term") %>% 
+  mutate(term = case_when(!is.na(term.x)~term.x, 
+                              is.na(term.x)~term.y)) %>% 
+  select(term, composite_secMod, nvq_secMod) %>% 
+  full_join(income_moderatorResults2, keep = TRUE) %>% 
+  mutate(term = case_when(!is.na(term.x)~term.x, 
+                          is.na(term.x)~term.y)) %>% 
+  select(term, composite_secMod, nvq_secMod, income_secMod) %>% 
+  full_join(occupation_moderatorResults2, keep =TRUE) %>% 
+  mutate(term = case_when(!is.na(term.x)~term.x, 
+                          is.na(term.x)~term.y)) %>% 
+  select(term, composite_secMod, nvq_secMod, income_secMod, occupation_secMod) %>% 
+  full_join(wealth_moderatorResults2, keep =TRUE) %>% 
+  mutate(term = case_when(!is.na(term.x)~term.x, 
+                          is.na(term.x)~term.y)) %>% 
+  select(term, composite_secMod, nvq_secMod, income_secMod, occupation_secMod, wealth_secMod) %>%
+  full_join(imd_moderatorResults2, keep =TRUE) %>% 
+  mutate(term = case_when(!is.na(term.x)~term.x, 
+                          is.na(term.x)~term.y)) %>% 
+  select(term, composite_secMod, nvq_secMod, income_secMod, occupation_secMod, wealth_secMod, imd_secMod) 
+
+```
+
+
+
