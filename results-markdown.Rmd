@@ -298,13 +298,12 @@ my_border = border= fp_border(color="black", width=1)
 results_Rq1Rq2 <- regression_resultsTable %>% 
   flextable() %>% 
   font(fontname = "Times New Roman", part="all") %>% #
-  fontsize(size=11, part = "all") %>% #
+  fontsize(size=10, part = "all") %>% #
   align(j=1, align="left", part="all") %>% 
   align(j=2:7, align="center", part="all") %>% 
   color(j=1:7, color="black", part="all") %>% 
-  width(j=1, width=0.5) %>% 
-  width(j=2, width=1.5) %>% 
-  width(j=2:7, width=1.9) %>% 
+  width(j=1, width=1) %>% 
+  width(j=2:7, width=1.4) %>% 
   line_spacing(j=2:7, space=1.5) %>% 
   line_spacing(j=1, space=1.5) %>% 
   border_remove() %>% 
@@ -321,24 +320,8 @@ results_Rq1Rq2 <- regression_resultsTable %>%
   italic(j = 1, i = c(1,47, 49), italic = TRUE) 
   
   
-  
 
-  merge_at(j=1, i = 1:6) %>% 
-  merge_at(j=1, i=7:11) %>% 
-  merge_at(j=1, i = 12:16) %>%
-  merge_at(j=1, i = 17:20) %>% 
-  merge_at(j=1, i=21:30) %>% 
-  rotate(i=1:6, j=1, rotation="btlr", align="center") %>% 
-  rotate(i=7:11, j=1, rotation="btlr", align="center") %>% 
-  rotate(i=12:16, j=1, rotation="btlr", align="center") %>% 
-  rotate(i=17:20, j=1, rotation="btlr", align="center") %>% 
-  rotate(i=21:30, j=1, rotation="btlr", align="center") %>% 
-  rotate(i=31, j=1, rotation="btlr", align="center") %>% 
-  align(j=1, align="center", part="all") %>% 
-  
-  
-  
- print( preview = "docx") 
+ print(results_Rq1Rq2, preview = "docx") 
 
 ```
 
@@ -461,7 +444,7 @@ imputed_data25$ses_latent = imputed_datasets$ses_latent[[25]]
 
 compositeModerator_model <- function(df) {
   fit <- glm(benchmark_binary ~ sex + ethnicity + EAL + country +
-               + caregiver_vocabStandardised + age5_standardised*ses_latent, 
+               + caregiver_vocabStandardised + ses_latent*age5_standardised, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -473,7 +456,7 @@ compositeModerator <- lapply(list(imputed_data1, imputed_data2, imputed_data3, i
                                   imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20,
                                   imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25),
                              compositeModerator_model)
-moderator_composite1 <- summary(pool(as.mira(compositeModerator)),conf.int = TRUE, conf.level = 0.95,  exponentiate = TRUE) 
+moderator_composite <- summary(pool(as.mira(compositeModerator)),conf.int = TRUE, conf.level = 0.95,  exponentiate = TRUE) 
 
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 noCompositeModerator_model <- function(df) {
@@ -506,7 +489,7 @@ MODERATOR ANALYSIS ON EACH INDIVIDUAL SEC PREDICTOR
 #vocabulary*NVQ interaction term
 NVQ_moderator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
                                                           oecd_income + occupational_status + wealth_quintiles + imd + 
-                                         caregiver_vocabStandardised + age5_standardised*highest_nvq, 
+                                         caregiver_vocabStandardised + highest_nvq*age5_standardised, 
                                          family = binomial, weights = weight))
 #no interaction term
 NVQ_noModerator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
@@ -523,7 +506,7 @@ D1(NVQ_moderator, NVQ_noModerator)
 #vocabulary*occupation interaction term
 occupation_moderator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
                                                 highest_nvq+ oecd_income  + wealth_quintiles + imd + 
-                                         caregiver_vocabStandardised + age5_standardised*occupational_status, 
+                                         caregiver_vocabStandardised + occupational_status*age5_standardised, 
                                        family = binomial, weights = weight))
 #no interaction term
 occupation_noModerator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
@@ -540,7 +523,7 @@ D1(occupation_moderator, occupation_noModerator)
 #vocabulary*income interaction term
 income_moderator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
                                                 highest_nvq+ occupational_status  + wealth_quintiles + imd + 
-                                                caregiver_vocabStandardised + age5_standardised*oecd_income, 
+                                                caregiver_vocabStandardised + oecd_income*age5_standardised, 
                                               family = binomial, weights = weight))
 #no interaction term
 income_noModerator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
@@ -557,7 +540,7 @@ D1(income_moderator, income_noModerator)
 #vocabulary*wealth interaction term
 wealth_moderator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
                                             highest_nvq+ oecd_income + occupational_status   + imd + 
-                                            caregiver_vocabStandardised + age5_standardised*wealth_quintiles, 
+                                            caregiver_vocabStandardised + wealth_quintiles*age5_standardised, 
                                           family = binomial, weights = weight))
 #no interaction term
 wealth_noModerator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
@@ -574,7 +557,7 @@ D1(wealth_moderator, wealth_noModerator)
 #vocabulary*wealth interaction term
 imd_moderator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
                                             highest_nvq+ oecd_income + occupational_status + wealth_quintiles + 
-                                            caregiver_vocabStandardised + age5_standardised*imd, 
+                                            caregiver_vocabStandardised + imd*age5_standardised, 
                                           family = binomial, weights = weight))
 #no interaction term
 imd_noModerator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
@@ -588,3 +571,377 @@ imd_noModeratorResults = summary(pool(imd_noModerator), conf.int = TRUE, exponen
 D1(imd_moderator, imd_noModerator)
 ```
 
+results table for main moderator analysis (with SEC composite)
+
+```{r}
+#get relevant results for table - composite
+moderator_composite$estimate = bv(moderator_composite$estimate) #no leading 0 
+moderator_composite$`2.5 %` = bv(moderator_composite$`2.5 %`)
+moderator_composite$`97.5 %` = bv(moderator_composite$`97.5 %`)
+moderator_composite$p.value1= ifelse(moderator_composite$p.value< .001, "<.001" , pv1(moderator_composite$p.value))
+moderator_composite$coefficient = paste0(moderator_composite$estimate, "[", moderator_composite$`2.5 %`, ";", moderator_composite$`97.5 %`, "]")
+moderator_composite$stars = add.significance.stars(moderator_composite$p.value, cutoffs=c(0.05, 0.01, 0.001))
+moderator_composite$p1 = paste0(moderator_composite$p.value1, "")
+moderator_composite$p = paste0("p", moderator_composite$p1)
+moderator_composite$new_coef = paste0(moderator_composite$coefficient, moderator_composite$stars)  #combine coefficients and stars into column.
+
+#select just odds ratio and p values
+moderator_composite1= moderator_composite%>% select(term, new_coef, p)
+#put p value into same cell as ratio for table
+moderator_composite1$composite_secMod <- paste0(moderator_composite1$new_coef,"\n", moderator_composite1$p) 
+
+moderator_composite1 = moderator_composite1 %>% select(term, composite_secMod) %>% 
+  slice(-(1)) %>% #remove intercept row
+  add_row(term = "sex1", .before  = 1) %>% #add in reference categories for factor variables
+  add_row(term = "ethnicity1", .before= 3) %>% 
+  add_row(term = "EAL1", .before = 9) %>% 
+  add_row(term = "country1", .before =  12) 
+moderator_composite1 [is.na(moderator_composite1)] <- "REFERENCE"
+
+#rename variables column 
+moderator_composite1$term <- c("Sex (male)", "Sex (female)", 
+                                  "Ethnicity \n (White)", "Ethnicity \n (mixed)", "Ethnicity \n (Indian)", "Ethnicity \n (Pakistani & Bangladeshi)", "Ethnicity \n (Black/ Black British)", "Ethnicity \n (other incl. Chinese)", 
+                                  "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)", 
+                                  "Country \n (England)", "Country \n (Wales)", "Country \n (Scotland)", "Country \n (Northern Ireland)", "Caregiver Vocabulary \n (Word Activity Test Score)", "Socioeconomic Circumstances \n (composite) ", "Cohort Member Vocabulary \n (Naming Vocabulary Score)", "SEC*Vocabulary")
+
+```
+
+
+parent education as the moderator - results 
+```{r}
+#get relevant results for table - composite
+NVQ_moderatorResults$estimate = bv(NVQ_moderatorResults$estimate) #no leading 0 
+NVQ_moderatorResults$`2.5 %` = bv(NVQ_moderatorResults$`2.5 %`)
+NVQ_moderatorResults$`97.5 %` = bv(NVQ_moderatorResults$`97.5 %`)
+NVQ_moderatorResults$p.value1= ifelse(NVQ_moderatorResults$p.value< .001, "<.001" , pv1(NVQ_moderatorResults$p.value))
+NVQ_moderatorResults$coefficient = paste0(NVQ_moderatorResults$estimate, "[", NVQ_moderatorResults$`2.5 %`, ";", NVQ_moderatorResults$`97.5 %`, "]")
+NVQ_moderatorResults$stars = add.significance.stars(NVQ_moderatorResults$p.value, cutoffs=c(0.05, 0.01, 0.001))
+NVQ_moderatorResults$p1 = paste0(NVQ_moderatorResults$p.value1, "")
+NVQ_moderatorResults$p = paste0("p", NVQ_moderatorResults$p1)
+NVQ_moderatorResults$new_coef = paste0(NVQ_moderatorResults$coefficient, NVQ_moderatorResults$stars)  #combine coefficients and stars into column.
+
+#select just odds ratio and p values
+NVQ_moderatorResults1= NVQ_moderatorResults%>% select(term, new_coef, p)
+#put p value into same cell as ratio for table
+NVQ_moderatorResults1$nvq_secMod <- paste0(NVQ_moderatorResults1$new_coef,"\n", NVQ_moderatorResults1$p) 
+
+NVQ_moderatorResults1 = NVQ_moderatorResults1 %>% select(term, nvq_secMod) %>% 
+  slice(-(1)) %>% #remove intercept row
+  add_row(term = "sex1", .before  = 1) %>% #add in reference categories for factor variables
+  add_row(term = "ethnicity1", .before= 3) %>% 
+  add_row(term = "EAL1", .before = 9) %>% 
+  add_row(term = "country1", .before =  12) %>% 
+  add_row(term = "oecd_income1", .before= 16) %>% 
+  add_row(term = "occupational_status2", .before = 21) %>% 
+  add_row(term = "wealth_quintiles1", .before = 25) %>% 
+  add_row(term = "imd1", .before = 30 ) %>% 
+  add_row(term = "highest_nvq1", .before = 41) %>% 
+  add_row(term = "highest_nvq1:age5_standardised*", .before =48)
+NVQ_moderatorResults1 [is.na(NVQ_moderatorResults1)] <- "REFERENCE"
+
+#rename variables column 
+NVQ_moderatorResults1$term <- c("Sex (male)", "Sex (female)", 
+                               "Ethnicity \n (White)", "Ethnicity \n (mixed)", "Ethnicity \n (Indian)", "Ethnicity \n (Pakistani & Bangladeshi)", "Ethnicity \n (Black/ Black British)", "Ethnicity \n (other incl. Chinese)", 
+                               "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)", 
+                               "Country \n (England)", "Country \n (Wales)", "Country \n (Scotland)", "Country \n (Northern Ireland)", "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
+                               "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5", "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",  
+                               "Relative Neighbourhood \n Deprivation \n (most deprived decile)", "Relative Neighbourhood \n Deprivation \n (10 - <20%)", "Relative Neighbourhood \n Deprivation \n (20 - <30%)", "Relative Neighbourhood \n Deprivation \n (30 - <40%)", "Relative Neighbourhood \n Deprivation \n (40 - <50%)", "Relative Neighbourhood \n Deprivation \n (50 - <60%)", "Relative Neighbourhood \n Deprivation \n (60 - <70%)", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)", "Relative Neighbourhood \n Deprivation \n (80 - <90%)", "Relative Neighbourhood \n Deprivation \n (least deprived decile)",  "Caregiver Vocabulary \n (Word Activity Test Score)", 
+                               "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", "Cohort Member Vocabulary \n (Naming Vocabulary Score)", "Parent Education \n (NVQ1)*Age 5 Vocabulary", "Parent Education \n (None of these/overseas qualifications)*Age 5 Vocabulary", "Parent Education \n (NVQ2)*Age 5 Vocabulary", "Parent Education \n (NVQ3)*Age 5 Vocabulary", "Parent Education \n (NVQ4)*Age 5 Vocabulary", "Parent Education \n (NVQ5)*Age 5 Vocabulary")
+```
+
+occupational status as the moderator - results
+```{r}
+#get relevant results for table - composite
+occupation_moderatorResults$estimate = bv(occupation_moderatorResults$estimate) #no leading 0 
+occupation_moderatorResults$`2.5 %` = bv(occupation_moderatorResults$`2.5 %`)
+occupation_moderatorResults$`97.5 %` = bv(occupation_moderatorResults$`97.5 %`)
+occupation_moderatorResults$p.value1= ifelse(occupation_moderatorResults$p.value< .001, "<.001" , pv1(occupation_moderatorResults$p.value))
+occupation_moderatorResults$coefficient = paste0(occupation_moderatorResults$estimate, "[", occupation_moderatorResults$`2.5 %`, ";", occupation_moderatorResults$`97.5 %`, "]")
+occupation_moderatorResults$stars = add.significance.stars(occupation_moderatorResults$p.value, cutoffs=c(0.05, 0.01, 0.001))
+occupation_moderatorResults$p1 = paste0(occupation_moderatorResults$p.value1, "")
+occupation_moderatorResults$p = paste0("p", occupation_moderatorResults$p1)
+occupation_moderatorResults$new_coef = paste0(occupation_moderatorResults$coefficient, occupation_moderatorResults$stars)  #combine coefficients and stars into column.
+
+#select just odds ratio and p values
+occupation_moderatorResults1= occupation_moderatorResults%>% select(term, new_coef, p)
+#put p value into same cell as ratio for table
+occupation_moderatorResults1$occupation_secMod <- paste0(occupation_moderatorResults1$new_coef,"\n", occupation_moderatorResults1$p) 
+
+occupation_moderatorResults1 = occupation_moderatorResults1 %>% select(term, occupation_secMod) %>% 
+  slice(-(1)) %>% #remove intercept row
+  add_row(term = "sex1", .before  = 1) %>% #add in reference categories for factor variables
+  add_row(term = "ethnicity1", .before= 3) %>% 
+  add_row(term = "EAL1", .before = 9) %>% 
+  add_row(term = "country1", .before =  12) %>% 
+  add_row(term = "highest_nvq1", .before = 16) %>% 
+  add_row(term = "oecd_income1", .before= 22) %>% 
+  add_row(term = "wealth_quintiles1", .before = 27) %>% 
+  add_row(term = "imd1", .before = 32) %>% 
+  add_row(term = "occupational_status2", .before = 43) %>% 
+  add_row(term = "occupational_status2:age5_standardised*", .before =48)
+occupation_moderatorResults1 [is.na(occupation_moderatorResults1)] <- "REFERENCE"
+
+#rename variables column 
+occupation_moderatorResults1$term <- c("Sex (male)", "Sex (female)", 
+                               "Ethnicity \n (White)", "Ethnicity \n (mixed)", "Ethnicity \n (Indian)", "Ethnicity \n (Pakistani & Bangladeshi)", "Ethnicity \n (Black/ Black British)", "Ethnicity \n (other incl. Chinese)", 
+                               "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)", 
+                               "Country \n (England)", "Country \n (Wales)", "Country \n (Scotland)", "Country \n (Northern Ireland)", "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)",
+                               "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
+                               "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5",  
+                               "Relative Neighbourhood \n Deprivation \n (most deprived decile)", "Relative Neighbourhood \n Deprivation \n (10 - <20%)", "Relative Neighbourhood \n Deprivation \n (20 - <30%)", "Relative Neighbourhood \n Deprivation \n (30 - <40%)", "Relative Neighbourhood \n Deprivation \n (40 - <50%)", "Relative Neighbourhood \n Deprivation \n (50 - <60%)", "Relative Neighbourhood \n Deprivation \n (60 - <70%)", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)", "Relative Neighbourhood \n Deprivation \n (80 - <90%)", "Relative Neighbourhood \n Deprivation \n (least deprived decile)",  "Caregiver Vocabulary \n (Word Activity Test Score)", "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)", "Cohort Member Vocabulary \n (Naming Vocabulary Score)", "Occupational Status \n (routine)*Age 5 Vocabulary", "Occupational Status \n (unemployed)*Age 5 Vocabulary", "Occupational Status \n (intermediate)*Age 5 Vocabulary", "Occupational Status \n (higher managerial)*Age 5 Vocabulary")
+```
+
+income moderator: results 
+```{r}
+#get relevant results for table - composite
+income_moderatorResults$estimate = bv(income_moderatorResults$estimate) #no leading 0 
+income_moderatorResults$`2.5 %` = bv(income_moderatorResults$`2.5 %`)
+income_moderatorResults$`97.5 %` = bv(income_moderatorResults$`97.5 %`)
+income_moderatorResults$p.value1= ifelse(income_moderatorResults$p.value< .001, "<.001" , pv1(income_moderatorResults$p.value))
+income_moderatorResults$coefficient = paste0(income_moderatorResults$estimate, "[", income_moderatorResults$`2.5 %`, ";", income_moderatorResults$`97.5 %`, "]")
+income_moderatorResults$stars = add.significance.stars(income_moderatorResults$p.value, cutoffs=c(0.05, 0.01, 0.001))
+income_moderatorResults$p1 = paste0(income_moderatorResults$p.value1, "")
+income_moderatorResults$p = paste0("p", income_moderatorResults$p1)
+income_moderatorResults$new_coef = paste0(income_moderatorResults$coefficient, income_moderatorResults$stars)  #combine coefficients and stars into column.
+
+#select just odds ratio and p values
+income_moderatorResults1= income_moderatorResults%>% select(term, new_coef, p)
+#put p value into same cell as ratio for table
+income_moderatorResults1$income_secMod <- paste0(income_moderatorResults1$new_coef,"\n", income_moderatorResults1$p) 
+
+income_moderatorResults1 = income_moderatorResults1 %>% select(term, income_secMod) %>% 
+  slice(-(1)) %>% #remove intercept row
+  add_row(term = "sex1", .before  = 1) %>% #add in reference categories for factor variables
+  add_row(term = "ethnicity1", .before= 3) %>% 
+  add_row(term = "EAL1", .before = 9) %>% 
+  add_row(term = "country1", .before =  12) %>% 
+  add_row(term = "highest_nvq1", .before = 16) %>% 
+  add_row(term = "occupational_status2", .before= 22) %>% 
+  add_row(term = "wealth_quintiles1", .before = 26) %>% 
+  add_row(term = "imd1", .before = 31) %>% 
+  add_row(term = "oecd_income1", .before = 42) %>% 
+  add_row(term = "oecd_income1:age5_standardised", .before =48)
+income_moderatorResults1 [is.na(income_moderatorResults1)] <- "REFERENCE"
+
+#rename variables column 
+income_moderatorResults1$term <- c("Sex (male)", "Sex (female)", 
+                               "Ethnicity \n (White)", "Ethnicity \n (mixed)", "Ethnicity \n (Indian)", "Ethnicity \n (Pakistani & Bangladeshi)", "Ethnicity \n (Black/ Black British)", "Ethnicity \n (other incl. Chinese)", 
+                               "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)", 
+                               "Country \n (England)", "Country \n (Wales)", "Country \n (Scotland)", "Country \n (Northern Ireland)", "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",
+                               "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5",  
+                               "Relative Neighbourhood \n Deprivation \n (most deprived decile)", "Relative Neighbourhood \n Deprivation \n (10 - <20%)", "Relative Neighbourhood \n Deprivation \n (20 - <30%)", "Relative Neighbourhood \n Deprivation \n (30 - <40%)", "Relative Neighbourhood \n Deprivation \n (40 - <50%)", "Relative Neighbourhood \n Deprivation \n (50 - <60%)", "Relative Neighbourhood \n Deprivation \n (60 - <70%)", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)", "Relative Neighbourhood \n Deprivation \n (80 - <90%)", "Relative Neighbourhood \n Deprivation \n (least deprived decile)",  "Caregiver Vocabulary \n (Word Activity Test Score)","Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5",  "Cohort Member Vocabulary \n (Naming Vocabulary Score)", 
+                               "Income Quintile 1*Age 5 Vocabulary", "Income Quintile 2*Age 5 Vocabulary", "Income Quintile 3*Age 5 Vocabulary", "Income Quintile 4*Age 5 Vocabulary", "Income Quintile 5*Age 5 Vocabulary")
+```
+
+wealth as moderator: results 
+```{r}
+#get relevant results for table - composite
+wealth_moderatorResults$estimate = bv(wealth_moderatorResults$estimate) #no leading 0 
+wealth_moderatorResults$`2.5 %` = bv(wealth_moderatorResults$`2.5 %`)
+wealth_moderatorResults$`97.5 %` = bv(wealth_moderatorResults$`97.5 %`)
+wealth_moderatorResults$p.value1= ifelse(wealth_moderatorResults$p.value< .001, "<.001" , pv1(wealth_moderatorResults$p.value))
+wealth_moderatorResults$coefficient = paste0(wealth_moderatorResults$estimate, "[", wealth_moderatorResults$`2.5 %`, ";", wealth_moderatorResults$`97.5 %`, "]")
+wealth_moderatorResults$stars = add.significance.stars(wealth_moderatorResults$p.value, cutoffs=c(0.05, 0.01, 0.001))
+wealth_moderatorResults$p1 = paste0(wealth_moderatorResults$p.value1, "")
+wealth_moderatorResults$p = paste0("p", wealth_moderatorResults$p1)
+wealth_moderatorResults$new_coef = paste0(wealth_moderatorResults$coefficient, wealth_moderatorResults$stars)  #combine coefficients and stars into column.
+
+#select just odds ratio and p values
+wealth_moderatorResults1= wealth_moderatorResults%>% select(term, new_coef, p)
+#put p value into same cell as ratio for table
+wealth_moderatorResults1$wealth_secMod <- paste0(wealth_moderatorResults1$new_coef,"\n", wealth_moderatorResults1$p) 
+
+wealth_moderatorResults1 = wealth_moderatorResults1 %>% select(term, wealth_secMod) %>% 
+  slice(-(1)) %>% #remove intercept row
+  add_row(term = "sex1", .before  = 1) %>% #add in reference categories for factor variables
+  add_row(term = "ethnicity1", .before= 3) %>% 
+  add_row(term = "EAL1", .before = 9) %>% 
+  add_row(term = "country1", .before =  12) %>% 
+  add_row(term = "highest_nvq1", .before = 16) %>% 
+  add_row(term = "oecd_income1", .before = 22) %>% 
+  add_row(term = "occupational_status2", .after= 26) %>% 
+  add_row(term = "imd1", .before = 31) %>% 
+  add_row(term = "wealth_quintiles1", .before = 42) %>% 
+  add_row(term = "wealth_quintiles1:age5_standardised", .before =48)
+wealth_moderatorResults1 [is.na(wealth_moderatorResults1)] <- "REFERENCE"
+
+#rename variables column 
+wealth_moderatorResults1$term <- c("Sex (male)", "Sex (female)", 
+                               "Ethnicity \n (White)", "Ethnicity \n (mixed)", "Ethnicity \n (Indian)", "Ethnicity \n (Pakistani & Bangladeshi)", "Ethnicity \n (Black/ Black British)", "Ethnicity \n (other incl. Chinese)", 
+                               "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)", 
+                               "Country \n (England)", "Country \n (Wales)", "Country \n (Scotland)", "Country \n (Northern Ireland)", "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", "Income Quintile 1",
+                               "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
+                               "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",
+                               "Relative Neighbourhood \n Deprivation \n (most deprived decile)", "Relative Neighbourhood \n Deprivation \n (10 - <20%)", "Relative Neighbourhood \n Deprivation \n (20 - <30%)", "Relative Neighbourhood \n Deprivation \n (30 - <40%)", "Relative Neighbourhood \n Deprivation \n (40 - <50%)", "Relative Neighbourhood \n Deprivation \n (50 - <60%)", "Relative Neighbourhood \n Deprivation \n (60 - <70%)", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)", "Relative Neighbourhood \n Deprivation \n (80 - <90%)", "Relative Neighbourhood \n Deprivation \n (least deprived decile)",  "Caregiver Vocabulary \n (Word Activity Test Score)", "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5",  
+ "Cohort Member Vocabulary \n (Naming Vocabulary Score)", 
+                               "Wealth Quintile 1*Age 5 Vocabulary", "Wealth Quintile 2*Age 5 Vocabulary", "Wealth Quintile 3*Age 5 Vocabulary", "Wealth Quintile 4*Age 5 Vocabulary", "Wealth Quintile 5*Age 5 Vocabulary")
+```
+
+imd as moderator: results
+```{r}
+#get relevant results for table - composite
+imd_moderatorResults$estimate = bv(imd_moderatorResults$estimate) #no leading 0 
+imd_moderatorResults$`2.5 %` = bv(imd_moderatorResults$`2.5 %`)
+imd_moderatorResults$`97.5 %` = bv(imd_moderatorResults$`97.5 %`)
+imd_moderatorResults$p.value1= ifelse(imd_moderatorResults$p.value< .001, "<.001" , pv1(imd_moderatorResults$p.value))
+imd_moderatorResults$coefficient = paste0(imd_moderatorResults$estimate, "[", imd_moderatorResults$`2.5 %`, ";", imd_moderatorResults$`97.5 %`, "]")
+imd_moderatorResults$stars = add.significance.stars(imd_moderatorResults$p.value, cutoffs=c(0.05, 0.01, 0.001))
+imd_moderatorResults$p1 = paste0(imd_moderatorResults$p.value1, "")
+imd_moderatorResults$p = paste0("p", imd_moderatorResults$p1)
+imd_moderatorResults$new_coef = paste0(imd_moderatorResults$coefficient, imd_moderatorResults$stars)  #combine coefficients and stars into column.
+
+#select just odds ratio and p values
+imd_moderatorResults1= imd_moderatorResults%>% select(term, new_coef, p)
+#put p value into same cell as ratio for table
+imd_moderatorResults1$imd_secMod <- paste0(imd_moderatorResults1$new_coef,"\n", imd_moderatorResults1$p) 
+
+imd_moderatorResults1 = imd_moderatorResults1 %>% select(term, imd_secMod) %>% 
+  slice(-(1)) %>% #remove intercept row
+  add_row(term = "sex1", .before  = 1) %>% #add in reference categories for factor variables
+  add_row(term = "ethnicity1", .before= 3) %>% 
+  add_row(term = "EAL1", .before = 9) %>% 
+  add_row(term = "country1", .before =  12) %>% 
+  add_row(term = "highest_nvq1", .before = 16) %>% 
+  add_row(term = "oecd_income1", .before = 22) %>% 
+  add_row(term = "occupational_status2", .after= 26) %>% 
+  add_row(term = "wealth_quintiles1", .before = 31) %>% 
+  add_row(term = "imd1", .before = 37) %>% 
+  add_row(term = "imd_quintiles1:age5_standardised", .before =48)
+imd_moderatorResults1 [is.na(imd_moderatorResults1)] <- "REFERENCE"
+
+#rename variables column 
+imd_moderatorResults1$term <- c("Sex (male)", "Sex (female)", 
+                               "Ethnicity \n (White)", "Ethnicity \n (mixed)", "Ethnicity \n (Indian)", "Ethnicity \n (Pakistani & Bangladeshi)", "Ethnicity \n (Black/ Black British)", "Ethnicity \n (other incl. Chinese)", 
+                               "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)", 
+                               "Country \n (England)", "Country \n (Wales)", "Country \n (Scotland)", "Country \n (Northern Ireland)", "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", "Income Quintile 1",
+                               "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
+                               "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)", "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5", 
+                               "Caregiver Vocabulary \n (Word Activity Test Score)",   "Relative Neighbourhood \n Deprivation \n (most deprived decile)", "Relative Neighbourhood \n Deprivation \n (10 - <20%)", "Relative Neighbourhood \n Deprivation \n (20 - <30%)", "Relative Neighbourhood \n Deprivation \n (30 - <40%)", "Relative Neighbourhood \n Deprivation \n (40 - <50%)", "Relative Neighbourhood \n Deprivation \n (50 - <60%)", "Relative Neighbourhood \n Deprivation \n (60 - <70%)", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)", "Relative Neighbourhood \n Deprivation \n (80 - <90%)", "Relative Neighbourhood \n Deprivation \n (least deprived decile)", 
+ "Cohort Member Vocabulary \n (Naming Vocabulary Score)", 
+ "Relative Neighbourhood \n Deprivation \n (most deprived decile)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (10 - <20%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (20 - <30%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (30 - <40%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (40 - <50%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (50 - <60%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (60 - <70%)*Age 5 Vocabulary", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (80 - <90%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (least deprived decile)*Age 5 Vocabulary")
+```
+
+results table for composite moderator - created with flextable
+
+```{r}
+secModerator_table <- moderator_composite1 %>% 
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2, align="center", part="all") %>% 
+  color(j=1:2, color="black", part="all") %>% 
+  width(j=1, width=1) %>% 
+  width(j=2, width=1.4) %>% 
+  line_spacing(j=2, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:2, part="all", border=my_border) %>% 
+  hline_bottom(j=1:2,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable",composite_secMod= "Composite SEC moderator \n (OR[95% CIs]") 
+
+ print(secModerator_table, preview = "docx") 
+  
+```
+
+results for NVQ moderator - made with flextable
+```{r}
+nvqModerator_table <- NVQ_moderatorResults1 %>% 
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2, align="center", part="all") %>% 
+  color(j=1:2, color="black", part="all") %>% 
+  width(j=1, width=1) %>% 
+  width(j=2, width=1.4) %>% 
+  line_spacing(j=2, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:2, part="all", border=my_border) %>% 
+  hline_bottom(j=1:2,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable", nvq_secMod= "Parent education moderator \n (OR[95% CIs]") 
+ print(nvqModerator_table, preview = "docx") 
+```
+
+results for occupation moderator - made with flextable
+```{r}
+occupationModerator_table <- occupation_moderatorResults1 %>% 
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2, align="center", part="all") %>% 
+  color(j=1:2, color="black", part="all") %>% 
+  width(j=1, width=1) %>% 
+  width(j=2, width=1.4) %>% 
+  line_spacing(j=2, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:2, part="all", border=my_border) %>% 
+  hline_bottom(j=1:2,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable", occupation_secMod= "Occupational status moderator \n (OR[95% CIs]") 
+ print(occupationModerator_table, preview = "docx") 
+```
+
+results for icnome moderator - made with flextable
+```{r}
+incomeModerator_table <- income_moderatorResults1 %>% 
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2, align="center", part="all") %>% 
+  color(j=1:2, color="black", part="all") %>% 
+  width(j=1, width=1) %>% 
+  width(j=2, width=1.4) %>% 
+  line_spacing(j=2, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:2, part="all", border=my_border) %>% 
+  hline_bottom(j=1:2,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable", income_secMod= "Income moderator \n (OR[95% CIs]") 
+
+ print(incomeModerator_table, preview = "docx") 
+```
+
+results for wealth moderator - made with flextable
+```{r}
+wealthModerator_table <- wealth_moderatorResults1 %>% 
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2, align="center", part="all") %>% 
+  color(j=1:2, color="black", part="all") %>% 
+  width(j=1, width=1) %>% 
+  width(j=2, width=1.4) %>% 
+  line_spacing(j=2, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:2, part="all", border=my_border) %>% 
+  hline_bottom(j=1:2,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable", wealth_secMod= "Wealth moderator \n (OR[95% CIs]") 
+ print(wealthModerator_table, preview = "docx") 
+```
+
+results for IMD moderator - made with flextable
+```{r}
+imdModerator_table <- imd_moderatorResults1 %>% 
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2, align="center", part="all") %>% 
+  color(j=1:2, color="black", part="all") %>% 
+  width(j=1, width=1) %>% 
+  width(j=2, width=1.4) %>% 
+  line_spacing(j=2, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:2, part="all", border=my_border) %>% 
+  hline_bottom(j=1:2,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable", imd_secMod= "Relative neighbourhood deprivation moderator \n (OR[95% CIs]") 
+
+ print(imdModerator_table, preview = "docx") 
+```
