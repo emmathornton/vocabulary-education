@@ -1928,6 +1928,14 @@ analysis_data = merge(all=TRUE, analysis_data, education_main_outcomes, by = "mc
 #select sample - those with a response on age 5 vocabulary test OR an educaion outcome
 mcs_analysis = analysis_data %>% filter((!is.na(age5_vocab)) | (!is.na(benchmark_binary)))
 
+#if want 2 analytical samples (one for each outcome)
+#binary outcome (will be same as if use overall sample anyway)
+binary_education = analysis_data %>% select(!standardised_core_subjects) %>% 
+  filter((!is.na(age5_vocab)) | (!is.na(benchmark_binary)))
+#continuous outcome 
+continuous_education = analysis_data %>% select(!benchmark_binary) %>% 
+  filter((!is.na(age5_vocab)) | (!is.na(standardised_core_subjects)))
+
 #save analysis data as a csv file ####
 write.csv(mcs_analysis, file = "education_data.csv")
 
