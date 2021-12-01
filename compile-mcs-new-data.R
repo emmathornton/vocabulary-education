@@ -1130,6 +1130,7 @@ Igcse = Igcse %>%  filter(!is.na(subject_name)) #remove the NA subject name as d
 #these are different to GCSE grades!! so the gcse grade recoding will be different here - updated. 
 # recode so that 1= 1, 2=2, 3=3, 4=4, 5=5, 6=6, 7=7, 8=8, 9=9. at the moment in the data, 1= grade 9 etc. 
 #so when recode, 1=9, 2=8 etc 
+#in data 13 = c*. when googled, this doesnt seem to be a possible grade for iGCSE so have made 13 = 4, same as a normal grade c. 
 Igcse$subject_grade =  as.numeric(Igcse$subject_grade)
 Igcse$subject_grade  = recode(Igcse$subject_grade, `1` = 9, `2` = 8, `3` = 7, `4` = 6, `6`= 4, `7` = 3, `8` = 2, `9` = 1,
                               `10` = 8.5, `11` = 7, `12` = 5.5, `13` =4, 
@@ -1618,7 +1619,7 @@ btec_only = btec_only %>% select(mcsid, gc_s_qual_btec, gc_s_qual_five, gc_s_qua
 btec_only = merge(btec_only, country, by = "mcsid")
 btec_only = btec_only %>%  filter(country !=3)
 btec_only = btec_only %>% mutate(btec_only1 = case_when((gc_s_qual_btec == 1) & (gc_s_qual_five == 1) | (gc_s_qual_gcse == 1)  |(gc_s_qual_igcs == 1) ~  2, 
-                                                        (gc_s_qual_btec == 1) |(gc_s_qual_five == 2) | (gc_s_qual_gcse == 2) |(gc_s_qual_igcs == 2) ~ 1))
+                                                        (gc_s_qual_btec == 1) & (gc_s_qual_five == 2) | (gc_s_qual_gcse == 2) |(gc_s_qual_igcs == 2) ~ 1))
 btec_only = btec_only %>% filter(btec_only1 == 1)
 btec_only = btec_only %>% select(mcsid,btec_only1)
 
@@ -1763,7 +1764,8 @@ btec_only_scotland = qualifications1 %>% filter(gc_s_qual_btec== 1)
 btec_only_scotland  = btec_only_scotland  %>% select(mcsid, gc_s_qual_btec, gc_s_qual_five, gc_s_qual_gcse, gc_s_qual_igcs)
 btec_only_scotland  = merge(btec_only_scotland , country, by = "mcsid")
 btec_only_scotland  = btec_only_scotland  %>%  filter(country ==3)
-btec_only_scotland  = btec_only_scotland  %>% mutate(btec_only1_scotland = case_when((gc_s_qual_btec == 1) & (gc_s_qual_five == 1) | (gc_s_qual_gcse == 1)  |(gc_s_qual_igcs == 1) ~  2, (gc_s_qual_btec == 1) |(gc_s_qual_five == 2) | (gc_s_qual_gcse == 2) |(gc_s_qual_igcs == 2) ~ 1))
+btec_only_scotland  = btec_only_scotland  %>% mutate(btec_only1_scotland = case_when((gc_s_qual_btec == 1) & (gc_s_qual_five == 1) | (gc_s_qual_gcse == 1)  |(gc_s_qual_igcs == 1) ~  2, 
+                                                                                     (gc_s_qual_btec == 1) & (gc_s_qual_five == 2) | (gc_s_qual_gcse == 2) |(gc_s_qual_igcs == 2) ~ 1))
 btec_only_scotland  = btec_only_scotland  %>% filter(btec_only1_scotland == 1)
 btec_only_scotland  = btec_only_scotland  %>% select(mcsid,btec_only1_scotland)
 
