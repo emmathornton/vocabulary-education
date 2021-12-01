@@ -1132,7 +1132,7 @@ Igcse = Igcse %>%  filter(!is.na(subject_name)) #remove the NA subject name as d
 #so when recode, 1=9, 2=8 etc 
 Igcse$subject_grade =  as.numeric(Igcse$subject_grade)
 Igcse$subject_grade  = recode(Igcse$subject_grade, `1` = 9, `2` = 8, `3` = 7, `4` = 6, `6`= 4, `7` = 3, `8` = 2, `9` = 1,
-                              `10` = 8.5, `11` = 7, `12` = 5.5, `14` =4, 
+                              `10` = 8.5, `11` = 7, `12` = 5.5, `13` =4, 
                               `14` = 4, `15` = 3, `16` = 2, `17` = 1.5, `19` = 0)
 
 #cm have grade 4 or above on core subjects ####
