@@ -977,18 +977,22 @@ moderator_table <- moderator_results %>%
   font(fontname = "Times New Roman", part="all") %>% #
   fontsize(size=10, part = "all") %>% #
   align(j=1, align="left", part="all") %>% 
-  align(j=2, align="center", part="all") %>% 
-  color(j=1:2, color="black", part="all") %>% 
+  align(j=2:7, align="center", part="all") %>% 
+  color(j=1:7, color="black", part="all") %>% 
   width(j=1, width=1) %>% 
-  width(j=2, width=1.4) %>% 
-  line_spacing(j=2, space=1.5) %>% 
+  width(j=2:7, width=1.4) %>% 
+  line_spacing(j=2:7, space=1.5) %>% 
   line_spacing(j=1, space=1.5) %>% 
   border_remove() %>% 
-  hline_top(j=1:2, part="all", border=my_border) %>% 
-  hline_bottom(j=1:2,part="body",  border=my_border) %>% 
-  set_header_labels(term= "Variable", imd_secMod= "Relative neighbourhood deprivation moderator \n (OR[95% CIs]") 
-
- print(imdModerator_table, preview = "docx") 
+  hline_top(j=1:7, part="all", border=my_border) %>% 
+  hline_bottom(j=1:7,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable", composite_secMod= "Composite SEC moderator \n (OR[95% CIs]", 
+                    nvq_secMod= "Parent education moderator \n (OR[95% CIs]",
+                    income_secMod= "Income moderator \n (OR[95% CIs]",
+                    occupation_secMod= "Occupational status moderator \n (OR[95% CIs]",
+                    wealth_secMod= "Wealth moderator \n (OR[95% CIs]",
+                    imd_secMod= "Relative neighbourhood deprivation moderator \n (OR[95% CIs]") 
+ print(moderator_table, preview = "docx") 
 ```
 
 or, could have this table so that it is just the main effects and interaction terms, and not the confounding variables? so would be SEC composite, language, parent education, income, occupation, wealth, imd?
@@ -1027,7 +1031,67 @@ moderator_results2 = full_join(moderator_composite2,NVQ_moderatorResults2, keep 
                           is.na(term.x)~term.y)) %>% 
   select(term, composite_secMod, nvq_secMod, income_secMod, occupation_secMod, wealth_secMod, imd_secMod) 
 
+#reorder variables so that vocabulary at the top, and then each SEC main effect and interction term diagonally across
+#custom reorder of variables - create vector with order of variable names want. these need to exactly match variable names in dataframe
+variables = c("Cohort Member Vocabulary \n (Naming Vocabulary Score)", 	"Socioeconomic Circumstances \n (composite) ", "SEC*Vocabulary",
+              "Parent Education \n (NVQ1)","Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2",  "Parent Education \n (NVQ3)","Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)","Parent Education \n (NVQ1)*Age 5 Vocabulary","Parent Education \n (None of these/overseas qualifications)*Age 5 Vocabulary","Parent Education \n (NVQ2)*Age 5 Vocabulary", "Parent Education \n (NVQ3)*Age 5 Vocabulary", "Parent Education \n (NVQ4)*Age 5 Vocabulary", "Parent Education \n (NVQ5)*Age 5 Vocabulary",
+              "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5",  
+              "Income Quintile 1*Age 5 Vocabulary", "Income Quintile 2*Age 5 Vocabulary", "Income Quintile 3*Age 5 Vocabulary", "Income Quintile 4*Age 5 Vocabulary", "Income Quintile 5*Age 5 Vocabulary",
+              "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)", "Occupational Status \n (routine)*Age 5 Vocabulary", "Occupational Status \n (unemployed)*Age 5 Vocabulary", "Occupational Status \n (intermediate)*Age 5 Vocabulary", "Occupational Status \n (higher managerial)*Age 5 Vocabulary", 
+              "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5",  
+              "Wealth Quintile 1*Age 5 Vocabulary", "Wealth Quintile 2*Age 5 Vocabulary", "Wealth Quintile 3*Age 5 Vocabulary", "Wealth Quintile 4*Age 5 Vocabulary", "Wealth Quintile 5*Age 5 Vocabulary", 
+              "Relative Neighbourhood \n Deprivation \n (most deprived decile)", "Relative Neighbourhood \n Deprivation \n (10 - <20%)", "Relative Neighbourhood \n Deprivation \n (20 - <30%)", "Relative Neighbourhood \n Deprivation \n (30 - <40%)", "Relative Neighbourhood \n Deprivation \n (40 - <50%)", "Relative Neighbourhood \n Deprivation \n (50 - <60%)", "Relative Neighbourhood \n Deprivation \n (60 - <70%)", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)", "Relative Neighbourhood \n Deprivation \n (80 - <90%)", "Relative Neighbourhood \n Deprivation \n (least deprived decile)", "Relative Neighbourhood \n Deprivation \n (most deprived decile)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (10 - <20%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (20 - <30%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (30 - <40%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (40 - <50%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (50 - <60%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (60 - <70%)*Age 5 Vocabulary", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (80 - <90%)*Age 5 Vocabulary", "Relative Neighbourhood \n Deprivation \n (least deprived decile)*Age 5 Vocabulary")
+
+#reorder data according to custom matrix
+moderator_results3 = moderator_results2 %>% slice(match(variables, term))
+
+#add indicator labels for vertical column in table. space for most of these as will merge cells later. 
+moderator_results3 = moderator_results3 %>%  add_column(z= c(" ", "SEC Composite Moderator"," ", 
+                                                              "Parent Education Moderator", "  ", "  ", "  ", "  ", "  ", "  ", 
+                                                              "  ", "  ", "  ", "  ", "  ",
+                                                     "Income Moderator", "  ", "  ", "  ", "  ",  "  ", "  ", "  ", "  ","  ", 
+                                                     "Occupational Status Moderator",  "  ", "  ", "  ", "  ",  "  ", "  ", "  ", 
+                                                     "Wealth Moderator",  "  ", "  ", "  ","  ", "  ", "  ","  ","  ", "  ",
+                                                     "Neighbourhood Deprivation Moderator",  "  ", "  ", "  ", "  ",  "  ", "  ", "  ", "  ",  "  ", "  ", "  ", "  ", "  ",  "  ", "  ", "  ", "  ",  "  ", "  "),.before = 1)
+
 ```
 
+create table with flextable
+```{r}
+moderator_table2 <- moderator_results3 %>%
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2:8, align="center", part="all") %>% 
+  color(j=1:8, color="black", part="all") %>% 
+  width(j=1, width=1) %>% 
+  width(j=2:8, width=1.4) %>% 
+  line_spacing(j=2:8, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:8, part="all", border=my_border) %>% 
+  hline_bottom(j=1:8,part="body",  border=my_border) %>% 
+  set_header_labels(z =" ", term= "Variable", composite_secMod= "Composite SEC moderator \n (OR[95% CIs]", 
+                    nvq_secMod= "Parent education moderator \n (OR[95% CIs]",
+                    income_secMod= "Income moderator \n (OR[95% CIs]",
+                    occupation_secMod= "Occupational status moderator \n (OR[95% CIs]",
+                    wealth_secMod= "Wealth moderator \n (OR[95% CIs]",
+                    imd_secMod= "Relative neighbourhood deprivation moderator \n (OR[95% CIs]") %>% 
+  merge_at(j=1, i = 2:3) %>% 
+  merge_at(j=1, i=4:15) %>% 
+  merge_at(j=1, i = 16:25) %>%
+  merge_at(j=1, i = 26:33) %>% 
+  merge_at(j=1, i=34:43) %>% 
+  merge_at(j=1, i=44:63) %>% 
+  rotate(i=2:3, j=1, rotation="btlr", align="center") %>% 
+  rotate(i=4:15, j=1, rotation="btlr", align="center") %>% 
+  rotate(i=16:25, j=1, rotation="btlr", align="center") %>% 
+  rotate(i=26:33, j=1, rotation="btlr", align="center") %>% 
+  rotate(i=34:33, j=1, rotation="btlr", align="center") %>% 
+  rotate(i=44:63, j=1, rotation="btlr", align="center") %>% 
+  align(j=1, align="center", part="all") 
 
+ print(moderator_table2, preview = "docx") 
+```
 
