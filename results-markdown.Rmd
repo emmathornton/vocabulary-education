@@ -55,7 +55,7 @@ remember, having grade 4/c above in core subjects is the reference category.
 binary_unadjusted = with(imputed_mcs2, glm(benchmark_binary ~ age5_standardised,
                                         family = binomial,  weights = weight))
 
-binary_unadjusted_results = summary(pool(binary_unadjusted), conf.int = TRUE, exponentiate = TRUE)
+binary_unadjusted_results = round(summary(pool(binary_unadjusted), conf.int = TRUE, exponentiate = TRUE),2)
 
 # adjusted relationship
 binary_model1 = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
@@ -80,7 +80,13 @@ binary_model3Results = summary(pool(binary_model3), conf.int = TRUE, exponentiat
 1b. does vocabulary predict reaching a functional level of education above and beyond SEC/caregiver vocab factors?
 ```{r}
 #compare model with only sociodemographic factors to a model with caregiver vocab
-D1(binary_model2, binary_model1) #check if need to use a specific method ?
+#compare sociodemographics model to no predictors
+#create null model 
+null_binaryModel = with(imputed_mcs2, glm(benchmark_binary ~ 1,
+                                        family = binomial,  weights = weight))
+D1(binary_model1, null_binaryModel)
+#model 2 compared to model 1
+D1(binary_model2, binary_model1) 
 #compare model with all confounders to model with vocab
 D1(binary_model3, binary_model2) 
 ```
@@ -93,7 +99,7 @@ D1(binary_model3, binary_model2)
 
 continuous_unadjusted = with(imputed_mcs2, lm(standardised_core_subjects ~ age5_standardised, weights = weight))
 
-continuous_unadjusted_results = summary(pool(continuous_unadjusted), conf.int = TRUE)
+continuous_unadjusted_results = round(summary(pool(continuous_unadjusted), conf.int = TRUE),2)
 
 #adjusted relationship 
 continuous_model1 = with(imputed_mcs2, lm(standardised_core_subjects ~ sex + ethnicity + EAL + country +
@@ -123,6 +129,10 @@ cont_model3R2 = as.data.frame(round(pool.r.squared(continuous_model3),4)*100)
 2b. does vocabulary predict level of achievement in core subjects above and beyond SEC/caregiver vocab factors?
 
 ```{r}
+#compare sociodemographics model to no predictors
+#create null model 
+null_continuousModel =  with(imputed_mcs2, lm(standardised_core_subjects ~ 1, weights = weight))
+D1(continuous_model1, null_continuousModel)
 #compare model with only sociodemographic factors to a model with caregiver vocab
 D1(continuous_model2, continuous_model1) #check if need to use a specific method ?
 #compare model with all confounders to model with vocab
