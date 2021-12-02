@@ -292,11 +292,9 @@ regression_resultsTable$term <- c("Sociodemographic confounders", "Sex (male)", 
                                   "Country \n (England)", "Country \n (Wales)", "Country \n (Scotland)", "Country \n (Northern Ireland)",
                                   "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2)", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", 
                            "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
-                          "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5", "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",  
+                           "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",  
+                           "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5",
                           "Relative Neighbourhood \n Deprivation \n (most deprived decile)", "Relative Neighbourhood \n Deprivation \n (10 - <20%)", "Relative Neighbourhood \n Deprivation \n (20 - <30%)", "Relative Neighbourhood \n Deprivation \n (30 - <40%)", "Relative Neighbourhood \n Deprivation \n (40 - <50%)", "Relative Neighbourhood \n Deprivation \n (50 - <60%)", "Relative Neighbourhood \n Deprivation \n (60 - <70%)", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)", "Relative Neighbourhood \n Deprivation \n (80 - <90%)", "Relative Neighbourhood \n Deprivation \n (least deprived decile)", "Caregiver Vocabulary", "Caregiver Vocabulary \n (Word Activity Test Score)", "Cohort Member Vocabulary", "Cohort Member Vocabulary \n (Naming Vocabulary Score)", "R2 (%)")
-                          
-
-
 ```
 
 
@@ -423,7 +421,7 @@ imputed_data11 = imputed_datasets[[11]]
 imputed_data11$ses_latent = imputed_datasets$ses_latent[[11]]
 imputed_data12 = imputed_datasets[[12]]
 imputed_data12$ses_latent = imputed_datasets$ses_latent[[12]]
-imputed_datq13 = imputed_datasets[[13]]
+imputed_data13 = imputed_datasets[[13]]
 imputed_data13$ses_latent = imputed_datasets$ses_latent[[13]]
 imputed_data14 = imputed_datasets[[14]]
 imputed_data14$ses_latent = imputed_datasets$ses_latent[[14]]
