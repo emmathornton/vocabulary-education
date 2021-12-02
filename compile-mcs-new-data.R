@@ -1878,6 +1878,7 @@ education_main_outcomes = education_main_outcomes %>%
   select(mcsid, benchmark_binary, standardised_core_subjects)
 
 #continous score version 2 - average of highest grade for each subject ####
+#need to do this for N5 too 
 
 #english_subjects_highest = english_subjects_gcse %>% select(!english_score) %>% 
   #mutate(highest_english = pmax(english,english_lang,english_lit,
