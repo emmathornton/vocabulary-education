@@ -1,0 +1,305 @@
+---
+title: "R Notebook"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+Descriptive statistics for imputed data. first of all load in packages and custom functions. 
+custom functions require imputed data to be in long format without the observed data included. 
+
+```{r}
+library(mice)
+library(pander)
+library(xtable)
+library(dplyr)
+library(gt)
+library(glue)
+library(tidyverse)
+library(miceadds)
+library(swfscMisc)
+library(imputools)
+library(haven)
+library(sjmisc)
+library(Hmisc)
+library(psych)
+library(lavaan)
+library(ggplot2)
+library(ggpubr)
+library(officer)
+library(flextable)
+library(ftExtra)
+library(dummies)
+
+weighted_descriptives_imputed_datasets<- function (dataAll,variable) {
+  variable=deparse(substitute(variable))
+  imputed_datasets <- unique(dataAll$.imp)
+  results <- data.frame(
+    Mean = as.numeric(rep(0, length(imputed_datasets))),
+    SD = as.numeric(rep(0, length(imputed_datasets))),
+    lower=as.numeric(rep(0, length(imputed_datasets))),
+    upper=as.numeric(rep(0, length(imputed_datasets))))
+  results$Imputed <-  imputed_datasets
+  for (i in 1:length(imputed_datasets)) {
+    data <- dataAll[dataAll$.imp == imputed_datasets[i], ]
+    results[i, "Mean"] <- get_weighted_descriptives(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[1]
+    results[i, "SD"] <- get_weighted_descriptives(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[2]
+    results[i, "lower"] <- get_weighted_descriptives(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[3]
+    results[i, "upper"] <- get_weighted_descriptives(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[4]
+  }
+  return (results)
+}
+
+
+weighted_proportions_imputed_datasets<- function (dataAll,variable) {
+  variable=deparse(substitute(variable))
+  imputed_datasets <- unique(dataAll$.imp)
+  results <- data.frame(
+    Level1 = as.numeric(rep(0, length(imputed_datasets))),
+    Level2 = as.numeric(rep(0, length(imputed_datasets))),
+    Level3=as.numeric(rep(0, length(imputed_datasets))),
+    Level4=as.numeric(rep(0, length(imputed_datasets))),
+    Level5=as.numeric(rep(0, length(imputed_datasets))),
+    Level6=as.numeric(rep(0, length(imputed_datasets))),
+    Level7=as.numeric(rep(0, length(imputed_datasets))),
+    Level8=as.numeric(rep(0, length(imputed_datasets))),
+    Level9=as.numeric(rep(0, length(imputed_datasets))),
+    Level10=as.numeric(rep(0, length(imputed_datasets))))
+  results$Imputed <-  imputed_datasets
+  for (i in 1:length(imputed_datasets)) {
+    data <- dataAll[dataAll$.imp == imputed_datasets[i], ]
+    results[i, "Level1"] <- get_weighted_proportions(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[1]
+    results[i, "Level2"] <- get_weighted_proportions(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[2]
+    results[i, "Level3"] <- get_weighted_proportions(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[3]
+    results[i, "Level4"] <- get_weighted_proportions(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[4]
+    results[i, "Level5"] <- get_weighted_proportions(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[5]
+    results[i, "Level6"] <- get_weighted_proportions(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[6]
+    results[i, "Level7"] <- get_weighted_proportions(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[7]
+    results[i, "Level8"] <- get_weighted_proportions(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[8]
+    results[i, "Level9"] <- get_weighted_proportions(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[9]
+    results[i, "Level10"] <- get_weighted_proportions(eval(parse(text = paste("data",variable,sep="$"))), weights = data$weight)[10]
+    
+  }
+  return (results)
+}
+
+
+#convert imputed data to long format without observed data
+long_format_mcs <- mice::complete(imputed_mcs2, "long", include=FALSE)
+```
+run descritpives
+```{r include = FALSE}
+
+#numeric variables - means & SDs
+#calculate descriptives across imputed datasets
+vocabDescriptives = weighted_descriptives_imputed_datasets(long_format_mcs, age5_vocab)
+caregiverVocabDescriptives = weighted_descriptives_imputed_datasets(long_format_mcs, caregiver_vocab)
+continuous_outcomeDescriptives = weighted_descriptives_imputed_datasets(long_format_mcs, standardised_core_subjects)
+
+#combine across imputed datasets
+combined_vocabDescriptives = round(combine_imputed_descriptives(vocabDescriptives),2) %>% 
+  select(!Imputed) %>% 
+  slice_head(n=1) 
+combined_caregiverVocabDescriptives = round(combine_imputed_descriptives(caregiverVocabDescriptives),2) %>% 
+  select(!Imputed) %>% 
+  slice_head(n=1)
+combined_continuousOutcomeDescriptives = round(combine_imputed_descriptives(continuous_outcomeDescriptives),2) %>% 
+  select(!Imputed) %>% 
+  slice_head(n=1)
+
+#categorical variables: proportions
+sexProportions = weighted_proportions_imputed_datasets(long_format_mcs, sex) %>% 
+  select(Level1:Level2) 
+ethnicityProportions = weighted_proportions_imputed_datasets(long_format_mcs, ethnicity) %>% 
+  select(Level1:Level6) 
+ealProportions = weighted_proportions_imputed_datasets(long_format_mcs, EAL) %>% 
+  select(Level1:Level3) 
+countryProportions = weighted_proportions_imputed_datasets(long_format_mcs, country) %>% 
+  select(Level1:Level4) 
+nvqProportions = weighted_proportions_imputed_datasets(long_format_mcs, highest_nvq) %>% 
+  select(Level1:Level6) 
+incomeProportions = weighted_proportions_imputed_datasets(long_format_mcs, oecd_income) %>% 
+  select(Level1:Level5) 
+occupationProportions = weighted_proportions_imputed_datasets(long_format_mcs, occupational_status) %>% 
+  select(Level1:Level4) 
+wealthProportions = weighted_proportions_imputed_datasets(long_format_mcs, wealth_quintiles) %>% 
+  select(Level1:Level5)  
+imdProportions = weighted_proportions_imputed_datasets(long_format_mcs, imd) %>% 
+  select(Level1:Level10)  
+benchmarkProportions = weighted_proportions_imputed_datasets(long_format_mcs, benchmark_binary) %>% 
+  select(Level1:Level2)  
+ 
+
+sexCombined = round(combine_imputed_descriptives(sexProportions)*100, 2) %>% 
+  slice_head(n=1) %>% 
+  rename("Sex (Male)" = Level1,
+         "Sex (Female)" = Level2) 
+sexCombined = as.data.frame(t(sexCombined)) %>% 
+  rownames_to_column() %>% 
+  rename("Variable" = rowname,
+         "Proportion (%) or \n Mean(±SD) [95% CIs]" = V1) 
+ethnicityCombined = round(combine_imputed_descriptives(ethnicityProportions)*100,2)%>% 
+  slice_head(n=1) %>% 
+  rename( "Ethnicity \n (White)" = Level1, 
+          "Ethnicity \n (mixed)" = Level2,
+          "Ethnicity \n (Indian)" = Level3, 
+          "Ethnicity \n (Pakistani & Bangladeshi)" = Level4, 
+          "Ethnicity \n (Black/ Black British)" = Level5, 
+          "Ethnicity \n (other incl. Chinese)" = Level6)
+ethnicityCombined = as.data.frame(t(ethnicityCombined)) %>% 
+  rownames_to_column() %>% 
+  rename("Variable" = rowname,
+         "Proportion (%) or \n Mean(±SD) [95% CIs]" = V1) 
+ealCombined = round(combine_imputed_descriptives(ealProportions)*100,2)%>% 
+  slice_head(n=1) %>% 
+  rename("EAL \n (English only)" = Level1, 
+         "EAL \n (English and another language)" = Level2,
+         "EAL \n (only another language)" = Level3)
+ealCombined = as.data.frame(t(ealCombined)) %>% 
+  rownames_to_column() %>% 
+  rename("Variable" = rowname,
+         "Proportion (%) or \n Mean(±SD) [95% CIs]" = V1) 
+countryCombined = round(combine_imputed_descriptives(countryProportions)*100,2)%>% 
+  slice_head(n=1) %>% 
+  rename("Country \n (England)" = Level1, 
+         "Country \n (Wales)" = Level2, 
+         "Country \n (Scotland)" = Level3, 
+         "Country \n (Northern Ireland)" = Level4)
+countryCombined = as.data.frame(t(countryCombined)) %>% 
+  rownames_to_column() %>% 
+  rename("Variable" = rowname,
+         "Proportion (%) or \n Mean(±SD) [95% CIs]" = V1) 
+nvqCombined = round(combine_imputed_descriptives(nvqProportions)*100,2)%>% 
+  slice_head(n=1) %>% 
+  rename("Parent Education \n (NVQ1)" = Level1, 
+         "Parent Education \n (None of these/overseas qualifications)" = Level2, 
+         "Parent Education \n (NVQ2)"= Level3, 
+         "Parent Education \n (NVQ3)" = Level4,
+         "Parent Education \n (NVQ4)" = Level5,
+         "Parent Education \n (NVQ5)" = Level6)
+nvqCombined = as.data.frame(t(nvqCombined)) %>% 
+  rownames_to_column() %>% 
+  rename("Variable" = rowname,
+         "Proportion (%) or \n Mean(±SD) [95% CIs]" = V1) 
+incomeCombined = round(combine_imputed_descriptives(incomeProportions)*100,2)%>% 
+  slice_head(n=1) %>% 
+  rename("Income Quintile 1" = Level1, 
+         "Income Quintile 2" = Level2, 
+         "Income Quintile 3" = Level3, 
+         "Income Quintile 4" = Level4 , 
+         "Income Quintile 5" = Level5)
+incomeCombined = as.data.frame(t(incomeCombined)) %>% 
+  rownames_to_column() %>% 
+  rename("Variable" = rowname,
+         "Proportion (%) or \n Mean(±SD) [95% CIs]" = V1) 
+occupationCombined = round(combine_imputed_descriptives(occupationProportions)*100,2)%>% 
+  slice_head(n=1) %>% 
+  rename("Occupational Status \n (routine)" = Level1, 
+         "Occupational Status \n (unemployed)" = Level2, 
+         "Occupational Status \n (intermediate)" = Level3,
+         "Occupational Status \n (higher managerial)" = Level4)
+occupationCombined = as.data.frame(t(occupationCombined)) %>% 
+  rownames_to_column() %>% 
+  rename("Variable" = rowname,
+         "Proportion (%) or \n Mean(±SD) [95% CIs]" = V1) 
+wealthCombined = round(combine_imputed_descriptives(wealthProportions)*100,2)%>% 
+  slice_head(n=1) %>% 
+  rename("Wealth Quintile 1" = Level1, 
+         "Wealth Quintile 2" = Level2, 
+         "Wealth Quintile 3" = Level3, 
+         "Wealth Quintile 4" = Level4, 
+         "Wealth Quintile 5" = Level5)
+wealthCombined = as.data.frame(t(wealthCombined)) %>% 
+  rownames_to_column() %>% 
+  rename("Variable" = rowname,
+         "Proportion (%) or \n Mean(±SD) [95% CIs]" = V1) 
+imdCombined = round(combine_imputed_descriptives(imdProportions)*100,2)%>% 
+  slice_head(n=1) %>% 
+  rename("Relative Neighbourhood \n Deprivation \n (most deprived decile)" = Level1, 
+         "Relative Neighbourhood \n Deprivation \n (10 - <20%)" = Level2, 
+         "Relative Neighbourhood \n Deprivation \n (20 - <30%)" = Level3, 
+         "Relative Neighbourhood \n Deprivation \n (30 - <40%)" = Level4, 
+         "Relative Neighbourhood \n Deprivation \n (40 - <50%)" = Level5, 
+         "Relative Neighbourhood \n Deprivation \n (50 - <60%)" = Level6, 
+         "Relative Neighbourhood \n Deprivation \n (60 - <70%)" = Level7, 
+         "Relative Neighbourhood \n  Deprivation \n (70 - <80%)" = Level8, 
+         "Relative Neighbourhood \n Deprivation \n (80 - <90%)"= Level9,
+         "Relative Neighbourhood \n Deprivation \n (least deprived decile)" = Level10)
+imdCombined = as.data.frame(t(imdCombined)) %>% 
+  rownames_to_column() %>% 
+  rename("Variable" = rowname,
+         "Proportion (%) or \n Mean(±SD) [95% CIs]" = V1) 
+benchmarkCombined = round(combine_imputed_descriptives(benchmarkProportions)*100,2)%>% 
+  slice_head(n=1) %>% 
+  rename("Core Subjects Grade ≥ 4: Yes" = Level1, 
+        "Core Subjects Grade ≥ 4: No" = Level2)  
+benchmarkCombined = as.data.frame(t(benchmarkCombined))%>% 
+  rownames_to_column() %>% 
+  rename("Variable" = rowname,
+        "Proportion (%) or \n Mean(±SD) [95% CIs]" = V1) 
+
+```
+
+prepare for table.
+will need to paste in 95%CIs with means and SDs and then put everything into one dataframe
+```{r}
+vocabDescriptives = combined_vocabDescriptives %>% add_column(paste0(combined_vocabDescriptives$Mean,"(±",combined_vocabDescriptives$SD,")", "\n", "[", combined_vocabDescriptives$lower, ";", combined_vocabDescriptives$upper,"]")) %>% 
+  rename("cmVocab" = `paste0(...)`) %>% 
+  add_column("Variable" = "Cohort Member Vocabulary \n (Naming Vocabulary Score)") %>% 
+  select(Variable, cmVocab)  %>% 
+  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = cmVocab) 
+
+caregiverVocabDescriptives = combined_caregiverVocabDescriptives %>% add_column(paste0(combined_caregiverVocabDescriptives$Mean,"(±",combined_caregiverVocabDescriptives$SD,")", "\n", "[", combined_caregiverVocabDescriptives$lower, ";", combined_caregiverVocabDescriptives$upper,"]")) %>% 
+  rename("caregiverVocab" = `paste0(...)`) %>% 
+  add_column("Variable" = "Caregiver Vocabulary \n (Word Activity Test Score)") %>% 
+  select(Variable, caregiverVocab)  %>% 
+  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = caregiverVocab) 
+   
+continuous_outcomeDescriptives = combined_continuousOutcomeDescriptives  %>% add_column(paste0(combined_continuousOutcomeDescriptives$Mean,"(±",combined_continuousOutcomeDescriptives$SD,")", "\n", "[", combined_continuousOutcomeDescriptives$lower, ";", combined_continuousOutcomeDescriptives$upper,"]")) %>% 
+  rename("contOutcome" = `paste0(...)`) %>% 
+  add_column("Variable" = "Continuous Outcome") %>% 
+  select(Variable, contOutcome)  %>% 
+  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = contOutcome) 
+
+
+#put into one overall dataframe that can then  put into flex table
+
+descriptivesTable = rbind(vocabDescriptives, caregiverVocabDescriptives, benchmarkCombined, continuous_outcomeDescriptives, 
+                          sexCombined, ethnicityCombined, ealCombined, countryCombined,
+                          nvqCombined, incomeCombined, wealthCombined, occupationCombined, imdCombined) %>% 
+  add_row(Variable = "Vocabulary", .before = 1) %>%  #add in rows to divide table up 
+  add_row(Variable = "Cohort Member Education", .after = 3) %>% 
+  add_row(Variable = "Demographics", .before = 8) %>% 
+  add_row(Variable = "Socioeconomic Circumstances", .before = 24)
+descriptivesTable [is.na(descriptivesTable )] <- " "
+```
+
+create flextable for descriptives
+```{r}
+#define border
+my_border = border= fp_border(color="black", width=1)
+descriptives_table <- descriptivesTable %>% 
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2, align="center", part="all") %>% 
+  color(j=1:2, color="black", part="all") %>% 
+  width(j=1, width=2) %>% 
+  width(j=2, width=1.8) %>% 
+  line_spacing(j=2, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:2, part="all", border=my_border) %>% 
+  hline_bottom(j=1:2,part="body",  border=my_border) %>% 
+  bold(j = 1, i = c(1,4,8,24), bold = TRUE) %>% 
+  italic(j = 1, i = c(1,4,8,24), italic = TRUE) 
+  
+  
+
+ print(results_Rq1Rq2, preview = "docx") 
+```
+
