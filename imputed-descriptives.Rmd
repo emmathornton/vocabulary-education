@@ -303,3 +303,58 @@ descriptives_table <- descriptivesTable %>%
  print(descriptives_table, preview = "docx") 
 ```
 
+
+whole cohort descriptives , so can compare full cohort to analytic sample. 
+
+```{r}
+#read in full cohort data
+mcs_cohort<-read.csv("cohort_data.csv")
+mcs_cohort[,1]<- NULL
+
+#get weighted proportions - need to remove NA values 
+#sex
+get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$sex),]$sex,
+                         mcs_cohort[!is.na(mcs_cohort$sex),]$weight)*100
+
+#ethnicity
+get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$ethnicity),]$ethnicity,
+                         mcs_cohort[!is.na(mcs_cohort$ethnicity),]$weight)*100
+
+#EAL
+get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$EAL),]$EAL,
+                         mcs_cohort[!is.na(mcs_cohort$EAL),]$weight)*100
+#country
+get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$country),]$country,
+                         mcs_cohort[!is.na(mcs_cohort$country),]$weight)*100
+
+#NVQ
+get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$highest_nvq),]$highest_nvq,
+                         mcs_cohort[!is.na(mcs_cohort$highest_nvq),]$weight)*100
+
+#income
+get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$oecd_income),]$oecd_income,
+                         mcs_cohort[!is.na(mcs_cohort$oecd_income),]$weight)*100
+
+#occupational status
+get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$occupational_status),]$occupational_status,
+                         mcs_cohort[!is.na(mcs_cohort$occupational_status),]$weight)*100
+
+#imd
+get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$imd),]$imd,
+                         mcs_cohort[!is.na(mcs_cohort$imd),]$weight)*100
+#means and SDs
+#vocabulary
+get_weighted_descriptives(mcs_cohort[!is.na(mcs_cohort$age5_vocab),]$age5_vocab,
+                          mcs_cohort[!is.na(mcs_cohort$age5_vocab),]$weight)
+#caregiver vocabulary
+get_weighted_descriptives(mcs_cohort[!is.na(mcs_cohort$caregiver_vocab),]$caregiver_vocab,
+                          mcs_cohort[!is.na(mcs_cohort$caregiver_vocab),]$weight)
+
+#continuous education 
+get_weighted_descriptives(mcs_cohort[!is.na(mcs_cohort$standardised_core_subjects),]$standardised_core_subjects,
+                          mcs_cohort[!is.na(mcs_cohort$standardised_core_subjects),]$weight)
+
+
+```
+
+
