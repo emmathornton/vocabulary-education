@@ -1903,7 +1903,43 @@ science_subjects_highest = science_subjects_gcse %>% select(!science_score) %>%
 highest_average_grade = merge(all=TRUE, english_subjects_highest, maths_subjects_highest, by="mcsid")
 highest_average_grade = merge(all=TRUE, highest_average_grade, science_subjects_highest, by="mcsid") %>% 
   mutate(highest_grade = rowMeans(.[-1]), 
-         .after = 1)
+         .after = 1) %>% 
+  select(mcsid, highest_grade)
+
+#national 5 highest
+english_colsN5 = n5_english_score
+maths_colsn5 = n5_maths_score
+science_colsn5 = n5_science_subjects %>% select(computer_science, biology, chemistry, physics) %>% names()
+science_n5Highest = n5_science_subjects %>% select(!science_score)%>% mutate(highest_science = pmax(!!!rlang::syms(science_colsn5), na.rm= TRUE), .after = 1) %>% 
+  select(mcsid, highest_science)
+
+highest_n5_average = merge(all=TRUE, english_colsN5, maths_colsn5, by = "mcsid")
+highest_n5_average = merge(all=TRUE, highest_n5_average, science_n5Highest, by = "mcsid" )%>% 
+  mutate(highest_gradeN5 = rowMeans(.[-1]), 
+         .after = 1) %>% 
+  select(mcsid, highest_gradeN5)
+
+#merge gcse and n5 together
+highest_grade = merge(all= TRUE, highest_average_grade, highest_n5_average, by = "mcsid")
+
+#check correlation between 2 continuous variables 
+continuous_outcomes = merge(all = TRUE, education_main_outcomes, highest_grade, by ="mcsid") %>% 
+  select(mcsid, standardised_core_subjects, highest_grade, highest_gradeN5) %>% 
+  mutate(standardised_gcse = scale(highest_grade, 
+                                   center = TRUE, scale = TRUE)) %>% #standardised within the relevant population
+  mutate(standardised_n5 =  scale(highest_gradeN5, 
+                                  center = TRUE, scale = TRUE)) %>% 
+  mutate(standardised_highest_grade = case_when(!is.na(standardised_gcse)~standardised_gcse, 
+                                                is.na(standardised_gcse) ~ standardised_n5, 
+                                                !is.na(standardised_n5) ~standardised_n5,
+                                                is.na(standardised_n5) ~ standardised_gcse)) %>% 
+  select(mcsid, standardised_core_subjects, standardised_highest_grade)
+
+#correlation between 2 versions of the variable: 
+cor(continuous_outcomes$standardised_core_subjects, continuous_outcomes$standardised_highest_grade, method = "pearson", use = "complete.obs")
+
+#for p value too
+cor.test(continuous_outcomes$standardised_core_subjects, continuous_outcomes$standardised_highest_grade, method = "pearson")
 
 #VARIABLES FOR IMPUTATION/ANALYSIS - COMBINE INTO ONE DATAFRAME.####
 #change order of these so auxiliary and SES variables first - for order of imputation
