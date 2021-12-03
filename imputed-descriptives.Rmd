@@ -327,12 +327,14 @@ cohort_country =  as_tibble(cohort_country) %>%
                                    "Country \n (Northern Ireland)"), .before = 1)
 
 #NVQ
+mcs_cohort$highest_nvq = as.factor(mcs_cohort$highest_nvq)
+mcs_cohort$highest_nvq = relevel(mcs_cohort$highest_nvq, ref = "1")
 cohort_nvq = round(get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$highest_nvq),]$highest_nvq,
                          mcs_cohort[!is.na(mcs_cohort$highest_nvq),]$weight)*100,2)
 cohort_nvq =  as_tibble(cohort_nvq) %>% 
   rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = value) %>% 
-           add_column(Variable = c("Parent Education \n (None of these/overseas qualifications)",
-                                   "Parent Education \n (NVQ1)",
+           add_column(Variable = c("Parent Education \n (NVQ1)",
+                                   "Parent Education \n (None of these/overseas qualifications)",
                                    "Parent Education \n (NVQ2)",
                                    "Parent Education \n (NVQ3)",
                                    "Parent Education \n (NVQ4)", 
@@ -350,12 +352,14 @@ cohort_income =  as_tibble(cohort_income) %>%
                                    "Income Quintile 5"), .before = 1)
 
 #occupational status
+mcs_cohort$occupational_status = as.factor(mcs_cohort$occupational_status)
+mcs_cohort$occupational_status = relevel(mcs_cohort$occupational_status, ref = "2")
 cohort_occupation = round(get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$occupational_status),]$occupational_status,
                          mcs_cohort[!is.na(mcs_cohort$occupational_status),]$weight)*100,2)
 cohort_occupation =  as_tibble(cohort_occupation) %>% 
   rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = value) %>% 
-           add_column(Variable = c("Occupational Status \n (unemployed)",
-                                   "Occupational Status \n (routine)", 
+           add_column(Variable = c("Occupational Status \n (routine)",
+                                   "Occupational Status \n (unemployed)",
                                    "Occupational Status \n (intermediate)",
                                    "Occupational Status \n (higher managerial)"), .before = 1)
 
@@ -376,12 +380,14 @@ cohort_imd =  as_tibble(cohort_imd) %>%
                                    "Relative Neighbourhood Deprivation \n (least deprived decile)"), .before = 1)
 
 #benchmark reached 
+mcs_cohort$benchmark_binary = as.factor(mcs_cohort$benchmark_binary)
+mcs_cohort$benchmark_binary = relevel(mcs_cohort$benchmark_binary, ref = "1")
 cohort_benchmark = round(get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$benchmark_binary),]$benchmark_binary,
                          mcs_cohort[!is.na(mcs_cohort$benchmark_binary),]$weight)*100,2)
 cohort_benchmark =  as_tibble(cohort_benchmark) %>% 
   rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = value) %>% 
-           add_column(Variable = c("Core Subjects Grade ≥ 4: No", 
-                                   "Core Subjects Grade ≥ 4: Yes"), .before = 1)
+           add_column(Variable = c("Core Subjects Grade ≥ 4: Yes",
+                                   "Core Subjects Grade ≥ 4: No"), .before = 1)
 
 #means and SDs
 #vocabulary
