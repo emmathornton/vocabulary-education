@@ -1976,6 +1976,9 @@ continuous_education = analysis_data %>% select(!benchmark_binary) %>%
 #save analysis data as a csv file ####
 write.csv(mcs_analysis, file = "education_data.csv")
 
+
+#save full cohort sample as a csv file- to get descriptives
+write.csv(analysis_data, file = "cohort_data.csv")
 #mcs_analysis = analysis_data[!is.na(analysis_data$age5_vocab),]
 
 
