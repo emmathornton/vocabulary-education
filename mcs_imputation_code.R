@@ -205,7 +205,6 @@ long_format_mcs$highest_nvq <- with(long_format_mcs, relevel(highest_nvq, ref = 
 long_format_mcs$highest_nvq <- as.factor(long_format_mcs$highest_nvq)
 long_format_mcs$occupational_status <- with(long_format_mcs, relevel(occupational_status, ref = "2"))
 long_format_mcs$occupational_status <- as.factor(long_format_mcs$occupational_status)
-long_format_mcs$benchmark_binary <- with(long_format_mcs, relevel(benchmark_binary, ref = "1"))
 long_format_mcs$benchmark_binary <- as.factor(long_format_mcs$benchmark_binary)
 long_format_mcs$wealth_quintiles <- with(long_format_mcs, quantcut(standardised_wealth,5))
 levels(long_format_mcs$wealth_quintiles)[1] = "1"
