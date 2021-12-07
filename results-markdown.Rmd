@@ -41,6 +41,14 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-02_vocabulary_education_imputedRQ1/2021-12-02_vocabulary_education_imputedRQ1.Rdata")
+imputed_mcs2 = mi.res
+long_format_mcs <- mice::complete(imputed_mcs2, "long", include=TRUE)
+long_format_mcs$benchmark_binary <- with(long_format_mcs, relevel(benchmark_binary, ref = "0"))
+long_format_mcs$success = with(long_format_mcs, as.numeric(benchmark_binary == 1))
+long_format_mcs$success = with(long_format_mcs, as.factor(success))
+imputed_mcs2<-as.mids(long_format_mcs)
+
 ```
 
 RQ1 & 2 - DOES VOCAB PREDICT EDUCATIONAL ATTAINMENT?
@@ -52,22 +60,22 @@ remember, having grade 4/c above in core subjects is the reference category.
 ```{r}
 #unadjusted relationship
 
-binary_unadjusted = with(imputed_mcs2, glm(benchmark_binary ~ age5_standardised,
+binary_unadjusted = with(imputed_mcs2, glm(success ~ age5_standardised,
                                         family = binomial,  weights = weight))
 
 binary_unadjusted_results = round(summary(pool(binary_unadjusted), conf.int = TRUE, exponentiate = TRUE),2)
 
 # adjusted relationship
-binary_model1 = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+binary_model1 = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
                                        family = binomial, weights = weight))
 
-binary_model2 = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+binary_model2 = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                          imd + caregiver_vocabStandardised, 
                                        family = binomial, weights = weight))
 
-binary_model3 = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+binary_model3 = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                          imd + caregiver_vocabStandardised + age5_standardised, 
                                        family = binomial, weights = weight))
@@ -82,7 +90,7 @@ binary_model3Results = summary(pool(binary_model3), conf.int = TRUE, exponentiat
 #compare model with only sociodemographic factors to a model with caregiver vocab
 #compare sociodemographics model to no predictors
 #create null model 
-null_binaryModel = with(imputed_mcs2, glm(benchmark_binary ~ 1,
+null_binaryModel = with(imputed_mcs2, glm(success ~ 1,
                                         family = binomial,  weights = weight))
 D1(binary_model1, null_binaryModel)
 #model 2 compared to model 1
@@ -398,60 +406,60 @@ imputed_datasets$ses_latent = lapply(imputed_datasets, cfa_imputed)
 #get individual datasets from list - these will now have SEP composite (pull this out for each dataset). 
 #this is so can run the regression over each dataset. 
 imputed_data1 = imputed_datasets[[1]]
-imputed_data1$ses_latent = imputed_datasets$ses_latent[[1]]
+imputed_data1$ses_latent = as.numeric(imputed_datasets$ses_latent[[1]])
 imputed_data2 = imputed_datasets[[2]]
-imputed_data2$ses_latent = imputed_datasets$ses_latent[[2]]
+imputed_data2$ses_latent = as.numeric(imputed_datasets$ses_latent[[2]])
 imputed_data3 = imputed_datasets[[3]]
-imputed_data3$ses_latent = imputed_datasets$ses_latent[[3]]
+imputed_data3$ses_latent = as.numeric(imputed_datasets$ses_latent[[3]])
 imputed_data4 = imputed_datasets[[4]]
-imputed_data4$ses_latent = imputed_datasets$ses_latent[[4]]
+imputed_data4$ses_latent = as.numeric(imputed_datasets$ses_latent[[4]])
 imputed_data5 = imputed_datasets[[5]]
-imputed_data5$ses_latent = imputed_datasets$ses_latent[[5]]
+imputed_data5$ses_latent = as.numeric(imputed_datasets$ses_latent[[5]])
 imputed_data6 = imputed_datasets[[6]]
-imputed_data6$ses_latent = imputed_datasets$ses_latent[[6]]
+imputed_data6$ses_latent = as.numeric(imputed_datasets$ses_latent[[6]])
 imputed_data7 = imputed_datasets[[7]]
-imputed_data7$ses_latent = imputed_datasets$ses_latent[[7]]
+imputed_data7$ses_latent = as.numeric(imputed_datasets$ses_latent[[7]])
 imputed_data8 = imputed_datasets[[8]]
-imputed_data8$ses_latent = imputed_datasets$ses_latent[[8]]
+imputed_data8$ses_latent = as.numeric(imputed_datasets$ses_latent[[8]])
 imputed_data9 = imputed_datasets[[9]]
-imputed_data9$ses_latent = imputed_datasets$ses_latent[[9]]
+imputed_data9$ses_latent = as.numeric(imputed_datasets$ses_latent[[9]])
 imputed_data10 = imputed_datasets[[10]]
-imputed_data10$ses_latent = imputed_datasets$ses_latent[[10]]
+imputed_data10$ses_latent = as.numeric(imputed_datasets$ses_latent[[10]])
 imputed_data11 = imputed_datasets[[11]]
-imputed_data11$ses_latent = imputed_datasets$ses_latent[[11]]
+imputed_data11$ses_latent = as.numeric(imputed_datasets$ses_latent[[11]])
 imputed_data12 = imputed_datasets[[12]]
-imputed_data12$ses_latent = imputed_datasets$ses_latent[[12]]
+imputed_data12$ses_latent = as.numeric(imputed_datasets$ses_latent[[12]])
 imputed_data13 = imputed_datasets[[13]]
-imputed_data13$ses_latent = imputed_datasets$ses_latent[[13]]
+imputed_data13$ses_latent = as.numeric(imputed_datasets$ses_latent[[13]])
 imputed_data14 = imputed_datasets[[14]]
-imputed_data14$ses_latent = imputed_datasets$ses_latent[[14]]
+imputed_data14$ses_latent = as.numeric(imputed_datasets$ses_latent[[14]])
 imputed_data15 = imputed_datasets[[15]]
-imputed_data15$ses_latent = imputed_datasets$ses_latent[[15]]
+imputed_data15$ses_latent = as.numeric(imputed_datasets$ses_latent[[15]])
 imputed_data16 = imputed_datasets[[16]]
-imputed_data16$ses_latent = imputed_datasets$ses_latent[[16]]
+imputed_data16$ses_latent = as.numeric(imputed_datasets$ses_latent[[16]])
 imputed_data17 = imputed_datasets[[17]]
-imputed_data17$ses_latent = imputed_datasets$ses_latent[[17]]
+imputed_data17$ses_latent = as.numeric(imputed_datasets$ses_latent[[17]])
 imputed_data18 = imputed_datasets[[18]]
-imputed_data18$ses_latent = imputed_datasets$ses_latent[[18]]
+imputed_data18$ses_latent = as.numeric(imputed_datasets$ses_latent[[18]])
 imputed_data19 = imputed_datasets[[19]]
-imputed_data19$ses_latent = imputed_datasets$ses_latent[[19]]
+imputed_data19$ses_latent = as.numeric(imputed_datasets$ses_latent[[19]])
 imputed_data20 = imputed_datasets[[20]]
-imputed_data20$ses_latent = imputed_datasets$ses_latent[[20]]
+imputed_data20$ses_latent = as.numeric(imputed_datasets$ses_latent[[20]])
 imputed_data21 = imputed_datasets[[21]]
-imputed_data21$ses_latent = imputed_datasets$ses_latent[[21]]
+imputed_data21$ses_latent = as.numeric(imputed_datasets$ses_latent[[21]])
 imputed_data22 = imputed_datasets[[22]]
-imputed_data22$ses_latent = imputed_datasets$ses_latent[[22]]
+imputed_data22$ses_latent = as.numeric(imputed_datasets$ses_latent[[22]])
 imputed_data23 = imputed_datasets[[23]]
-imputed_data23$ses_latent = imputed_datasets$ses_latent[[23]]
+imputed_data23$ses_latent = as.numeric(imputed_datasets$ses_latent[[23]])
 imputed_data24 = imputed_datasets[[24]]
-imputed_data24$ses_latent = imputed_datasets$ses_latent[[24]]
+imputed_data24$ses_latent = as.numeric(imputed_datasets$ses_latent[[24]])
 imputed_data25 = imputed_datasets[[25]]
-imputed_data25$ses_latent = imputed_datasets$ses_latent[[25]]
+imputed_data25$ses_latent = as.numeric(imputed_datasets$ses_latent[[25]])
 
 #regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
 
 compositeModerator_model <- function(df) {
-  fit <- glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+  fit <- glm(success ~ sex + ethnicity + EAL + country +
                + caregiver_vocabStandardised + ses_latent*age5_standardised, 
              family = binomial, weights = weight, data=df)
   return(fit)
