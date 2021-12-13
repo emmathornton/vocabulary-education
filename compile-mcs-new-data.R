@@ -1964,6 +1964,11 @@ analysis_data = merge(all=TRUE, analysis_data, education_main_outcomes, by = "mc
 
 #select sample - those with a response on age 5 vocabulary test OR an educaion outcome
 mcs_analysis = analysis_data %>% filter((!is.na(age5_vocab)) | (!is.na(benchmark_binary)))
+#save analysis data as a csv file ####
+write.csv(mcs_analysis, file = "education_data.csv")
+
+#save full cohort sample as a csv file- to get descriptives
+write.csv(analysis_data, file = "cohort_data.csv")
 
 #if want 2 analytical samples (one for each outcome)
 #binary outcome (will be same as if use overall sample anyway)
@@ -1973,14 +1978,54 @@ binary_education = analysis_data %>% select(!standardised_core_subjects) %>%
 continuous_education = analysis_data %>% select(!benchmark_binary) %>% 
   filter((!is.na(age5_vocab)) | (!is.na(standardised_core_subjects)))
 
-#save analysis data as a csv file ####
-write.csv(mcs_analysis, file = "education_data.csv")
+#SENSITIVITY CHECKS - COMPILE DATA ####
+
+#sensitivity check: complete cases for education outcomes####
+binary_educationComplete = analysis_data  %>% filter(!is.na(benchmark_binary))
+#continuous outcome 
+continuous_educationComplete = analysis_data %>% filter(!is.na(standardised_core_subjects))
+#save datasets
+write.csv(binary_educationComplete, file = "binary_educationComplete_data.csv")
+write.csv(continuous_educationComplete, file = "continuous_educationComplete_data.csv")
 
 
-#save full cohort sample as a csv file- to get descriptives
-write.csv(analysis_data, file = "cohort_data.csv")
+
 #mcs_analysis = analysis_data[!is.na(analysis_data$age5_vocab),]
 
+#sensitivity analysis 1: by country. need country specific weights for this analysis. ####
+#country specific weights 
+age5_countryWeight = mcs_family %>% select(mcsid, covwt1)
+sample_countryWeight = mcs_family %>% select(mcsid, weight1)
+countryWeight = merge(all=TRUE, age5_countryWeight, sample_countryWeight, by="mcsid") %>% 
+  mutate(weight = case_when(!is.na(covwt1) ~ covwt1, 
+                            is.na(covwt1) ~ weight1)) %>% 
+  select(mcsid, weight)
+
+#create analysis data. split into country post imputation. 
+
+countryAnalysis_data = merge(all=TRUE, countryWeight, sex, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, ethnicity, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, EAL, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, age_atBirth, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, tenure, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, accommodation, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, parent_nvq, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, breastfed, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, carers_in_hh, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, income, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, imd, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, occupational_status, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, wealth_variables, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, country_17, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, caregiver_vocabTotal, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, age5_vocab, by = "mcsid")
+countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, education_main_outcomes, by = "mcsid")
+
+#select sample - those with a response on age 5 vocabulary test OR an educaion outcome
+countrySpecific_analysis = countryAnalysis_data %>% filter((!is.na(age5_vocab)) | (!is.na(benchmark_binary)))
+
+#save dataset
+write.csv(countrySpecific_analysis, file = "countrySpecific_data.csv")
 
 # outcome variable sensitivity check - welsh included as a core variable for those in Wales. ####
 
@@ -2131,3 +2176,71 @@ mcs_analysisWelsh = analysis_dataWelsh %>% filter((!is.na(age5_vocab)) | (!is.na
 
 #save analysis data as a csv file ####
 write.csv(mcs_analysisWelsh, file = "education_dataWelsh.csv")
+
+#exploratory analysis: english, maths and science considered separately####
+#english 
+exploratory_english = merge(all=TRUE, english_score, n5_english_score, by ="mcsid") %>% 
+  mutate(standardised_gcseEnglish = scale(english_score, 
+                                   center = TRUE, scale = TRUE)) %>% 
+  mutate(standardised_n5English = scale(english, 
+                                   center = TRUE, scale = TRUE)) %>% 
+  mutate(standardised_english = case_when(!is.na(standardised_gcseEnglish)~standardised_gcseEnglish, 
+                                                is.na(standardised_gcseEnglish) ~ standardised_n5English, 
+                                                !is.na(standardised_n5English) ~standardised_n5English,
+                                                is.na(standardised_n5English) ~ standardised_gcseEnglish)) %>% 
+  select(mcsid,standardised_english)
+
+#maths
+exploratory_maths = merge(all=TRUE, maths_score, n5_maths_score, by ="mcsid") %>% 
+  mutate(standardised_gcsemaths = scale(maths_score, 
+                                        center = TRUE, scale = TRUE)) %>% 
+  mutate(standardised_n5maths = scale(maths, 
+                                      center = TRUE, scale = TRUE)) %>% 
+  mutate(standardised_maths = case_when(!is.na(standardised_gcsemaths)~standardised_gcsemaths, 
+                                        is.na(standardised_gcsemaths) ~ standardised_n5maths, 
+                                        !is.na(standardised_n5maths) ~standardised_n5maths,
+                                        is.na(standardised_n5maths) ~ standardised_gcsemaths)) %>% 
+  select(mcsid,standardised_maths)
+
+#science
+exploratory_science = merge(all=TRUE, science_score, n5_science_score, by ="mcsid") %>% 
+  rename("science_gcse" = science_score.x, 
+         "science_n5" = science_score.y) %>% 
+  mutate(standardised_gcsescience = scale(science_gcse, 
+                                          center = TRUE, scale = TRUE)) %>% 
+  mutate(standardised_n5science = scale(science_n5, 
+                                        center = TRUE, scale = TRUE)) %>% 
+  mutate(standardised_science = case_when(!is.na(standardised_gcsescience)~standardised_gcsescience, 
+                                          is.na(standardised_gcsescience) ~ standardised_n5science, 
+                                          !is.na(standardised_n5science) ~standardised_n5science,
+                                          is.na(standardised_n5science) ~ standardised_gcsescience)) %>% 
+  select(mcsid,standardised_science)
+
+exploratory_education = merge(all=TRUE, exploratory_english, exploratory_maths, by = "mcsid")
+exploratory_education = merge(all=TRUE, exploratory_education, exploratory_science, by="mcsid")
+#create analysis data
+exploratory_analysisData = merge(all=TRUE, weight, sex, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, ethnicity, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, EAL, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, age_atBirth, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, tenure, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, accommodation, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, parent_nvq, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, breastfed, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, carers_in_hh, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, income, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, imd, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, occupational_status, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, wealth_variables, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, country_17, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, caregiver_vocabTotal, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, age5_vocab, by = "mcsid")
+exploratory_analysisData = merge(all=TRUE, exploratory_analysisData, exploratory_education, by = "mcsid")
+
+#select sample - those with a response on age 5 vocabulary test OR an educaion outcome
+exploratory_analysis = exploratory_analysisData %>% filter((!is.na(age5_vocab)) | (!is.na(standardised_english)) |
+                                                             (!is.na(standardised_maths)) | (!is.na(standardised_science)))
+                                                           
+#save analysis data as a csv file ####
+write.csv(exploratory_analysis, file = "exploratory_analysisData.csv")
+
