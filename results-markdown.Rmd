@@ -406,55 +406,80 @@ imputed_datasets$ses_latent = lapply(imputed_datasets, cfa_imputed)
 #get individual datasets from list - these will now have SEP composite (pull this out for each dataset). 
 #this is so can run the regression over each dataset. 
 imputed_data1 = imputed_datasets[[1]]
-imputed_data1$ses_latent = as.numeric(imputed_datasets$ses_latent[[1]])
+imputed_data1$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[1]], center = TRUE, scale = TRUE))
+#imputed_data1$ses_latent = scale(imputed_data1$ses_latent, center = TRUE, scale = TRUE)
 imputed_data2 = imputed_datasets[[2]]
-imputed_data2$ses_latent = as.numeric(imputed_datasets$ses_latent[[2]])
+imputed_data2$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[2]], center = TRUE, scale = TRUE))
+#imputed_data2$ses_latent = scale(imputed_data2$ses_latent, center = TRUE, scale = TRUE)
 imputed_data3 = imputed_datasets[[3]]
-imputed_data3$ses_latent = as.numeric(imputed_datasets$ses_latent[[3]])
+imputed_data3$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[3]], center = TRUE, scale = TRUE))
+#imputed_data3$ses_latent = scale(imputed_data3$ses_latent, center = TRUE, scale = TRUE)
 imputed_data4 = imputed_datasets[[4]]
-imputed_data4$ses_latent = as.numeric(imputed_datasets$ses_latent[[4]])
+imputed_data4$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[4]], center = TRUE, scale = TRUE))
+#imputed_data4$ses_latent = scale(imputed_data4$ses_latent, center = TRUE, scale = TRUE)
 imputed_data5 = imputed_datasets[[5]]
-imputed_data5$ses_latent = as.numeric(imputed_datasets$ses_latent[[5]])
+imputed_data5$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[5]], center = TRUE, scale = TRUE))
+#imputed_data5$ses_latent = scale(imputed_data5$ses_latent, center = TRUE, scale = TRUE)
 imputed_data6 = imputed_datasets[[6]]
-imputed_data6$ses_latent = as.numeric(imputed_datasets$ses_latent[[6]])
+imputed_data6$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[6]], center = TRUE, scale = TRUE))
+#imputed_data6$ses_latent = scale(imputed_data6$ses_latent, center = TRUE, scale = TRUE)
 imputed_data7 = imputed_datasets[[7]]
-imputed_data7$ses_latent = as.numeric(imputed_datasets$ses_latent[[7]])
+imputed_data7$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[7]], center = TRUE, scale = TRUE))
+#imputed_data7$ses_latent = scale(imputed_data7$ses_latent, center = TRUE, scale = TRUE)
 imputed_data8 = imputed_datasets[[8]]
-imputed_data8$ses_latent = as.numeric(imputed_datasets$ses_latent[[8]])
+imputed_data8$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[8]], center = TRUE, scale = TRUE))
+#imputed_data8$ses_latent = scale(imputed_data8$ses_latent, center = TRUE, scale = TRUE)
 imputed_data9 = imputed_datasets[[9]]
-imputed_data9$ses_latent = as.numeric(imputed_datasets$ses_latent[[9]])
+imputed_data9$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[9]], center = TRUE, scale = TRUE))
+#imputed_data9$ses_latent = scale(imputed_data9$ses_latent, center = TRUE, scale = TRUE)
 imputed_data10 = imputed_datasets[[10]]
-imputed_data10$ses_latent = as.numeric(imputed_datasets$ses_latent[[10]])
+imputed_data10$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[10]], center = TRUE, scale = TRUE))
+#imputed_data10$ses_latent = scale(imputed_data10$ses_latent, center = TRUE, scale = TRUE)
 imputed_data11 = imputed_datasets[[11]]
-imputed_data11$ses_latent = as.numeric(imputed_datasets$ses_latent[[11]])
+imputed_data11$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[11]],center = TRUE, scale = TRUE))
+#imputed_data11$ses_latent = scale(imputed_data11$ses_latent, center = TRUE, scale = TRUE)
 imputed_data12 = imputed_datasets[[12]]
-imputed_data12$ses_latent = as.numeric(imputed_datasets$ses_latent[[12]])
+imputed_data12$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[12]], center = TRUE, scale = TRUE))
+#imputed_data12$ses_latent = scale(imputed_data12$ses_latent, center = TRUE, scale = TRUE)
 imputed_data13 = imputed_datasets[[13]]
-imputed_data13$ses_latent = as.numeric(imputed_datasets$ses_latent[[13]])
+imputed_data13$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[13]], center = TRUE, scale = TRUE))
+#imputed_data13$ses_latent = scale(imputed_data13$ses_latent, center = TRUE, scale = TRUE)
 imputed_data14 = imputed_datasets[[14]]
-imputed_data14$ses_latent = as.numeric(imputed_datasets$ses_latent[[14]])
+imputed_data14$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[14]], center = TRUE, scale = TRUE))
+#imputed_data14$ses_latent = scale(imputed_data14$ses_latent, center = TRUE, scale = TRUE)
 imputed_data15 = imputed_datasets[[15]]
-imputed_data15$ses_latent = as.numeric(imputed_datasets$ses_latent[[15]])
+imputed_data15$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[15]], center = TRUE, scale = TRUE))
+#imputed_data15$ses_latent = scale(imputed_data15$ses_latent, center = TRUE, scale = TRUE)
 imputed_data16 = imputed_datasets[[16]]
-imputed_data16$ses_latent = as.numeric(imputed_datasets$ses_latent[[16]])
+imputed_data16$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[16]], center = TRUE, scale = TRUE))
+#imputed_data16$ses_latent = scale(imputed_data16$ses_latent, center = TRUE, scale = TRUE)
 imputed_data17 = imputed_datasets[[17]]
-imputed_data17$ses_latent = as.numeric(imputed_datasets$ses_latent[[17]])
+imputed_data17$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[17]], center = TRUE, scale = TRUE))
+#imputed_data17$ses_latent = scale(imputed_data17$ses_latent, center = TRUE, scale = TRUE)
 imputed_data18 = imputed_datasets[[18]]
-imputed_data18$ses_latent = as.numeric(imputed_datasets$ses_latent[[18]])
+imputed_data18$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[18]], center = TRUE, scale = TRUE))
+#imputed_data18$ses_latent = scale(imputed_data18$ses_latent, center = TRUE, scale = TRUE)
 imputed_data19 = imputed_datasets[[19]]
-imputed_data19$ses_latent = as.numeric(imputed_datasets$ses_latent[[19]])
+imputed_data19$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[19]], center = TRUE, scale = TRUE))
+#imputed_data19$ses_latent = scale(imputed_data19$ses_latent, center = TRUE, scale = TRUE)
 imputed_data20 = imputed_datasets[[20]]
-imputed_data20$ses_latent = as.numeric(imputed_datasets$ses_latent[[20]])
+imputed_data20$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[20]], center = TRUE, scale = TRUE))
+#imputed_data20$ses_latent = scale(imputed_data20$ses_latent, center = TRUE, scale = TRUE)
 imputed_data21 = imputed_datasets[[21]]
-imputed_data21$ses_latent = as.numeric(imputed_datasets$ses_latent[[21]])
+imputed_data21$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[21]], center = TRUE, scale = TRUE))
+#imputed_data21$ses_latent = scale(imputed_data21$ses_latent, center = TRUE, scale = TRUE)
 imputed_data22 = imputed_datasets[[22]]
-imputed_data22$ses_latent = as.numeric(imputed_datasets$ses_latent[[22]])
+imputed_data22$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[22]], center = TRUE, scale = TRUE))
+#imputed_data22$ses_latent = scale(imputed_data22$ses_latent, center = TRUE, scale = TRUE)
 imputed_data23 = imputed_datasets[[23]]
-imputed_data23$ses_latent = as.numeric(imputed_datasets$ses_latent[[23]])
+imputed_data23$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[23]], center = TRUE, scale = TRUE))
+#imputed_data23$ses_latent = scale(imputed_data23$ses_latent, center = TRUE, scale = TRUE)
 imputed_data24 = imputed_datasets[[24]]
-imputed_data24$ses_latent = as.numeric(imputed_datasets$ses_latent[[24]])
+imputed_data24$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[24]], center = TRUE, scale = TRUE))
+#imputed_data24$ses_latent = scale(imputed_data24$ses_latent, center = TRUE, scale = TRUE)
 imputed_data25 = imputed_datasets[[25]]
-imputed_data25$ses_latent = as.numeric(imputed_datasets$ses_latent[[25]])
+imputed_data25$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[25]], center = TRUE, scale = TRUE))
+#imputed_data25$ses_latent = scale(imputed_data25$ses_latent, center = TRUE, scale = TRUE)
 
 #regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
 
@@ -476,7 +501,7 @@ moderator_composite <- summary(pool(as.mira(compositeModerator)),conf.int = TRUE
 
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 noCompositeModerator_model <- function(df) {
-  fit1 <- glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+  fit1 <- glm(success ~ sex + ethnicity + EAL + country +
                 + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
               family = binomial, weights = weight, data=df)
   return(fit1)
@@ -503,12 +528,12 @@ MODERATOR ANALYSIS ON EACH INDIVIDUAL SEC PREDICTOR
 ```{r}
 #1. parent education as the moderator 
 #vocabulary*NVQ interaction term
-NVQ_moderator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+NVQ_moderator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                                           oecd_income + occupational_status + wealth_quintiles + imd + 
                                          caregiver_vocabStandardised + highest_nvq*age5_standardised, 
                                          family = binomial, weights = weight))
 #no interaction term
-NVQ_noModerator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+NVQ_noModerator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                            oecd_income + occupational_status + wealth_quintiles + imd + 
                                            caregiver_vocabStandardised + highest_nvq + age5_standardised, 
                                          family = binomial, weights = weight))
@@ -520,12 +545,12 @@ D1(NVQ_moderator, NVQ_noModerator)
 
 #2. occupational status as the moderator 
 #vocabulary*occupation interaction term
-occupation_moderator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+occupation_moderator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                                 highest_nvq+ oecd_income  + wealth_quintiles + imd + 
                                          caregiver_vocabStandardised + occupational_status*age5_standardised, 
                                        family = binomial, weights = weight))
 #no interaction term
-occupation_noModerator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+occupation_noModerator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                            highest_nvq + oecd_income  + wealth_quintiles + imd + 
                                            caregiver_vocabStandardised + occupational_status + age5_standardised, 
                                          family = binomial, weights = weight))
@@ -537,12 +562,12 @@ D1(occupation_moderator, occupation_noModerator)
 
 #3. income as the moderator 
 #vocabulary*income interaction term
-income_moderator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+income_moderator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                                 highest_nvq+ occupational_status  + wealth_quintiles + imd + 
                                                 caregiver_vocabStandardised + oecd_income*age5_standardised, 
                                               family = binomial, weights = weight))
 #no interaction term
-income_noModerator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+income_noModerator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                                   highest_nvq + occupational_status  + wealth_quintiles + imd + 
                                                   caregiver_vocabStandardised + oecd_income + age5_standardised, 
                                                 family = binomial, weights = weight))
@@ -554,12 +579,12 @@ D1(income_moderator, income_noModerator)
 
 #4. wealth as the moderator 
 #vocabulary*wealth interaction term
-wealth_moderator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+wealth_moderator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                             highest_nvq+ oecd_income + occupational_status   + imd + 
                                             caregiver_vocabStandardised + wealth_quintiles*age5_standardised, 
                                           family = binomial, weights = weight))
 #no interaction term
-wealth_noModerator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+wealth_noModerator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                               highest_nvq + oecd_income + occupational_status  + wealth_quintiles + imd + 
                                               caregiver_vocabStandardised + wealth_quintiles + age5_standardised, 
                                             family = binomial, weights = weight))
@@ -571,12 +596,12 @@ D1(wealth_moderator, wealth_noModerator)
 
 #5. imd as the moderator 
 #vocabulary*wealth interaction term
-imd_moderator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+imd_moderator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                             highest_nvq+ oecd_income + occupational_status + wealth_quintiles + 
                                             caregiver_vocabStandardised + imd*age5_standardised, 
                                           family = binomial, weights = weight))
 #no interaction term
-imd_noModerator = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
+imd_noModerator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                               highest_nvq + oecd_income + occupational_status  + wealth_quintiles + 
                                               caregiver_vocabStandardised + imd + age5_standardised, 
                                             family = binomial, weights = weight))
