@@ -30,6 +30,7 @@ library(officer)
 library(flextable)
 library(ftExtra)
 library(ggeffects)
+library(gtools)
 
 #this will take a float (e.g. a p value) and return a string with 3 digits and no leading 0
 
@@ -1314,9 +1315,11 @@ moderator_table2 <- moderator_results3 %>%
 
  print(moderator_table2, preview = "docx") 
 ```
+
 plots of predicted probabilities
 
 ```{r}
+#plots of predicted probabilities####
 #composite plot 
 
 #regression model
