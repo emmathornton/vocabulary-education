@@ -43,13 +43,9 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-02_vocabulary_education_imputedRQ1/2021-12-02_vocabulary_education_imputedRQ1.Rdata")
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-17_vocabulary_education_imputedRQ1/2021-12-17_vocabulary_education_imputedRQ1.Rdata")
 imputed_mcs2 = mi.res
-long_format_mcs <- mice::complete(imputed_mcs2, "long", include=TRUE)
-long_format_mcs$benchmark_binary <- with(long_format_mcs, relevel(benchmark_binary, ref = "0"))
-long_format_mcs$success = with(long_format_mcs, as.numeric(benchmark_binary == 1))
-long_format_mcs$success = with(long_format_mcs, as.factor(success))
-imputed_mcs2<-as.mids(long_format_mcs)
+
 
 ```
 
@@ -1716,5 +1712,81 @@ predicted_table <- predictions %>%
   align(j=1, align="center", part="all") 
 
  print(predicted_table, preview = "docx") 
+```
+
+
+sensitivity check for interactions. 
+
+To control for potential confounding effects on the interaction term, all potential confounders and interaction terms between the potential confounders and the predictor, and potential confounders and the moderator, must be entered into the model (Keller, 2014). 
+We therefore ran sensitivity analyses for our SEC* vocabulary moderations, whereby we included interaction terms between potential confounders (remaining SEC variables) and between the predictor (vocabulary) and potential confounders and the moderator (each SEC variable in turn), to ensure the confounding effect of SEC on the interaction term was accounted for. 
+
+```{r}
+#1. parent education moderator ####
+
+#vocabulary*NVQ interaction term
+NVQ_moderatorSensitivity = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
+                                                          oecd_income*age5_standardised + oecd_income*highest_nvq + 
+                                                    occupational_status*age5_standardised +occupational_status*highest_nvq +
+                                                    wealth_quintiles*age5_standardised + wealth_quintiles*highest_nvq + 
+                                                    imd*age5_standardised + imd*highest_nvq + 
+                                         caregiver_vocabStandardised + highest_nvq*age5_standardised, 
+                                         family = binomial, weights = weight))
+
+#pooled results of models 
+NVQ_moderatorSensitivityResults = summary(pool(NVQ_moderatorSensitivity), conf.int = TRUE, exponentiate = TRUE)
+
+#2. occupational status as the moderator 
+#vocabulary*occupation interaction term
+occupation_moderatorSensitivity = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
+                                                           highest_nvq*age5_standardised + highest_nvq*occupational_status+
+                                                           oecd_income*age5_standardised + oecd_income*occupational_status + 
+                                                    occupational_status*age5_standardised +occupational_status*occupational_status +
+                                                    wealth_quintiles*age5_standardised + wealth_quintiles*occupational_status + 
+                                                    imd*age5_standardised + imd*occupational_status + 
+                                         caregiver_vocabStandardised + occupational_status*age5_standardised, 
+                                       family = binomial, weights = weight))
+
+#pooled results of models 
+occupation_moderatorSensitivityResults = summary(pool(occupation_moderatorSensitivity), conf.int = TRUE, exponentiate = TRUE)
+
+#3. income as the moderator 
+#vocabulary*income interaction term
+income_moderatorSensitivity = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
+                                                       highest_nvq*age5_standardised + highest_nvq*oecd_income+
+                                                    occupational_status*age5_standardised +occupational_status*oecd_income +
+                                                    wealth_quintiles*age5_standardised + wealth_quintiles*oecd_income + 
+                                                    imd*age5_standardised + imd*oecd_income + 
+                                                      caregiver_vocabStandardised + oecd_income*age5_standardised, 
+                                                    family = binomial, weights = weight))
+
+#pooled results of models 
+income_moderatorSensitivityResults = summary(pool(income_moderatorSensitivity), conf.int = TRUE, exponentiate = TRUE)
+
+#4. wealth as the moderator 
+#vocabulary*wealth interaction term
+wealth_moderatorSensitivity = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
+                                            highest_nvq*age5_standardised + highest_nvq*wealth_quintiles +
+                                              oecd_income*age5_standardised + oecd_income*wealth_quintiles + 
+                                              occupational_status*age5_standardised + occupational_status*wealth_quintiles +
+                                              imd*age5_standardised + imd*wealth_quintiles + 
+                                            caregiver_vocabStandardised + wealth_quintiles*age5_standardised, 
+                                          family = binomial, weights = weight))
+
+#pooled results of models 
+wealth_moderatorResultsSensitivity = summary(pool(wealth_moderatorSensitivity), conf.int = TRUE, exponentiate = TRUE)
+
+#5. imd as the moderator 
+#vocabulary*wealth interaction term
+imd_moderatorSensitivity  = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
+                                            highest_nvq*age5_standardised + highest_nvq*imd +
+                                              oecd_income*age5_standardised + oecd_income*imd + 
+                                              occupational_status*age5_standardised +occupational_status*imd +
+                                              wealth_quintiles*age5_standardised + wealth_quintiles*imd + 
+                                            caregiver_vocabStandardised + imd*age5_standardised, 
+                                          family = binomial, weights = weight))
+
+#pooled results of models 
+imd_moderatorResultsSensitivity  = summary(pool(imd_moderatorSensitivity ), conf.int = TRUE, exponentiate = TRUE)
+
 ```
 
