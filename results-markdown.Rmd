@@ -1595,7 +1595,7 @@ composite_predictions$value = paste0(composite_predictions$predicted, "[", compo
 composite_predictions = composite_predictions %>% group_by(x) %>% 
   select(x, group, value) %>% 
 pivot_wider(names_from = x, values_from = c("value")) %>% 
-  select(group, `-2.96`, `-1.99`, `-0.94`, `0.12`, `2.31`) %>% 
+  select(group, `-2.97`, `-2`, `-0.94`, `0.12`, `2.32`) %>% 
   rename("SEC Indicator" = group) %>% 
   add_column(z = c("Composite Quintiles", " ", " ", " ", " "), .before = 1)
 composite_predictions$`SEC Indicator`= c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintiles")
