@@ -1,0 +1,462 @@
+---
+title: "R Notebook"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+```{r}
+library(mice)
+library(pander)
+library(xtable)
+library(dplyr)
+library(gt)
+library(glue)
+library(tidyverse)
+library(miceadds)
+library(swfscMisc)
+library(imputools)
+library(haven)
+library(sjmisc)
+library(Hmisc)
+library(psych)
+library(lavaan)
+library(ggplot2)
+library(ggpubr)
+library(officer)
+library(flextable)
+library(ftExtra)
+library(ggeffects)
+library(gtools)
+
+#this will take a float (e.g. a p value) and return a string with 3 digits and no leading 0
+
+bv <- function(val) {
+  return(sub("^(-?)0.", "\\1.", sprintf("%.2f", val)))
+}
+
+#if the number is less than .001, it will give <.001. 
+pv1 <- function(val) {
+  return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
+}
+
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-17_vocabulary_education_exploratoryAnalyses/2021-12-17_vocabulary_education_exploratoryAnalyses.Rdata")
+imputed_mcs2 = mi.res
+
+
+```
+
+#english, maths and science average grades considered as separate outcomes - exploratory analysis to see if vocabulary differentially predicts these subjects
+
+#english 
+```{r}
+#unadjusted relationship
+
+continuous_unadjustedEnglish = with(imputed_mcs2, lm(standardised_english ~ age5_standardised, weights = weight))
+
+continuous_unadjusted_resultsEnglish = round(summary(pool(continuous_unadjustedEnglish), conf.int = TRUE),2)
+
+#adjusted relationship 
+continuous_model1English= with(imputed_mcs2, lm(standardised_english ~ sex + ethnicity + EAL + country +
+                                         highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
+                                       weights = weight))
+
+continuous_model2English = with(imputed_mcs2, lm(standardised_english ~ sex + ethnicity + EAL + country +
+                                         highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                         imd + caregiver_vocabStandardised, 
+                                        weights = weight))
+
+continuous_model3English = with(imputed_mcs2, lm(standardised_english ~ sex + ethnicity + EAL + country +
+                                         highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                         imd + caregiver_vocabStandardised + age5_standardised, 
+                                        weights = weight))
+
+continuous_model1ResultsEnglish = summary(pool(continuous_model1English), conf.int = TRUE)
+continuous_model2ResultsEnglish = summary(pool(continuous_model2English), conf.int = TRUE)
+continuous_model3ResultsEnglish = summary(pool(continuous_model3English), conf.int = TRUE)
+
+round(pool.r.squared(continuous_unadjustedEnglish),4)*100
+cont_model1R2English = as.data.frame(round(pool.r.squared(continuous_model1English),4)*100)
+cont_model2R2English = as.data.frame(round(pool.r.squared(continuous_model2English),4)*100)
+cont_model3R2English = as.data.frame(round(pool.r.squared(continuous_model3English),4)*100)
+```
+
+2b. does vocabulary predict level of achievement in core subjects above and beyond SEC/caregiver vocab factors?
+
+```{r}
+#compare sociodemographics model to no predictors
+#create null model 
+null_continuousModelEnglish =  with(imputed_mcs2, lm(standardised_english ~ 1, weights = weight))
+D1(continuous_model1English, null_continuousModelEnglish)
+#compare model with only sociodemographic factors to a model with caregiver vocab
+D1(continuous_model2English, continuous_model1English) #check if need to use a specific method ?
+#compare model with all confounders to model with vocab
+D1(continuous_model3English, continuous_model2English) 
+```
+
+maths
+```{r}
+continuous_unadjustedMaths = with(imputed_mcs2, lm(standardised_maths ~ age5_standardised, weights = weight))
+
+continuous_unadjusted_resultsMaths = round(summary(pool(continuous_unadjustedMaths), conf.int = TRUE),2)
+
+#adjusted relationship 
+continuous_model1Maths= with(imputed_mcs2, lm(standardised_maths ~ sex + ethnicity + EAL + country +
+                                                  highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
+                                                weights = weight))
+
+continuous_model2Maths = with(imputed_mcs2, lm(standardised_maths ~ sex + ethnicity + EAL + country +
+                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                                   imd + caregiver_vocabStandardised, 
+                                                 weights = weight))
+
+continuous_model3Maths = with(imputed_mcs2, lm(standardised_maths ~ sex + ethnicity + EAL + country +
+                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                                   imd + caregiver_vocabStandardised + age5_standardised, 
+                                                 weights = weight))
+
+continuous_model1ResultsMaths = summary(pool(continuous_model1Maths), conf.int = TRUE)
+continuous_model2ResultsMaths = summary(pool(continuous_model2Maths), conf.int = TRUE)
+continuous_model3ResultsMaths = summary(pool(continuous_model3Maths), conf.int = TRUE)
+
+round(pool.r.squared(continuous_unadjustedMaths),4)*100
+cont_model1R2Maths = as.data.frame(round(pool.r.squared(continuous_model1Maths),4)*100)
+cont_model2R2Maths = as.data.frame(round(pool.r.squared(continuous_model2Maths),4)*100)
+cont_model3R2Maths = as.data.frame(round(pool.r.squared(continuous_model3Maths),4)*100)
+```
+
+2b. does vocabulary predict level of achievement in core subjects above and beyond SEC/caregiver vocab factors?
+  
+```{r}
+#compare sociodemographics model to no predictors
+#create null model 
+null_continuousModelMaths =  with(imputed_mcs2, lm(standardised_maths ~ 1, weights = weight))
+D1(continuous_model1Maths, null_continuousModelMaths)
+#compare model with only sociodemographic factors to a model with caregiver vocab
+D1(continuous_model2Maths, continuous_model1Maths) #check if need to use a specific method ?
+#compare model with all confounders to model with vocab
+D1(continuous_model3Maths, continuous_model2Maths) 
+```
+
+science 
+```{r}
+continuous_unadjustedScience = with(imputed_mcs2, lm(standardised_science ~ age5_standardised, weights = weight))
+
+continuous_unadjusted_resultsScience = round(summary(pool(continuous_unadjustedScience), conf.int = TRUE),2)
+
+#adjusted relationship 
+continuous_model1Science= with(imputed_mcs2, lm(standardised_science ~ sex + ethnicity + EAL + country +
+                                                  highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
+                                                weights = weight))
+
+continuous_model2Science = with(imputed_mcs2, lm(standardised_science ~ sex + ethnicity + EAL + country +
+                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                                   imd + caregiver_vocabStandardised, 
+                                                 weights = weight))
+
+continuous_model3Science = with(imputed_mcs2, lm(standardised_science ~ sex + ethnicity + EAL + country +
+                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                                   imd + caregiver_vocabStandardised + age5_standardised, 
+                                                 weights = weight))
+
+continuous_model1ResultsScience = summary(pool(continuous_model1Science), conf.int = TRUE)
+continuous_model2ResultsScience = summary(pool(continuous_model2Science), conf.int = TRUE)
+continuous_model3ResultsScience = summary(pool(continuous_model3Science), conf.int = TRUE)
+
+round(pool.r.squared(continuous_unadjustedScience),4)*100
+cont_model1R2Science = as.data.frame(round(pool.r.squared(continuous_model1Science),4)*100)
+cont_model2R2Science = as.data.frame(round(pool.r.squared(continuous_model2Science),4)*100)
+cont_model3R2Science = as.data.frame(round(pool.r.squared(continuous_model3Science),4)*100)
+```
+
+2b. does vocabulary predict level of achievement in core subjects above and beyond SEC/caregiver vocab factors?
+  
+```{r}
+#compare sociodemographics model to no predictors
+#create null model 
+null_continuousModelScience =  with(imputed_mcs2, lm(standardised_science ~ 1, weights = weight))
+D1(continuous_model1Science, null_continuousModelScience)
+#compare model with only sociodemographic factors to a model with caregiver vocab
+D1(continuous_model2Science, continuous_model1Science) #check if need to use a specific method ?
+#compare model with all confounders to model with vocab
+D1(continuous_model3Science, continuous_model2Science) 
+
+```
+
+results table 
+
+get data for tables 
+```{r}
+#english 
+#model 1 for continuous outcome
+continuous_model1ResultsEnglish$estimate = bv(continuous_model1ResultsEnglish$estimate) #no leading 0 
+continuous_model1ResultsEnglish$`2.5 %` = bv(continuous_model1ResultsEnglish$`2.5 %`)
+continuous_model1ResultsEnglish$`97.5 %` = bv(continuous_model1ResultsEnglish$`97.5 %`)
+continuous_model1ResultsEnglish$p.value1= ifelse(continuous_model1ResultsEnglish$p.value< .001, "<.001" , pv1(continuous_model1ResultsEnglish$p.value))
+continuous_model1ResultsEnglish$coefficient = paste0(continuous_model1ResultsEnglish$estimate, "[", continuous_model1ResultsEnglish$`2.5 %`, ";", continuous_model1ResultsEnglish$`97.5 %`, "]")
+continuous_model1ResultsEnglish$stars = add.significance.stars(continuous_model1ResultsEnglish$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model1ResultsEnglish$p1 = paste0(continuous_model1ResultsEnglish$p.value1, "")
+continuous_model1ResultsEnglish$p = paste0("p", continuous_model1ResultsEnglish$p1)
+continuous_model1ResultsEnglish$new_coef = paste0(continuous_model1ResultsEnglish$coefficient, continuous_model1ResultsEnglish$stars)  #combine coefficients and stars into column.
+
+#model 2 for continuous outcome
+continuous_model2ResultsEnglish$estimate = bv(continuous_model2ResultsEnglish$estimate) #no leading 0 
+continuous_model2ResultsEnglish$`2.5 %` = bv(continuous_model2ResultsEnglish$`2.5 %`)
+continuous_model2ResultsEnglish$`97.5 %` = bv(continuous_model2ResultsEnglish$`97.5 %`)
+continuous_model2ResultsEnglish$p.value1= ifelse(continuous_model2ResultsEnglish$p.value< .001, "<.001" , pv1(continuous_model2ResultsEnglish$p.value))
+continuous_model2ResultsEnglish$coefficient = paste0(continuous_model2ResultsEnglish$estimate, "[", continuous_model2ResultsEnglish$`2.5 %`, ";", continuous_model2ResultsEnglish$`97.5 %`, "]")
+continuous_model2ResultsEnglish$stars = add.significance.stars(continuous_model2ResultsEnglish$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model2ResultsEnglish$p1 = paste0(continuous_model2ResultsEnglish$p.value1, "")
+continuous_model2ResultsEnglish$p = paste0("p", continuous_model2ResultsEnglish$p1)
+continuous_model2ResultsEnglish$new_coef = paste0(continuous_model2ResultsEnglish$coefficient, continuous_model2ResultsEnglish$stars)  #combine coefficients and stars into column.
+
+
+#model 3 for continuous outcome
+continuous_model3ResultsEnglish$estimate = bv(continuous_model3ResultsEnglish$estimate) #no leading 0 
+continuous_model3ResultsEnglish$`2.5 %` = bv(continuous_model3ResultsEnglish$`2.5 %`)
+continuous_model3ResultsEnglish$`97.5 %` = bv(continuous_model3ResultsEnglish$`97.5 %`)
+continuous_model3ResultsEnglish$p.value1= ifelse(continuous_model3ResultsEnglish$p.value< .001, "<.001" , pv1(continuous_model3ResultsEnglish$p.value))
+continuous_model3ResultsEnglish$coefficient = paste0(continuous_model3ResultsEnglish$estimate, "[", continuous_model3ResultsEnglish$`2.5 %`, ";", continuous_model3ResultsEnglish$`97.5 %`, "]")
+continuous_model3ResultsEnglish$stars = add.significance.stars(continuous_model3ResultsEnglish$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model3ResultsEnglish$p1 = paste0(continuous_model3ResultsEnglish$p.value1, "")
+continuous_model3ResultsEnglish$p = paste0("p", continuous_model3ResultsEnglish$p1)
+continuous_model3ResultsEnglish$new_coef = paste0(continuous_model3ResultsEnglish$coefficient, continuous_model3ResultsEnglish$stars)  #combine coefficients and stars into column.
+
+#maths
+#model 1 for continuous outcome
+continuous_model1ResultsMaths$estimate = bv(continuous_model1ResultsMaths$estimate) #no leading 0 
+continuous_model1ResultsMaths$`2.5 %` = bv(continuous_model1ResultsMaths$`2.5 %`)
+continuous_model1ResultsMaths$`97.5 %` = bv(continuous_model1ResultsMaths$`97.5 %`)
+continuous_model1ResultsMaths$p.value1= ifelse(continuous_model1ResultsMaths$p.value< .001, "<.001" , pv1(continuous_model1ResultsMaths$p.value))
+continuous_model1ResultsMaths$coefficient = paste0(continuous_model1ResultsMaths$estimate, "[", continuous_model1ResultsMaths$`2.5 %`, ";", continuous_model1ResultsMaths$`97.5 %`, "]")
+continuous_model1ResultsMaths$stars = add.significance.stars(continuous_model1ResultsMaths$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model1ResultsMaths$p1 = paste0(continuous_model1ResultsMaths$p.value1, "")
+continuous_model1ResultsMaths$p = paste0("p", continuous_model1ResultsMaths$p1)
+continuous_model1ResultsMaths$new_coef = paste0(continuous_model1ResultsMaths$coefficient, continuous_model1ResultsMaths$stars)  #combine coefficients and stars into column.
+
+#model 2 for continuous outcome
+continuous_model2ResultsMaths$estimate = bv(continuous_model2ResultsMaths$estimate) #no leading 0 
+continuous_model2ResultsMaths$`2.5 %` = bv(continuous_model2ResultsMaths$`2.5 %`)
+continuous_model2ResultsMaths$`97.5 %` = bv(continuous_model2ResultsMaths$`97.5 %`)
+continuous_model2ResultsMaths$p.value1= ifelse(continuous_model2ResultsMaths$p.value< .001, "<.001" , pv1(continuous_model2ResultsMaths$p.value))
+continuous_model2ResultsMaths$coefficient = paste0(continuous_model2ResultsMaths$estimate, "[", continuous_model2ResultsMaths$`2.5 %`, ";", continuous_model2ResultsMaths$`97.5 %`, "]")
+continuous_model2ResultsMaths$stars = add.significance.stars(continuous_model2ResultsMaths$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model2ResultsMaths$p1 = paste0(continuous_model2ResultsMaths$p.value1, "")
+continuous_model2ResultsMaths$p = paste0("p", continuous_model2ResultsMaths$p1)
+continuous_model2ResultsMaths$new_coef = paste0(continuous_model2ResultsMaths$coefficient, continuous_model2ResultsMaths$stars)  #combine coefficients and stars into column.
+
+
+#model 3 for continuous outcome
+continuous_model3ResultsMaths$estimate = bv(continuous_model3ResultsMaths$estimate) #no leading 0 
+continuous_model3ResultsMaths$`2.5 %` = bv(continuous_model3ResultsMaths$`2.5 %`)
+continuous_model3ResultsMaths$`97.5 %` = bv(continuous_model3ResultsMaths$`97.5 %`)
+continuous_model3ResultsMaths$p.value1= ifelse(continuous_model3ResultsMaths$p.value< .001, "<.001" , pv1(continuous_model3ResultsMaths$p.value))
+continuous_model3ResultsMaths$coefficient = paste0(continuous_model3ResultsMaths$estimate, "[", continuous_model3ResultsMaths$`2.5 %`, ";", continuous_model3ResultsMaths$`97.5 %`, "]")
+continuous_model3ResultsMaths$stars = add.significance.stars(continuous_model3ResultsMaths$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model3ResultsMaths$p1 = paste0(continuous_model3ResultsMaths$p.value1, "")
+continuous_model3ResultsMaths$p = paste0("p", continuous_model3ResultsMaths$p1)
+continuous_model3ResultsMaths$new_coef = paste0(continuous_model3ResultsMaths$coefficient, continuous_model3ResultsMaths$stars)  #combine coefficients and stars into column.
+
+
+#science
+#model 1 for continuous outcome
+continuous_model1ResultsScience$estimate = bv(continuous_model1ResultsScience$estimate) #no leading 0 
+continuous_model1ResultsScience$`2.5 %` = bv(continuous_model1ResultsScience$`2.5 %`)
+continuous_model1ResultsScience$`97.5 %` = bv(continuous_model1ResultsScience$`97.5 %`)
+continuous_model1ResultsScience$p.value1= ifelse(continuous_model1ResultsScience$p.value< .001, "<.001" , pv1(continuous_model1ResultsScience$p.value))
+continuous_model1ResultsScience$coefficient = paste0(continuous_model1ResultsScience$estimate, "[", continuous_model1ResultsScience$`2.5 %`, ";", continuous_model1ResultsScience$`97.5 %`, "]")
+continuous_model1ResultsScience$stars = add.significance.stars(continuous_model1ResultsScience$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model1ResultsScience$p1 = paste0(continuous_model1ResultsScience$p.value1, "")
+continuous_model1ResultsScience$p = paste0("p", continuous_model1ResultsScience$p1)
+continuous_model1ResultsScience$new_coef = paste0(continuous_model1ResultsScience$coefficient, continuous_model1ResultsScience$stars)  #combine coefficients and stars into column.
+
+#model 2 for continuous outcome
+continuous_model2ResultsScience$estimate = bv(continuous_model2ResultsScience$estimate) #no leading 0 
+continuous_model2ResultsScience$`2.5 %` = bv(continuous_model2ResultsScience$`2.5 %`)
+continuous_model2ResultsScience$`97.5 %` = bv(continuous_model2ResultsScience$`97.5 %`)
+continuous_model2ResultsScience$p.value1= ifelse(continuous_model2ResultsScience$p.value< .001, "<.001" , pv1(continuous_model2ResultsScience$p.value))
+continuous_model2ResultsScience$coefficient = paste0(continuous_model2ResultsScience$estimate, "[", continuous_model2ResultsScience$`2.5 %`, ";", continuous_model2ResultsScience$`97.5 %`, "]")
+continuous_model2ResultsScience$stars = add.significance.stars(continuous_model2ResultsScience$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model2ResultsScience$p1 = paste0(continuous_model2ResultsScience$p.value1, "")
+continuous_model2ResultsScience$p = paste0("p", continuous_model2ResultsScience$p1)
+continuous_model2ResultsScience$new_coef = paste0(continuous_model2ResultsScience$coefficient, continuous_model2ResultsScience$stars)  #combine coefficients and stars into column.
+
+
+#model 3 for continuous outcome
+continuous_model3ResultsScience$estimate = bv(continuous_model3ResultsScience$estimate) #no leading 0 
+continuous_model3ResultsScience$`2.5 %` = bv(continuous_model3ResultsScience$`2.5 %`)
+continuous_model3ResultsScience$`97.5 %` = bv(continuous_model3ResultsScience$`97.5 %`)
+continuous_model3ResultsScience$p.value1= ifelse(continuous_model3ResultsScience$p.value< .001, "<.001" , pv1(continuous_model3ResultsScience$p.value))
+continuous_model3ResultsScience$coefficient = paste0(continuous_model3ResultsScience$estimate, "[", continuous_model3ResultsScience$`2.5 %`, ";", continuous_model3ResultsScience$`97.5 %`, "]")
+continuous_model3ResultsScience$stars = add.significance.stars(continuous_model3ResultsScience$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model3ResultsScience$p1 = paste0(continuous_model3ResultsScience$p.value1, "")
+continuous_model3ResultsScience$p = paste0("p", continuous_model3ResultsScience$p1)
+continuous_model3ResultsScience$new_coef = paste0(continuous_model3ResultsScience$coefficient, continuous_model3ResultsScience$stars)  #combine coefficients and stars into column.
+
+```
+
+put together into a dataframe for table 
+```{r}
+#english 
+continuous_model1ResultsEnglish = continuous_model1ResultsEnglish %>% select(term, new_coef, p)
+continuous_model2ResultsEnglish = continuous_model2ResultsEnglish %>% select(term, new_coef, p)
+continuous_model3ResultsEnglish = continuous_model3ResultsEnglish %>% select(term, new_coef, p)
+
+continuous_model1ResultsEnglish$model1_b <- paste0(continuous_model1ResultsEnglish$new_coef,"\n", continuous_model1ResultsEnglish$p) 
+continuous_model2ResultsEnglish$model2_b <- paste0(continuous_model2ResultsEnglish$new_coef,"\n", continuous_model2ResultsEnglish$p) 
+continuous_model3ResultsEnglish$model3_b <- paste0(continuous_model3ResultsEnglish$new_coef,"\n", continuous_model3ResultsEnglish$p) 
+
+continuous_model1ResultsEnglish = continuous_model1ResultsEnglish %>% select(term, model1_b) %>% 
+  rename("model1_english" = model1_b)
+continuous_model2ResultsEnglish = continuous_model2ResultsEnglish %>% select(term, model2_b)%>% 
+  rename("model2_english" = model2_b)
+continuous_model3ResultsEnglish = continuous_model3ResultsEnglish %>% select(term, model3_b)%>% 
+  rename("model3_english" = model3_b)
+
+
+#add column to make it the same length for all 3 models - needs to be as long as model 3 
+continuous_model1ResultsEnglish = continuous_model1ResultsEnglish %>% add_row(term = "caregiver_vocabStandardised") %>% 
+  add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model1_english =paste0(cont_model1R2English$est,"[", cont_model1R2English$`lo 95`, ";", cont_model1R2English$`hi 95`,"]"), .after = 39)
+continuous_model2ResultsEnglish = continuous_model2ResultsEnglish %>% add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model2_english =paste0(cont_model2R2English$est,"[", cont_model2R2English$`lo 95`, ";", cont_model2R2English$`hi 95`,"]"), .after = 39)
+continuous_model3ResultsEnglish = continuous_model3ResultsEnglish %>% 
+  add_row(term = "R2", model3_english =paste0(cont_model3R2English$est,"[", cont_model3R2English$`lo 95`, ";", cont_model3R2English$`hi 95`,"]"), .after = 39)
+
+continuous_outcomeResultsEnglish = cbind(continuous_model1ResultsEnglish, continuous_model2ResultsEnglish, continuous_model3ResultsEnglish)
+continuous_outcomeResultsEnglish = continuous_outcomeResultsEnglish %>% select(!3 & !5)
+
+continuous_outcomeResultsEnglish = continuous_outcomeResultsEnglish %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
+  add_row(term = "Caregiver vocabulary", .before = 39) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 41)
+
+#maths
+continuous_model1ResultsMaths = continuous_model1ResultsMaths %>% select(term, new_coef, p)
+continuous_model2ResultsMaths = continuous_model2ResultsMaths %>% select(term, new_coef, p)
+continuous_model3ResultsMaths = continuous_model3ResultsMaths %>% select(term, new_coef, p)
+
+continuous_model1ResultsMaths$model1_b <- paste0(continuous_model1ResultsMaths$new_coef,"\n", continuous_model1ResultsMaths$p) 
+continuous_model2ResultsMaths$model2_b <- paste0(continuous_model2ResultsMaths$new_coef,"\n", continuous_model2ResultsMaths$p) 
+continuous_model3ResultsMaths$model3_b <- paste0(continuous_model3ResultsMaths$new_coef,"\n", continuous_model3ResultsMaths$p) 
+
+continuous_model1ResultsMaths = continuous_model1ResultsMaths %>% select(term, model1_b) %>% 
+  rename("model1_maths" = model1_b)
+continuous_model2ResultsMaths = continuous_model2ResultsMaths %>% select(term, model2_b) %>% 
+  rename("model2_maths" = model2_b)
+continuous_model3ResultsMaths = continuous_model3ResultsMaths %>% select(term, model3_b) %>% 
+  rename("model3_maths" = model3_b)
+
+
+#add column to make it the same length for all 3 models - needs to be as long as model 3 
+continuous_model1ResultsMaths = continuous_model1ResultsMaths %>% add_row(term = "caregiver_vocabStandardised") %>% 
+  add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model1_maths =paste0(cont_model1R2Maths$est,"[", cont_model1R2Maths$`lo 95`, ";", cont_model1R2Maths$`hi 95`,"]"), .after = 39)
+continuous_model2ResultsMaths = continuous_model2ResultsMaths %>% add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model2_maths =paste0(cont_model2R2Maths$est,"[", cont_model2R2Maths$`lo 95`, ";", cont_model2R2Maths$`hi 95`,"]"), .after = 39)
+continuous_model3ResultsMaths = continuous_model3ResultsMaths %>% 
+  add_row(term = "R2", model3_maths =paste0(cont_model3R2Maths$est,"[", cont_model3R2Maths$`lo 95`, ";", cont_model3R2Maths$`hi 95`,"]"), .after = 39)
+
+continuous_outcomeResultsMaths = cbind(continuous_model1ResultsMaths, continuous_model2ResultsMaths, continuous_model3ResultsMaths)
+continuous_outcomeResultsMaths = continuous_outcomeResultsMaths %>% select(!3 & !5)
+
+continuous_outcomeResultsMaths = continuous_outcomeResultsMaths %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
+  add_row(term = "Caregiver vocabulary", .before = 39) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 41) %>% 
+  rename("term_maths" = term)
+
+#science
+continuous_model1ResultsScience = continuous_model1ResultsScience %>% select(term, new_coef, p)
+continuous_model2ResultsScience = continuous_model2ResultsScience %>% select(term, new_coef, p)
+continuous_model3ResultsScience = continuous_model3ResultsScience %>% select(term, new_coef, p)
+
+continuous_model1ResultsScience$model1_b <- paste0(continuous_model1ResultsScience$new_coef,"\n", continuous_model1ResultsScience$p) 
+continuous_model2ResultsScience$model2_b <- paste0(continuous_model2ResultsScience$new_coef,"\n", continuous_model2ResultsScience$p) 
+continuous_model3ResultsScience$model3_b <- paste0(continuous_model3ResultsScience$new_coef,"\n", continuous_model3ResultsScience$p) 
+
+continuous_model1ResultsScience = continuous_model1ResultsScience %>% select(term, model1_b) %>% 
+  rename("model1_science" = model1_b)
+continuous_model2ResultsScience = continuous_model2ResultsScience %>% select(term, model2_b) %>% 
+  rename("model2_science" = model2_b)
+continuous_model3ResultsScience = continuous_model3ResultsScience %>% select(term, model3_b) %>% 
+  rename("model3_science" = model3_b)
+
+
+#add column to make it the same length for all 3 models - needs to be as long as model 3 
+continuous_model1ResultsScience = continuous_model1ResultsScience %>% add_row(term = "caregiver_vocabStandardised") %>% 
+  add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model1_science =paste0(cont_model1R2Science$est,"[", cont_model1R2Science$`lo 95`, ";", cont_model1R2Science$`hi 95`,"]"), .after = 39)
+continuous_model2ResultsScience = continuous_model2ResultsScience %>% add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model2_science =paste0(cont_model2R2Science$est,"[", cont_model2R2Science$`lo 95`, ";", cont_model2R2Science$`hi 95`,"]"), .after = 39)
+continuous_model3ResultsScience = continuous_model3ResultsScience %>% 
+  add_row(term = "R2", model3_science =paste0(cont_model3R2Science$est,"[", cont_model3R2Science$`lo 95`, ";", cont_model3R2Science$`hi 95`,"]"), .after = 39)
+
+continuous_outcomeResultsScience = cbind(continuous_model1ResultsScience, continuous_model2ResultsScience, continuous_model3ResultsScience)
+continuous_outcomeResultsScience = continuous_outcomeResultsScience %>% select(!3 & !5)
+
+continuous_outcomeResultsScience = continuous_outcomeResultsScience %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
+  add_row(term = "Caregiver vocabulary", .before = 39) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 41) %>% 
+  rename("term_science" = term)
+
+#put into one dataframe
+regression_resultsTable = cbind(continuous_outcomeResultsEnglish, continuous_outcomeResultsMaths, continuous_outcomeResultsScience)
+regression_resultsTable [is.na(regression_resultsTable )] <- "  "
+regression_resultsTable = regression_resultsTable %>% select(!5) %>% 
+  select(!8) %>% 
+    slice(-(1)) %>% #remove intercept row
+  add_row(term = "sex1", .after = 1) %>% #add in reference categories for factor variables
+  add_row(term = "ethnicity1", .after = 3) %>% 
+  add_row(term = "EAL1", .after = 9) %>% 
+  add_row(term = "country1", .after =  12) %>% 
+  add_row(term = "highest_nvq1", .after = 16) %>% 
+  add_row(term = "oecd_income1", .after = 22) %>% 
+  add_row(term = "occupational_status2", .after = 27) %>% 
+  add_row(term = "wealth_quintiles1", .after = 31) %>% 
+  add_row(term = "imd1", .after = 36 )
+regression_resultsTable [is.na(regression_resultsTable )] <- "REFERENCE"
+
+regression_resultsTable$term <- c("Sociodemographic confounders", "Sex (male)", "Sex (female)", 
+                                  "Ethnicity \n (White)", "Ethnicity \n (mixed)", "Ethnicity \n (Indian)", "Ethnicity \n (Pakistani & Bangladeshi)", "Ethnicity \n (Black/ Black British)", "Ethnicity \n (other incl. Chinese)", 
+                                  "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)", 
+                                  "Country \n (England)", "Country \n (Wales)", "Country \n (Scotland)", "Country \n (Northern Ireland)",
+                                  "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2)", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", 
+                           "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
+                           "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",  
+                           "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5",
+                          "Relative Neighbourhood \n Deprivation \n (most deprived decile)", "Relative Neighbourhood \n Deprivation \n (10 - <20%)", "Relative Neighbourhood \n Deprivation \n (20 - <30%)", "Relative Neighbourhood \n Deprivation \n (30 - <40%)", "Relative Neighbourhood \n Deprivation \n (40 - <50%)", "Relative Neighbourhood \n Deprivation \n (50 - <60%)", "Relative Neighbourhood \n Deprivation \n (60 - <70%)", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)", "Relative Neighbourhood \n Deprivation \n (80 - <90%)", "Relative Neighbourhood \n Deprivation \n (least deprived decile)", "Caregiver Vocabulary", "Caregiver Vocabulary \n (Word Activity Test Score)", "Cohort Member Vocabulary", "Cohort Member Vocabulary \n (Naming Vocabulary Score)", "R2 (%)")
+```
+
+
+tanle with flextable package
+```{r}
+my_border = border= fp_border(color="black", width=1)
+results_exploratory <- regression_resultsTable %>% 
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2:10, align="center", part="all") %>% 
+  color(j=1:10, color="black", part="all") %>% 
+  width(j=1, width=1) %>% 
+  width(j=2:10, width=1.4) %>% 
+  line_spacing(j=2:10, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:10, part="all", border=my_border) %>% 
+  hline_bottom(j=1:10,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable", 
+                    model1_english= "Model 1", model2_english= "Model 2",model3_english= "Model 3", 
+                    model1_maths= "Model 1",model2_maths= "Model 2",model3_maths= "Model 3", 
+                    model1_science= "Model 1",  model2_science= "Model 2",model3_science= "Model 3") %>% 
+ add_header_row(values = c(" ", "English Outcome (B[95% CIs]", "Maths Outcome (B[95% CIs]", "Science Outcome (B[95% CIs]"), colwidths = c(1, 3, 3,3)) %>% 
+  font(fontname = "Times New Roman", part="header") %>% 
+  align(align="center", part="header") %>% 
+  hline_top(j = 2:10, part = "all", border = my_border) %>% 
+  bold(j = 1, i = c(1,47, 49), bold = TRUE) %>% 
+  italic(j = 1, i = c(1,47, 49), italic = TRUE) 
+  
+```
+

@@ -1,0 +1,2655 @@
+title: "R Notebook"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+country specific sensitivity analyses. 
+
+```{r}
+library(mice)
+library(pander)
+library(xtable)
+library(dplyr)
+library(gt)
+library(glue)
+library(tidyverse)
+library(miceadds)
+library(swfscMisc)
+library(imputools)
+library(haven)
+library(sjmisc)
+library(Hmisc)
+library(psych)
+library(lavaan)
+library(ggplot2)
+library(ggpubr)
+library(officer)
+library(flextable)
+library(ftExtra)
+
+#this will take a float (e.g. a p value) and return a string with 3 digits and no leading 0
+
+bv <- function(val) {
+  return(sub("^(-?)0.", "\\1.", sprintf("%.2f", val)))
+}
+
+#if the number is less than .001, it will give <.001. 
+pv1 <- function(val) {
+  return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
+}
+
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-13_vocabulary_education_imputed_countrySpecificData/2021-12-13_vocabulary_education_imputed_countrySpecificData.Rdata")
+imputed_mcs2 = mi.res
+```
+
+split into 4 countries - do this on long data then convert back to mids format
+
+```{r}
+long_format_mcs <- mice::complete(imputed_mcs2, "long", include=TRUE)
+
+england = filter(long_format_mcs, country == 1) %>% 
+  select(!country)
+wales = filter(long_format_mcs, country == 2) %>% 
+  select(!country)
+scotland = filter(long_format_mcs, country == 3) %>% 
+  select(!country)
+northern_ireland= filter(long_format_mcs, country == 4) %>% 
+  select(!country)
+
+#for wales, scotland and NI, not many minorities - split ethnicity into a binary variable of White vs minority here
+wales = wales %>% mutate(ethnicity_binary = case_when(ethnicity == 1 ~ 0, 
+                                                      TRUE ~ 1))
+scotland = scotland %>% mutate(ethnicity_binary = case_when(ethnicity == 1 ~ 0, 
+                                                      TRUE ~ 1))
+northern_ireland =northern_ireland %>% mutate(ethnicity_binary = case_when(ethnicity == 1 ~ 0, 
+                                                      TRUE ~ 1))
+
+
+#convert bag to mids for analysis
+england_imputed = as.mids(england)
+wales_imputed = as.mids(wales)
+scotland_imputed = as.mids(scotland)
+northern_ireland_imputed = as.mids(northern_ireland)
+```
+
+England only analyses 
+
+```{r}
+#england####
+
+#1.binary outcome of core subjects 
+binary_unadjustedEngland = with(england_imputed, glm(benchmark_binary ~ age5_standardised,
+                                        family = binomial,  weights = weight))
+
+binary_unadjusted_resultsEngland = round(summary(pool(binary_unadjustedEngland), conf.int = TRUE, exponentiate = TRUE),2)
+
+binary_model1England = with(england_imputed, glm(benchmark_binary ~ sex + ethnicity + EAL + 
+                                         highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
+                                       family = binomial, weights = weight))
+
+binary_model2England= with(england_imputed, glm(benchmark_binary ~ sex + ethnicity + EAL +
+                                         highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                         imd + caregiver_vocabStandardised, 
+                                       family = binomial, weights = weight))
+
+binary_model3England = with(england_imputed, glm(benchmark_binary ~ sex + ethnicity + EAL +
+                                         highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                         imd + caregiver_vocabStandardised + age5_standardised, 
+                                       family = binomial, weights = weight))
+
+
+binary_model1ResultsEngland = summary(pool(binary_model1England), conf.int = TRUE, exponentiate = TRUE)
+binary_model2ResultsEngland = summary(pool(binary_model2England), conf.int = TRUE, exponentiate = TRUE)
+binary_model3ResultsEngland = summary(pool(binary_model3England), conf.int = TRUE, exponentiate = TRUE)
+
+```
+
+1b. does vocabulary predict reaching a functional level of education above and beyond SEC/caregiver vocab factors?
+```{r}
+#compare model with only sociodemographic factors to a model with caregiver vocab
+#compare sociodemographics model to no predictors
+#create null model 
+null_binaryModelEngland = with(england_imputed, glm(benchmark_binary ~ 1,
+                                        family = binomial,  weights = weight))
+D1(binary_model1England, null_binaryModelEngland)
+#model 2 compared to model 1
+D1(binary_model2England, binary_model1England) 
+#compare model with all confounders to model with vocab
+D1(binary_model3England, binary_model2England) 
+```
+
+2. Continuous outcome variable#### - England
+2a does vocabulary predict level of achievement in core subjects regardless of pass/ fail? 
+
+```{r}
+#unadjusted relationship
+
+continuous_unadjustedEngland = with(england_imputed, lm(standardised_core_subjects ~ age5_standardised, weights = weight))
+
+continuous_unadjusted_resultsEngland = round(summary(pool(continuous_unadjustedEngland), conf.int = TRUE),2)
+
+#adjusted relationship 
+continuous_model1England = with(england_imputed, lm(standardised_core_subjects ~ sex + ethnicity + EAL + 
+                                         highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
+                                       weights = weight))
+
+continuous_model2England = with(england_imputed, lm(standardised_core_subjects ~ sex + ethnicity + EAL + 
+                                         highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                         imd + caregiver_vocabStandardised, 
+                                        weights = weight))
+
+continuous_model3England = with(england_imputed, lm(standardised_core_subjects ~ sex + ethnicity + EAL + 
+                                         highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                         imd + caregiver_vocabStandardised + age5_standardised, 
+                                        weights = weight))
+
+continuous_model1ResultsEngland= summary(pool(continuous_model1England), conf.int = TRUE)
+continuous_model2ResultsEngland = summary(pool(continuous_model2England), conf.int = TRUE)
+continuous_model3ResultsEngland = summary(pool(continuous_model3England), conf.int = TRUE)
+
+round(pool.r.squared(continuous_unadjustedEngland),4)*100
+cont_model1R2England = as.data.frame(round(pool.r.squared(continuous_model1England),4)*100)
+cont_model2R2England = as.data.frame(round(pool.r.squared(continuous_model2England),4)*100)
+cont_model3R2England = as.data.frame(round(pool.r.squared(continuous_model3England),4)*100)
+```
+
+2b. does vocabulary predict level of achievement in core subjects above and beyond SEC/caregiver vocab factors? - England
+
+```{r}
+#compare sociodemographics model to no predictors
+#create null model 
+null_continuousModelEngland =  with(england_imputed, lm(standardised_core_subjects ~ 1, weights = weight))
+D1(continuous_model1England, null_continuousModelEngland)
+#compare model with only sociodemographic factors to a model with caregiver vocab
+D1(continuous_model2England, continuous_model1England) #check if need to use a specific method ?
+#compare model with all confounders to model with vocab
+D1(continuous_model3England, continuous_model2England) 
+```
+
+
+gather relevant information for table for RQ 1 & 2
+
+```{r}
+#binary outcome ####
+#model 1 for binary outcome
+binary_model1ResultsEngland$estimate = bv(binary_model1ResultsEngland$estimate) #no leading 0 
+binary_model1ResultsEngland$`2.5 %` = bv(binary_model1ResultsEngland$`2.5 %`)
+binary_model1ResultsEngland$`97.5 %` = bv(binary_model1ResultsEngland$`97.5 %`)
+binary_model1ResultsEngland$p.value1= ifelse(binary_model1ResultsEngland$p.value< .001, "<.001" , pv1(binary_model1ResultsEngland$p.value))
+binary_model1ResultsEngland$coefficient = paste0(binary_model1ResultsEngland$estimate, "[", binary_model1ResultsEngland$`2.5 %`, ";", binary_model1ResultsEngland$`97.5 %`, "]")
+binary_model1ResultsEngland$stars = add.significance.stars(binary_model1ResultsEngland$p.value, cutoffs=c(0.05, 0.01, 0.001))
+binary_model1ResultsEngland$p1 = paste0(binary_model1ResultsEngland$p.value1, "")
+binary_model1ResultsEngland$p = paste0("p", binary_model1ResultsEngland$p1)
+binary_model1ResultsEngland$new_coef = paste0(binary_model1ResultsEngland$coefficient, binary_model1ResultsEngland$stars)  #combine coefficients and stars into column.
+
+#model 2 for binary outcome
+binary_model2ResultsEngland$estimate = bv(binary_model2ResultsEngland$estimate) #no leading 0 
+binary_model2ResultsEngland$`2.5 %` = bv(binary_model2ResultsEngland$`2.5 %`)
+binary_model2ResultsEngland$`97.5 %` = bv(binary_model2ResultsEngland$`97.5 %`)
+binary_model2ResultsEngland$p.value1= ifelse(binary_model2ResultsEngland$p.value< .001, "<.001" , pv1(binary_model2ResultsEngland$p.value))
+binary_model2ResultsEngland$coefficient = paste0(binary_model2ResultsEngland$estimate, "[", binary_model2ResultsEngland$`2.5 %`, ";", binary_model2ResultsEngland$`97.5 %`, "]")
+binary_model2ResultsEngland$stars = add.significance.stars(binary_model2ResultsEngland$p.value, cutoffs=c(0.05, 0.01, 0.001))
+binary_model2ResultsEngland$p1 = paste0(binary_model2ResultsEngland$p.value1, "")
+binary_model2ResultsEngland$p = paste0("p", binary_model2ResultsEngland$p1)
+binary_model2ResultsEngland$new_coef = paste0(binary_model2ResultsEngland$coefficient, binary_model2ResultsEngland$stars)  #combine coefficients and stars into column.
+
+#model 3 for binary outcome
+binary_model3ResultsEngland$estimate = bv(binary_model3ResultsEngland$estimate) #no leading 0 
+binary_model3ResultsEngland$`2.5 %` = bv(binary_model3ResultsEngland$`2.5 %`)
+binary_model3ResultsEngland$`97.5 %` = bv(binary_model3ResultsEngland$`97.5 %`)
+binary_model3ResultsEngland$p.value1= ifelse(binary_model3ResultsEngland$p.value< .001, "<.001" , pv1(binary_model3ResultsEngland$p.value))
+binary_model3ResultsEngland$coefficient = paste0(binary_model3ResultsEngland$estimate, "[", binary_model3ResultsEngland$`2.5 %`, ";", binary_model3ResultsEngland$`97.5 %`, "]")
+binary_model3ResultsEngland$stars = add.significance.stars(binary_model3ResultsEngland$p.value, cutoffs=c(0.05, 0.01, 0.001))
+binary_model3ResultsEngland$p1 = paste0(binary_model3ResultsEngland$p.value1, "")
+binary_model3ResultsEngland$p = paste0("p", binary_model3ResultsEngland$p1)
+binary_model3ResultsEngland$new_coef = paste0(binary_model3ResultsEngland$coefficient, binary_model3ResultsEngland$stars)  #combine coefficients and stars into column.
+
+#contunous outcome ####
+#model 1 for continuous outcome
+continuous_model1ResultsEngland$estimate = bv(continuous_model1ResultsEngland$estimate) #no leading 0 
+continuous_model1ResultsEngland$`2.5 %` = bv(continuous_model1ResultsEngland$`2.5 %`)
+continuous_model1ResultsEngland$`97.5 %` = bv(continuous_model1ResultsEngland$`97.5 %`)
+continuous_model1ResultsEngland$p.value1= ifelse(continuous_model1ResultsEngland$p.value< .001, "<.001" , pv1(continuous_model1ResultsEngland$p.value))
+continuous_model1ResultsEngland$coefficient = paste0(continuous_model1ResultsEngland$estimate, "[", continuous_model1ResultsEngland$`2.5 %`, ";", continuous_model1ResultsEngland$`97.5 %`, "]")
+continuous_model1ResultsEngland$stars = add.significance.stars(continuous_model1ResultsEngland$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model1ResultsEngland$p1 = paste0(continuous_model1ResultsEngland$p.value1, "")
+continuous_model1ResultsEngland$p = paste0("p", continuous_model1ResultsEngland$p1)
+continuous_model1ResultsEngland$new_coef = paste0(continuous_model1ResultsEngland$coefficient, continuous_model1ResultsEngland$stars)  #combine coefficients and stars into column.
+
+#model 2 for continuous outcome
+continuous_model2ResultsEngland$estimate = bv(continuous_model2ResultsEngland$estimate) #no leading 0 
+continuous_model2ResultsEngland$`2.5 %` = bv(continuous_model2ResultsEngland$`2.5 %`)
+continuous_model2ResultsEngland$`97.5 %` = bv(continuous_model2ResultsEngland$`97.5 %`)
+continuous_model2ResultsEngland$p.value1= ifelse(continuous_model2ResultsEngland$p.value< .001, "<.001" , pv1(continuous_model2ResultsEngland$p.value))
+continuous_model2ResultsEngland$coefficient = paste0(continuous_model2ResultsEngland$estimate, "[", continuous_model2ResultsEngland$`2.5 %`, ";", continuous_model2ResultsEngland$`97.5 %`, "]")
+continuous_model2ResultsEngland$stars = add.significance.stars(continuous_model2ResultsEngland$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model2ResultsEngland$p1 = paste0(continuous_model2ResultsEngland$p.value1, "")
+continuous_model2ResultsEngland$p = paste0("p", continuous_model2ResultsEngland$p1)
+continuous_model2ResultsEngland$new_coef = paste0(continuous_model2ResultsEngland$coefficient, continuous_model2ResultsEngland$stars)  #combine coefficients and stars into column.
+
+
+#model 3 for continuous outcome
+continuous_model3ResultsEngland$estimate = bv(continuous_model3ResultsEngland$estimate) #no leading 0 
+continuous_model3ResultsEngland$`2.5 %` = bv(continuous_model3ResultsEngland$`2.5 %`)
+continuous_model3ResultsEngland$`97.5 %` = bv(continuous_model3ResultsEngland$`97.5 %`)
+continuous_model3ResultsEngland$p.value1= ifelse(continuous_model3ResultsEngland$p.value< .001, "<.001" , pv1(continuous_model3ResultsEngland$p.value))
+continuous_model3ResultsEngland$coefficient = paste0(continuous_model3ResultsEngland$estimate, "[", continuous_model3ResultsEngland$`2.5 %`, ";", continuous_model3ResultsEngland$`97.5 %`, "]")
+continuous_model3ResultsEngland$stars = add.significance.stars(continuous_model3ResultsEngland$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model3ResultsEngland$p1 = paste0(continuous_model3ResultsEngland$p.value1, "")
+continuous_model3ResultsEngland$p = paste0("p", continuous_model3ResultsEngland$p1)
+continuous_model3ResultsEngland$new_coef = paste0(continuous_model3ResultsEngland$coefficient, continuous_model3ResultsEngland$stars)  #combine coefficients and stars into column.
+
+
+#get odds ratios and 95% CIs for table: logistic regression
+binary_model1ResultsEngland = binary_model1ResultsEngland %>% select(term, new_coef, p)
+binary_model2ResultsEngland = binary_model2ResultsEngland %>% select(term, new_coef, p)
+binary_model3ResultsEngland = binary_model3ResultsEngland %>% select(term, new_coef, p)
+
+binary_model1ResultsEngland$model1_OR <- paste0(binary_model1ResultsEngland$new_coef,"\n", binary_model1ResultsEngland$p) 
+binary_model2ResultsEngland$model2_OR <- paste0(binary_model2ResultsEngland$new_coef,"\n", binary_model2ResultsEngland$p) 
+binary_model3ResultsEngland$model3_OR <- paste0(binary_model3ResultsEngland$new_coef,"\n", binary_model3ResultsEngland$p) 
+
+binary_model1ResultsEngland = binary_model1ResultsEngland %>% select(term, model1_OR)
+binary_model2ResultsEngland = binary_model2ResultsEngland %>% select(term, model2_OR)
+binary_model3ResultsEngland = binary_model3ResultsEngland %>% select(term, model3_OR)
+
+#add column to make it the same length for all 3 models - needs to be as long as model 3 
+binary_model1ResultsEngland = binary_model1ResultsEngland %>% add_row(term = "caregiver_vocabStandardised") %>% 
+  add_row(term = "age5_standardised")
+binary_model2ResultsEngland = binary_model2ResultsEngland %>% add_row(term = "age5_standardised")
+
+binary_outcomeResultsEngland = cbind(binary_model1ResultsEngland, binary_model2ResultsEngland, binary_model3ResultsEngland)
+binary_outcomeResultsEngland = binary_outcomeResultsEngland %>% select(!3 & !5)
+
+binary_outcomeResultsEngland = binary_outcomeResultsEngland %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
+  add_row(term = "Caregiver vocabulary", .before = 36) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 38) %>% 
+  add_row(term = "R2", .after = 39)
+
+#get coefficients and 95% CIs for table: linear regression
+continuous_model1ResultsEngland = continuous_model1ResultsEngland %>% select(term, new_coef, p)
+continuous_model2ResultsEngland = continuous_model2ResultsEngland %>% select(term, new_coef, p)
+continuous_model3ResultsEngland = continuous_model3ResultsEngland %>% select(term, new_coef, p)
+
+continuous_model1ResultsEngland$model1_b <- paste0(continuous_model1ResultsEngland$new_coef,"\n", continuous_model1ResultsEngland$p) 
+continuous_model2ResultsEngland$model2_b <- paste0(continuous_model2ResultsEngland$new_coef,"\n", continuous_model2ResultsEngland$p) 
+continuous_model3ResultsEngland$model3_b <- paste0(continuous_model3ResultsEngland$new_coef,"\n", continuous_model3ResultsEngland$p) 
+
+continuous_model1ResultsEngland = continuous_model1ResultsEngland %>% select(term, model1_b)
+continuous_model2ResultsEngland = continuous_model2ResultsEngland %>% select(term, model2_b)
+continuous_model3ResultsEngland = continuous_model3ResultsEngland %>% select(term, model3_b)
+
+
+#add column to make it the same length for all 3 models - needs to be as long as model 3 
+continuous_model1ResultsEngland = continuous_model1ResultsEngland %>% add_row(term = "caregiver_vocabStandardised") %>% 
+  add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model1_b =paste0(cont_model1R2England$est,"[", cont_model1R2England$`lo 95`, ";", cont_model1R2England$`hi 95`,"]"), .after = 39)
+continuous_model2ResultsEngland = continuous_model2ResultsEngland %>% add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model2_b =paste0(cont_model2R2England$est,"[", cont_model2R2England$`lo 95`, ";", cont_model2R2England$`hi 95`,"]"), .after = 39)
+continuous_model3ResultsEngland = continuous_model3ResultsEngland %>% 
+  add_row(term = "R2", model3_b =paste0(cont_model3R2England$est,"[", cont_model3R2England$`lo 95`, ";", cont_model3R2England$`hi 95`,"]"), .after = 39)
+
+continuous_outcomeResultsEngland = cbind(continuous_model1ResultsEngland, continuous_model2ResultsEngland, continuous_model3ResultsEngland)
+continuous_outcomeResultsEngland = continuous_outcomeResultsEngland %>% select(!3 & !5)
+
+continuous_outcomeResultsEngland = continuous_outcomeResultsEngland %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
+  add_row(term = "Caregiver vocabulary", .before = 36) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 38)
+
+
+regression_resultsTableEngland = cbind(binary_outcomeResultsEngland, continuous_outcomeResultsEngland)
+regression_resultsTableEngland [is.na(regression_resultsTableEngland )] <- "  "
+regression_resultsTableEngland = regression_resultsTableEngland %>% select(!5) %>%  
+  slice(-(1)) %>% #remove intercept row
+  add_row(term = "sex1", .after = 1) %>% #add in reference categories for factor variables
+  add_row(term = "ethnicity1", .after = 3) %>% 
+  add_row(term = "EAL1", .after = 9) %>% 
+  add_row(term = "highest_nvq1", .before = 13) %>% 
+  add_row(term = "oecd_income1", .before = 19) %>% 
+  add_row(term = "occupational_status2", .before = 24) %>% 
+  add_row(term = "wealth_quintiles1", .before = 28) %>% 
+  add_row(term = "imd1", .before = 33)
+regression_resultsTableEngland [is.na(regression_resultsTableEngland )] <- "REFERENCE"
+  
+#rename variables column 
+
+regression_resultsTableEngland$term <- c("Sociodemographic confounders", "Sex (male)", "Sex (female)", 
+                                  "Ethnicity \n (White)", "Ethnicity \n (mixed)", "Ethnicity \n (Indian)", "Ethnicity \n (Pakistani & Bangladeshi)", "Ethnicity \n (Black/ Black British)", "Ethnicity \n (other incl. Chinese)", 
+                                  "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)",
+                                  "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2)", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", 
+                           "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
+                           "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",  
+                           "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5",
+                          "Relative Neighbourhood \n Deprivation \n (most deprived decile)", "Relative Neighbourhood \n Deprivation \n (10 - <20%)", "Relative Neighbourhood \n Deprivation \n (20 - <30%)", "Relative Neighbourhood \n Deprivation \n (30 - <40%)", "Relative Neighbourhood \n Deprivation \n (40 - <50%)", "Relative Neighbourhood \n Deprivation \n (50 - <60%)", "Relative Neighbourhood \n Deprivation \n (60 - <70%)", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)", "Relative Neighbourhood \n Deprivation \n (80 - <90%)", "Relative Neighbourhood \n Deprivation \n (least deprived decile)", "Caregiver Vocabulary", "Caregiver Vocabulary \n (Word Activity Test Score)", "Cohort Member Vocabulary", "Cohort Member Vocabulary \n (Naming Vocabulary Score)", "R2 (%)")
+```
+
+
+
+#results table - england only analysis
+```{r}
+#define border
+my_border = border= fp_border(color="black", width=1)
+results_england <- regression_resultsTableEngland %>% 
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2:7, align="center", part="all") %>% 
+  color(j=1:7, color="black", part="all") %>% 
+  width(j=1, width=1) %>% 
+  width(j=2:7, width=1.4) %>% 
+  line_spacing(j=2:7, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:7, part="all", border=my_border) %>% 
+  hline_bottom(j=1:7,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable",model1_OR= "Model 1",
+                    model2_OR= "Model 2",model3_OR = "Model 3", 
+                    model1_b="Model 1", model2_b = "Model 2", model3_b = "Model 3") %>% 
+ add_header_row(values = c(" ", "Binary Outcome (OR[95% CIs]", "Continuous Outcome (B[95% CIs]"), colwidths = c(1, 3, 3)) %>% 
+  font(fontname = "Times New Roman", part="header") %>% 
+  align(align="center", part="header") %>% 
+  hline_top(j = 2:7, part = "all", border = my_border) %>% 
+  bold(j = 1, i = c(1,43, 45), bold = TRUE) %>% 
+  italic(j = 1, i = c(1,43, 45), italic = TRUE) 
+  
+  
+
+ print(results_Rq1Rq2, preview = "docx") 
+```
+
+Wales only analyses 
+
+```{r}
+#wales####
+
+#1.binary outcome of core subjects 
+binary_unadjustedWales = with(wales_imputed, glm(benchmark_binary ~ age5_standardised,
+                                                     family = binomial,  weights = weight))
+
+binary_unadjusted_resultsWales = round(summary(pool(binary_unadjustedWales), conf.int = TRUE, exponentiate = TRUE),2)
+
+binary_model1Wales = with(wales_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL + 
+                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
+                                                 family = binomial, weights = weight))
+
+binary_model2Wales= with(wales_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL +
+                                                  highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                                  imd + caregiver_vocabStandardised, 
+                                                family = binomial, weights = weight))
+
+binary_model3Wales = with(wales_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL +
+                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                                   imd + caregiver_vocabStandardised + age5_standardised, 
+                                                 family = binomial, weights = weight))
+
+
+binary_model1ResultsWales = summary(pool(binary_model1Wales), conf.int = TRUE, exponentiate = TRUE)
+binary_model2ResultsWales = summary(pool(binary_model2Wales), conf.int = TRUE, exponentiate = TRUE)
+binary_model3ResultsWales = summary(pool(binary_model3Wales), conf.int = TRUE, exponentiate = TRUE)
+
+```
+
+1b. does vocabulary predict reaching a functional level of education above and beyond SEC/caregiver vocab factors?
+```{r}
+#compare model with only sociodemographic factors to a model with caregiver vocab
+#compare sociodemographics model to no predictors
+#create null model 
+null_binaryModelWales = with(wales_imputed, glm(benchmark_binary ~ 1,
+                                                    family = binomial,  weights = weight))
+D1(binary_model1Wales, null_binaryModelWales)
+#model 2 compared to model 1
+D1(binary_model2Wales, binary_model1Wales) 
+#compare model with all confounders to model with vocab
+D1(binary_model3Wales, binary_model2Wales) 
+```
+
+2. Continuous outcome variable#### - Wales
+2a does vocabulary predict level of achievement in core subjects regardless of pass/ fail? 
+  
+```{r}
+#unadjusted relationship
+
+continuous_unadjustedWales = with(wales_imputed, lm(standardised_core_subjects ~ age5_standardised, weights = weight))
+
+continuous_unadjusted_resultsWales = round(summary(pool(continuous_unadjustedWales), conf.int = TRUE),2)
+
+#adjusted relationship 
+continuous_model1Wales = with(wales_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+                                                      highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
+                                                    weights = weight))
+
+continuous_model2Wales = with(wales_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+                                                      highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                                      imd + caregiver_vocabStandardised, 
+                                                    weights = weight))
+
+continuous_model3Wales = with(wales_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+                                                      highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                                      imd + caregiver_vocabStandardised + age5_standardised, 
+                                                    weights = weight))
+
+continuous_model1ResultsWales= summary(pool(continuous_model1Wales), conf.int = TRUE)
+continuous_model2ResultsWales = summary(pool(continuous_model2Wales), conf.int = TRUE)
+continuous_model3ResultsWales = summary(pool(continuous_model3Wales), conf.int = TRUE)
+
+round(pool.r.squared(continuous_unadjustedWales),4)*100
+cont_model1R2Wales = as.data.frame(round(pool.r.squared(continuous_model1Wales),4)*100)
+cont_model2R2Wales = as.data.frame(round(pool.r.squared(continuous_model2Wales),4)*100)
+cont_model3R2Wales = as.data.frame(round(pool.r.squared(continuous_model3Wales),4)*100)
+```
+
+2b. does vocabulary predict level of achievement in core subjects above and beyond SEC/caregiver vocab factors? - Wales
+
+```{r}
+#compare sociodemographics model to no predictors
+#create null model 
+null_continuousModelWales =  with(wales_imputed, lm(standardised_core_subjects ~ 1, weights = weight))
+D1(continuous_model1Wales, null_continuousModelWales)
+#compare model with only sociodemographic factors to a model with caregiver vocab
+D1(continuous_model2Wales, continuous_model1Wales) #check if need to use a specific method ?
+#compare model with all confounders to model with vocab
+D1(continuous_model3Wales, continuous_model2Wales) 
+```
+
+
+gather relevant information for table for RQ 1 & 2
+
+```{r}
+#binary outcome ####
+#model 1 for binary outcome
+binary_model1ResultsWales$estimate = bv(binary_model1ResultsWales$estimate) #no leading 0 
+binary_model1ResultsWales$`2.5 %` = bv(binary_model1ResultsWales$`2.5 %`)
+binary_model1ResultsWales$`97.5 %` = bv(binary_model1ResultsWales$`97.5 %`)
+binary_model1ResultsWales$p.value1= ifelse(binary_model1ResultsWales$p.value< .001, "<.001" , pv1(binary_model1ResultsWales$p.value))
+binary_model1ResultsWales$coefficient = paste0(binary_model1ResultsWales$estimate, "[", binary_model1ResultsWales$`2.5 %`, ";", binary_model1ResultsWales$`97.5 %`, "]")
+binary_model1ResultsWales$stars = add.significance.stars(binary_model1ResultsWales$p.value, cutoffs=c(0.05, 0.01, 0.001))
+binary_model1ResultsWales$p1 = paste0(binary_model1ResultsWales$p.value1, "")
+binary_model1ResultsWales$p = paste0("p", binary_model1ResultsWales$p1)
+binary_model1ResultsWales$new_coef = paste0(binary_model1ResultsWales$coefficient, binary_model1ResultsWales$stars)  #combine coefficients and stars into column.
+
+#model 2 for binary outcome
+binary_model2ResultsWales$estimate = bv(binary_model2ResultsWales$estimate) #no leading 0 
+binary_model2ResultsWales$`2.5 %` = bv(binary_model2ResultsWales$`2.5 %`)
+binary_model2ResultsWales$`97.5 %` = bv(binary_model2ResultsWales$`97.5 %`)
+binary_model2ResultsWales$p.value1= ifelse(binary_model2ResultsWales$p.value< .001, "<.001" , pv1(binary_model2ResultsWales$p.value))
+binary_model2ResultsWales$coefficient = paste0(binary_model2ResultsWales$estimate, "[", binary_model2ResultsWales$`2.5 %`, ";", binary_model2ResultsWales$`97.5 %`, "]")
+binary_model2ResultsWales$stars = add.significance.stars(binary_model2ResultsWales$p.value, cutoffs=c(0.05, 0.01, 0.001))
+binary_model2ResultsWales$p1 = paste0(binary_model2ResultsWales$p.value1, "")
+binary_model2ResultsWales$p = paste0("p", binary_model2ResultsWales$p1)
+binary_model2ResultsWales$new_coef = paste0(binary_model2ResultsWales$coefficient, binary_model2ResultsWales$stars)  #combine coefficients and stars into column.
+
+#model 3 for binary outcome
+binary_model3ResultsWales$estimate = bv(binary_model3ResultsWales$estimate) #no leading 0 
+binary_model3ResultsWales$`2.5 %` = bv(binary_model3ResultsWales$`2.5 %`)
+binary_model3ResultsWales$`97.5 %` = bv(binary_model3ResultsWales$`97.5 %`)
+binary_model3ResultsWales$p.value1= ifelse(binary_model3ResultsWales$p.value< .001, "<.001" , pv1(binary_model3ResultsWales$p.value))
+binary_model3ResultsWales$coefficient = paste0(binary_model3ResultsWales$estimate, "[", binary_model3ResultsWales$`2.5 %`, ";", binary_model3ResultsWales$`97.5 %`, "]")
+binary_model3ResultsWales$stars = add.significance.stars(binary_model3ResultsWales$p.value, cutoffs=c(0.05, 0.01, 0.001))
+binary_model3ResultsWales$p1 = paste0(binary_model3ResultsWales$p.value1, "")
+binary_model3ResultsWales$p = paste0("p", binary_model3ResultsWales$p1)
+binary_model3ResultsWales$new_coef = paste0(binary_model3ResultsWales$coefficient, binary_model3ResultsWales$stars)  #combine coefficients and stars into column.
+
+#contunous outcome ####
+#model 1 for continuous outcome
+continuous_model1ResultsWales$estimate = bv(continuous_model1ResultsWales$estimate) #no leading 0 
+continuous_model1ResultsWales$`2.5 %` = bv(continuous_model1ResultsWales$`2.5 %`)
+continuous_model1ResultsWales$`97.5 %` = bv(continuous_model1ResultsWales$`97.5 %`)
+continuous_model1ResultsWales$p.value1= ifelse(continuous_model1ResultsWales$p.value< .001, "<.001" , pv1(continuous_model1ResultsWales$p.value))
+continuous_model1ResultsWales$coefficient = paste0(continuous_model1ResultsWales$estimate, "[", continuous_model1ResultsWales$`2.5 %`, ";", continuous_model1ResultsWales$`97.5 %`, "]")
+continuous_model1ResultsWales$stars = add.significance.stars(continuous_model1ResultsWales$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model1ResultsWales$p1 = paste0(continuous_model1ResultsWales$p.value1, "")
+continuous_model1ResultsWales$p = paste0("p", continuous_model1ResultsWales$p1)
+continuous_model1ResultsWales$new_coef = paste0(continuous_model1ResultsWales$coefficient, continuous_model1ResultsWales$stars)  #combine coefficients and stars into column.
+
+#model 2 for continuous outcome
+continuous_model2ResultsWales$estimate = bv(continuous_model2ResultsWales$estimate) #no leading 0 
+continuous_model2ResultsWales$`2.5 %` = bv(continuous_model2ResultsWales$`2.5 %`)
+continuous_model2ResultsWales$`97.5 %` = bv(continuous_model2ResultsWales$`97.5 %`)
+continuous_model2ResultsWales$p.value1= ifelse(continuous_model2ResultsWales$p.value< .001, "<.001" , pv1(continuous_model2ResultsWales$p.value))
+continuous_model2ResultsWales$coefficient = paste0(continuous_model2ResultsWales$estimate, "[", continuous_model2ResultsWales$`2.5 %`, ";", continuous_model2ResultsWales$`97.5 %`, "]")
+continuous_model2ResultsWales$stars = add.significance.stars(continuous_model2ResultsWales$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model2ResultsWales$p1 = paste0(continuous_model2ResultsWales$p.value1, "")
+continuous_model2ResultsWales$p = paste0("p", continuous_model2ResultsWales$p1)
+continuous_model2ResultsWales$new_coef = paste0(continuous_model2ResultsWales$coefficient, continuous_model2ResultsWales$stars)  #combine coefficients and stars into column.
+
+
+#model 3 for continuous outcome
+continuous_model3ResultsWales$estimate = bv(continuous_model3ResultsWales$estimate) #no leading 0 
+continuous_model3ResultsWales$`2.5 %` = bv(continuous_model3ResultsWales$`2.5 %`)
+continuous_model3ResultsWales$`97.5 %` = bv(continuous_model3ResultsWales$`97.5 %`)
+continuous_model3ResultsWales$p.value1= ifelse(continuous_model3ResultsWales$p.value< .001, "<.001" , pv1(continuous_model3ResultsWales$p.value))
+continuous_model3ResultsWales$coefficient = paste0(continuous_model3ResultsWales$estimate, "[", continuous_model3ResultsWales$`2.5 %`, ";", continuous_model3ResultsWales$`97.5 %`, "]")
+continuous_model3ResultsWales$stars = add.significance.stars(continuous_model3ResultsWales$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model3ResultsWales$p1 = paste0(continuous_model3ResultsWales$p.value1, "")
+continuous_model3ResultsWales$p = paste0("p", continuous_model3ResultsWales$p1)
+continuous_model3ResultsWales$new_coef = paste0(continuous_model3ResultsWales$coefficient, continuous_model3ResultsWales$stars)  #combine coefficients and stars into column.
+
+
+#get odds ratios and 95% CIs for table: logistic regression
+binary_model1ResultsWales = binary_model1ResultsWales %>% select(term, new_coef, p)
+binary_model2ResultsWales = binary_model2ResultsWales %>% select(term, new_coef, p)
+binary_model3ResultsWales = binary_model3ResultsWales %>% select(term, new_coef, p)
+
+binary_model1ResultsWales$model1_OR <- paste0(binary_model1ResultsWales$new_coef,"\n", binary_model1ResultsWales$p) 
+binary_model2ResultsWales$model2_OR <- paste0(binary_model2ResultsWales$new_coef,"\n", binary_model2ResultsWales$p) 
+binary_model3ResultsWales$model3_OR <- paste0(binary_model3ResultsWales$new_coef,"\n", binary_model3ResultsWales$p) 
+
+binary_model1ResultsWales = binary_model1ResultsWales %>% select(term, model1_OR)
+binary_model2ResultsWales = binary_model2ResultsWales %>% select(term, model2_OR)
+binary_model3ResultsWales = binary_model3ResultsWales %>% select(term, model3_OR)
+
+#add column to make it the same length for all 3 models - needs to be as long as model 3 
+binary_model1ResultsWales = binary_model1ResultsWales %>% add_row(term = "caregiver_vocabStandardised") %>% 
+  add_row(term = "age5_standardised")
+binary_model2ResultsWales = binary_model2ResultsWales %>% add_row(term = "age5_standardised")
+
+binary_outcomeResultsWales = cbind(binary_model1ResultsWales, binary_model2ResultsWales, binary_model3ResultsWales)
+binary_outcomeResultsWales = binary_outcomeResultsWales %>% select(!3 & !5)
+
+binary_outcomeResultsWales = binary_outcomeResultsWales %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
+  add_row(term = "Caregiver vocabulary", .before = 32) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 34) %>% 
+  add_row(term = "R2", .after = 35)
+
+#get coefficients and 95% CIs for table: linear regression
+continuous_model1ResultsWales = continuous_model1ResultsWales %>% select(term, new_coef, p)
+continuous_model2ResultsWales = continuous_model2ResultsWales %>% select(term, new_coef, p)
+continuous_model3ResultsWales = continuous_model3ResultsWales %>% select(term, new_coef, p)
+
+continuous_model1ResultsWales$model1_b <- paste0(continuous_model1ResultsWales$new_coef,"\n", continuous_model1ResultsWales$p) 
+continuous_model2ResultsWales$model2_b <- paste0(continuous_model2ResultsWales$new_coef,"\n", continuous_model2ResultsWales$p) 
+continuous_model3ResultsWales$model3_b <- paste0(continuous_model3ResultsWales$new_coef,"\n", continuous_model3ResultsWales$p) 
+
+continuous_model1ResultsWales = continuous_model1ResultsWales %>% select(term, model1_b)
+continuous_model2ResultsWales = continuous_model2ResultsWales %>% select(term, model2_b)
+continuous_model3ResultsWales = continuous_model3ResultsWales %>% select(term, model3_b)
+
+
+#add column to make it the same length for all 3 models - needs to be as long as model 3 
+continuous_model1ResultsWales = continuous_model1ResultsWales %>% add_row(term = "caregiver_vocabStandardised") %>% 
+  add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model1_b =paste0(cont_model1R2Wales$est,"[", cont_model1R2Wales$`lo 95`, ";", cont_model1R2Wales$`hi 95`,"]"), .after = 32)
+continuous_model2ResultsWales = continuous_model2ResultsWales %>% add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model2_b =paste0(cont_model2R2Wales$est,"[", cont_model2R2Wales$`lo 95`, ";", cont_model2R2Wales$`hi 95`,"]"), .after = 32)
+continuous_model3ResultsWales = continuous_model3ResultsWales %>% 
+  add_row(term = "R2", model3_b =paste0(cont_model3R2Wales$est,"[", cont_model3R2Wales$`lo 95`, ";", cont_model3R2Wales$`hi 95`,"]"), .after = 32)
+
+continuous_outcomeResultsWales = cbind(continuous_model1ResultsWales, continuous_model2ResultsWales, continuous_model3ResultsWales)
+continuous_outcomeResultsWales = continuous_outcomeResultsWales %>% select(!3 & !5)
+
+continuous_outcomeResultsWales = continuous_outcomeResultsWales %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
+  add_row(term = "Caregiver vocabulary", .after = 31) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 34)
+
+
+regression_resultsTableWales = cbind(binary_outcomeResultsWales, continuous_outcomeResultsWales)
+regression_resultsTableWales [is.na(regression_resultsTableWales )] <- "  "
+regression_resultsTableWales = regression_resultsTableWales %>% select(!5) %>%  
+  slice(-(1)) %>% #remove intercept row
+  add_row(term = "sex1", .after = 1) %>% #add in reference categories for factor variables
+  add_row(term = "ethnicity1", .after = 3) %>% 
+  add_row(term = "EAL1", .after = 5) %>% 
+  add_row(term = "highest_nvq1", .before = 9) %>% 
+  add_row(term = "oecd_income1", .before = 15) %>% 
+  add_row(term = "occupational_status2", .before = 20) %>% 
+  add_row(term = "wealth_quintiles1", .before = 24) %>% 
+  add_row(term = "imd1", .after = 28)
+regression_resultsTableWales [is.na(regression_resultsTableWales )] <- "REFERENCE"
+
+#rename variables column 
+
+regression_resultsTableWales$term <- c("Sociodemographic confounders", "Sex (male)", "Sex (female)", 
+                                         "Ethnicity \n (White)", "Ethnicity \n (Minority)",
+                                         "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)",
+                                         "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2)", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", 
+                                         "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
+                                         "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",  
+                                         "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5",
+                                         "Relative Neighbourhood \n Deprivation \n (most deprived decile)", "Relative Neighbourhood \n Deprivation \n (10 - <20%)", "Relative Neighbourhood \n Deprivation \n (20 - <30%)", "Relative Neighbourhood \n Deprivation \n (30 - <40%)", "Relative Neighbourhood \n Deprivation \n (40 - <50%)", "Relative Neighbourhood \n Deprivation \n (50 - <60%)", "Relative Neighbourhood \n Deprivation \n (60 - <70%)", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)", "Relative Neighbourhood \n Deprivation \n (80 - <90%)", "Relative Neighbourhood \n Deprivation \n (least deprived decile)", "Caregiver Vocabulary", "Caregiver Vocabulary \n (Word Activity Test Score)", "Cohort Member Vocabulary", "Cohort Member Vocabulary \n (Naming Vocabulary Score)", "R2 (%)")
+```
+
+
+
+#results table - wales only analysis
+```{r}
+#define border
+my_border = border= fp_border(color="black", width=1)
+results_wales <- regression_resultsTableWales %>% 
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2:7, align="center", part="all") %>% 
+  color(j=1:7, color="black", part="all") %>% 
+  width(j=1, width=1) %>% 
+  width(j=2:7, width=1.4) %>% 
+  line_spacing(j=2:7, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:7, part="all", border=my_border) %>% 
+  hline_bottom(j=1:7,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable",model1_OR= "Model 1",
+                    model2_OR= "Model 2",model3_OR = "Model 3", 
+                    model1_b="Model 1", model2_b = "Model 2", model3_b = "Model 3") %>% 
+  add_header_row(values = c(" ", "Binary Outcome (OR[95% CIs]", "Continuous Outcome (B[95% CIs]"), colwidths = c(1, 3, 3)) %>% 
+  font(fontname = "Times New Roman", part="header") %>% 
+  align(align="center", part="header") %>% 
+  hline_top(j = 2:7, part = "all", border = my_border) %>% 
+  bold(j = 1, i = c(1,39, 41), bold = TRUE) %>% 
+  italic(j = 1, i = c(1,39, 41), italic = TRUE) 
+
+
+
+print(results_wales, preview = "docx") 
+```
+
+
+Scotland only analyses 
+
+```{r}
+#scotland####
+
+#1.binary outcome of core subjects 
+binary_unadjustedScotland = with(scotland_imputed, glm(benchmark_binary ~ age5_standardised,
+                                                 family = binomial,  weights = weight))
+
+binary_unadjusted_resultsScotland = round(summary(pool(binary_unadjustedScotland), conf.int = TRUE, exponentiate = TRUE),2)
+
+binary_model1Scotland = with(scotland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL + 
+                                               highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
+                                             family = binomial, weights = weight))
+
+binary_model2Scotland= with(scotland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL +
+                                              highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                              imd + caregiver_vocabStandardised, 
+                                            family = binomial, weights = weight))
+
+binary_model3Scotland = with(scotland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL +
+                                               highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                               imd + caregiver_vocabStandardised + age5_standardised, 
+                                             family = binomial, weights = weight))
+
+
+binary_model1ResultsScotland = summary(pool(binary_model1Scotland), conf.int = TRUE, exponentiate = TRUE)
+binary_model2ResultsScotland = summary(pool(binary_model2Scotland), conf.int = TRUE, exponentiate = TRUE)
+binary_model3ResultsScotland = summary(pool(binary_model3Scotland), conf.int = TRUE, exponentiate = TRUE)
+
+```
+
+1b. does vocabulary predict reaching a functional level of education above and beyond SEC/caregiver vocab factors?
+```{r}
+#compare model with only sociodemographic factors to a model with caregiver vocab
+#compare sociodemographics model to no predictors
+#create null model 
+null_binaryModelScotland = with(scotland_imputed, glm(benchmark_binary ~ 1,
+                                                family = binomial,  weights = weight))
+D1(binary_model1Scotland, null_binaryModelScotland)
+#model 2 compared to model 1
+D1(binary_model2Scotland, binary_model1Scotland) 
+#compare model with all confounders to model with vocab
+D1(binary_model3Scotland, binary_model2Scotland) 
+```
+
+2. Continuous outcome variable#### - Scotland
+2a does vocabulary predict level of achievement in core subjects regardless of pass/ fail? 
+  
+```{r}
+#unadjusted relationship
+
+continuous_unadjustedScotland = with(scotland_imputed, lm(standardised_core_subjects ~ age5_standardised, weights = weight))
+
+continuous_unadjusted_resultsScotland = round(summary(pool(continuous_unadjustedScotland), conf.int = TRUE),2)
+
+#adjusted relationship 
+continuous_model1Scotland = with(scotland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+                                                  highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
+                                                weights = weight))
+
+continuous_model2Scotland = with(scotland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+                                                  highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                                  imd + caregiver_vocabStandardised, 
+                                                weights = weight))
+
+continuous_model3Scotland = with(scotland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+                                                  highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                                  imd + caregiver_vocabStandardised + age5_standardised, 
+                                                weights = weight))
+
+continuous_model1ResultsScotland= summary(pool(continuous_model1Scotland), conf.int = TRUE)
+continuous_model2ResultsScotland = summary(pool(continuous_model2Scotland), conf.int = TRUE)
+continuous_model3ResultsScotland = summary(pool(continuous_model3Scotland), conf.int = TRUE)
+
+round(pool.r.squared(continuous_unadjustedScotland),4)*100
+cont_model1R2Scotland = as.data.frame(round(pool.r.squared(continuous_model1Scotland),4)*100)
+cont_model2R2Scotland = as.data.frame(round(pool.r.squared(continuous_model2Scotland),4)*100)
+cont_model3R2Scotland = as.data.frame(round(pool.r.squared(continuous_model3Scotland),4)*100)
+```
+
+2b. does vocabulary predict level of achievement in core subjects above and beyond SEC/caregiver vocab factors? - Scotland
+
+```{r}
+#compare sociodemographics model to no predictors
+#create null model 
+null_continuousModelScotland =  with(scotland_imputed, lm(standardised_core_subjects ~ 1, weights = weight))
+D1(continuous_model1Scotland, null_continuousModelScotland)
+#compare model with only sociodemographic factors to a model with caregiver vocab
+D1(continuous_model2Scotland, continuous_model1Scotland) #check if need to use a specific method ?
+#compare model with all confounders to model with vocab
+D1(continuous_model3Scotland, continuous_model2Scotland) 
+```
+
+
+gather relevant information for table for RQ 1 & 2
+
+```{r}
+#binary outcome ####
+#model 1 for binary outcome
+binary_model1ResultsScotland$estimate = bv(binary_model1ResultsScotland$estimate) #no leading 0 
+binary_model1ResultsScotland$`2.5 %` = bv(binary_model1ResultsScotland$`2.5 %`)
+binary_model1ResultsScotland$`97.5 %` = bv(binary_model1ResultsScotland$`97.5 %`)
+binary_model1ResultsScotland$p.value1= ifelse(binary_model1ResultsScotland$p.value< .001, "<.001" , pv1(binary_model1ResultsScotland$p.value))
+binary_model1ResultsScotland$coefficient = paste0(binary_model1ResultsScotland$estimate, "[", binary_model1ResultsScotland$`2.5 %`, ";", binary_model1ResultsScotland$`97.5 %`, "]")
+binary_model1ResultsScotland$stars = add.significance.stars(binary_model1ResultsScotland$p.value, cutoffs=c(0.05, 0.01, 0.001))
+binary_model1ResultsScotland$p1 = paste0(binary_model1ResultsScotland$p.value1, "")
+binary_model1ResultsScotland$p = paste0("p", binary_model1ResultsScotland$p1)
+binary_model1ResultsScotland$new_coef = paste0(binary_model1ResultsScotland$coefficient, binary_model1ResultsScotland$stars)  #combine coefficients and stars into column.
+
+#model 2 for binary outcome
+binary_model2ResultsScotland$estimate = bv(binary_model2ResultsScotland$estimate) #no leading 0 
+binary_model2ResultsScotland$`2.5 %` = bv(binary_model2ResultsScotland$`2.5 %`)
+binary_model2ResultsScotland$`97.5 %` = bv(binary_model2ResultsScotland$`97.5 %`)
+binary_model2ResultsScotland$p.value1= ifelse(binary_model2ResultsScotland$p.value< .001, "<.001" , pv1(binary_model2ResultsScotland$p.value))
+binary_model2ResultsScotland$coefficient = paste0(binary_model2ResultsScotland$estimate, "[", binary_model2ResultsScotland$`2.5 %`, ";", binary_model2ResultsScotland$`97.5 %`, "]")
+binary_model2ResultsScotland$stars = add.significance.stars(binary_model2ResultsScotland$p.value, cutoffs=c(0.05, 0.01, 0.001))
+binary_model2ResultsScotland$p1 = paste0(binary_model2ResultsScotland$p.value1, "")
+binary_model2ResultsScotland$p = paste0("p", binary_model2ResultsScotland$p1)
+binary_model2ResultsScotland$new_coef = paste0(binary_model2ResultsScotland$coefficient, binary_model2ResultsScotland$stars)  #combine coefficients and stars into column.
+
+#model 3 for binary outcome
+binary_model3ResultsScotland$estimate = bv(binary_model3ResultsScotland$estimate) #no leading 0 
+binary_model3ResultsScotland$`2.5 %` = bv(binary_model3ResultsScotland$`2.5 %`)
+binary_model3ResultsScotland$`97.5 %` = bv(binary_model3ResultsScotland$`97.5 %`)
+binary_model3ResultsScotland$p.value1= ifelse(binary_model3ResultsScotland$p.value< .001, "<.001" , pv1(binary_model3ResultsScotland$p.value))
+binary_model3ResultsScotland$coefficient = paste0(binary_model3ResultsScotland$estimate, "[", binary_model3ResultsScotland$`2.5 %`, ";", binary_model3ResultsScotland$`97.5 %`, "]")
+binary_model3ResultsScotland$stars = add.significance.stars(binary_model3ResultsScotland$p.value, cutoffs=c(0.05, 0.01, 0.001))
+binary_model3ResultsScotland$p1 = paste0(binary_model3ResultsScotland$p.value1, "")
+binary_model3ResultsScotland$p = paste0("p", binary_model3ResultsScotland$p1)
+binary_model3ResultsScotland$new_coef = paste0(binary_model3ResultsScotland$coefficient, binary_model3ResultsScotland$stars)  #combine coefficients and stars into column.
+
+#contunous outcome ####
+#model 1 for continuous outcome
+continuous_model1ResultsScotland$estimate = bv(continuous_model1ResultsScotland$estimate) #no leading 0 
+continuous_model1ResultsScotland$`2.5 %` = bv(continuous_model1ResultsScotland$`2.5 %`)
+continuous_model1ResultsScotland$`97.5 %` = bv(continuous_model1ResultsScotland$`97.5 %`)
+continuous_model1ResultsScotland$p.value1= ifelse(continuous_model1ResultsScotland$p.value< .001, "<.001" , pv1(continuous_model1ResultsScotland$p.value))
+continuous_model1ResultsScotland$coefficient = paste0(continuous_model1ResultsScotland$estimate, "[", continuous_model1ResultsScotland$`2.5 %`, ";", continuous_model1ResultsScotland$`97.5 %`, "]")
+continuous_model1ResultsScotland$stars = add.significance.stars(continuous_model1ResultsScotland$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model1ResultsScotland$p1 = paste0(continuous_model1ResultsScotland$p.value1, "")
+continuous_model1ResultsScotland$p = paste0("p", continuous_model1ResultsScotland$p1)
+continuous_model1ResultsScotland$new_coef = paste0(continuous_model1ResultsScotland$coefficient, continuous_model1ResultsScotland$stars)  #combine coefficients and stars into column.
+
+#model 2 for continuous outcome
+continuous_model2ResultsScotland$estimate = bv(continuous_model2ResultsScotland$estimate) #no leading 0 
+continuous_model2ResultsScotland$`2.5 %` = bv(continuous_model2ResultsScotland$`2.5 %`)
+continuous_model2ResultsScotland$`97.5 %` = bv(continuous_model2ResultsScotland$`97.5 %`)
+continuous_model2ResultsScotland$p.value1= ifelse(continuous_model2ResultsScotland$p.value< .001, "<.001" , pv1(continuous_model2ResultsScotland$p.value))
+continuous_model2ResultsScotland$coefficient = paste0(continuous_model2ResultsScotland$estimate, "[", continuous_model2ResultsScotland$`2.5 %`, ";", continuous_model2ResultsScotland$`97.5 %`, "]")
+continuous_model2ResultsScotland$stars = add.significance.stars(continuous_model2ResultsScotland$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model2ResultsScotland$p1 = paste0(continuous_model2ResultsScotland$p.value1, "")
+continuous_model2ResultsScotland$p = paste0("p", continuous_model2ResultsScotland$p1)
+continuous_model2ResultsScotland$new_coef = paste0(continuous_model2ResultsScotland$coefficient, continuous_model2ResultsScotland$stars)  #combine coefficients and stars into column.
+
+
+#model 3 for continuous outcome
+continuous_model3ResultsScotland$estimate = bv(continuous_model3ResultsScotland$estimate) #no leading 0 
+continuous_model3ResultsScotland$`2.5 %` = bv(continuous_model3ResultsScotland$`2.5 %`)
+continuous_model3ResultsScotland$`97.5 %` = bv(continuous_model3ResultsScotland$`97.5 %`)
+continuous_model3ResultsScotland$p.value1= ifelse(continuous_model3ResultsScotland$p.value< .001, "<.001" , pv1(continuous_model3ResultsScotland$p.value))
+continuous_model3ResultsScotland$coefficient = paste0(continuous_model3ResultsScotland$estimate, "[", continuous_model3ResultsScotland$`2.5 %`, ";", continuous_model3ResultsScotland$`97.5 %`, "]")
+continuous_model3ResultsScotland$stars = add.significance.stars(continuous_model3ResultsScotland$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model3ResultsScotland$p1 = paste0(continuous_model3ResultsScotland$p.value1, "")
+continuous_model3ResultsScotland$p = paste0("p", continuous_model3ResultsScotland$p1)
+continuous_model3ResultsScotland$new_coef = paste0(continuous_model3ResultsScotland$coefficient, continuous_model3ResultsScotland$stars)  #combine coefficients and stars into column.
+
+
+#get odds ratios and 95% CIs for table: logistic regression
+binary_model1ResultsScotland = binary_model1ResultsScotland %>% select(term, new_coef, p)
+binary_model2ResultsScotland = binary_model2ResultsScotland %>% select(term, new_coef, p)
+binary_model3ResultsScotland = binary_model3ResultsScotland %>% select(term, new_coef, p)
+
+binary_model1ResultsScotland$model1_OR <- paste0(binary_model1ResultsScotland$new_coef,"\n", binary_model1ResultsScotland$p) 
+binary_model2ResultsScotland$model2_OR <- paste0(binary_model2ResultsScotland$new_coef,"\n", binary_model2ResultsScotland$p) 
+binary_model3ResultsScotland$model3_OR <- paste0(binary_model3ResultsScotland$new_coef,"\n", binary_model3ResultsScotland$p) 
+
+binary_model1ResultsScotland = binary_model1ResultsScotland %>% select(term, model1_OR)
+binary_model2ResultsScotland = binary_model2ResultsScotland %>% select(term, model2_OR)
+binary_model3ResultsScotland = binary_model3ResultsScotland %>% select(term, model3_OR)
+
+#add column to make it the same length for all 3 models - needs to be as long as model 3 
+binary_model1ResultsScotland = binary_model1ResultsScotland %>% add_row(term = "caregiver_vocabStandardised") %>% 
+  add_row(term = "age5_standardised")
+binary_model2ResultsScotland = binary_model2ResultsScotland %>% add_row(term = "age5_standardised")
+
+binary_outcomeResultsScotland = cbind(binary_model1ResultsScotland, binary_model2ResultsScotland, binary_model3ResultsScotland)
+binary_outcomeResultsScotland = binary_outcomeResultsScotland %>% select(!3 & !5)
+
+binary_outcomeResultsScotland = binary_outcomeResultsScotland %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
+  add_row(term = "Caregiver vocabulary", .before = 32) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 34) %>% 
+  add_row(term = "R2", .after = 35)
+
+#get coefficients and 95% CIs for table: linear regression
+continuous_model1ResultsScotland = continuous_model1ResultsScotland %>% select(term, new_coef, p)
+continuous_model2ResultsScotland = continuous_model2ResultsScotland %>% select(term, new_coef, p)
+continuous_model3ResultsScotland = continuous_model3ResultsScotland %>% select(term, new_coef, p)
+
+continuous_model1ResultsScotland$model1_b <- paste0(continuous_model1ResultsScotland$new_coef,"\n", continuous_model1ResultsScotland$p) 
+continuous_model2ResultsScotland$model2_b <- paste0(continuous_model2ResultsScotland$new_coef,"\n", continuous_model2ResultsScotland$p) 
+continuous_model3ResultsScotland$model3_b <- paste0(continuous_model3ResultsScotland$new_coef,"\n", continuous_model3ResultsScotland$p) 
+
+continuous_model1ResultsScotland = continuous_model1ResultsScotland %>% select(term, model1_b)
+continuous_model2ResultsScotland = continuous_model2ResultsScotland %>% select(term, model2_b)
+continuous_model3ResultsScotland = continuous_model3ResultsScotland %>% select(term, model3_b)
+
+
+#add column to make it the same length for all 3 models - needs to be as long as model 3 
+continuous_model1ResultsScotland = continuous_model1ResultsScotland %>% add_row(term = "caregiver_vocabStandardised") %>% 
+  add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model1_b =paste0(cont_model1R2Scotland$est,"[", cont_model1R2Scotland$`lo 95`, ";", cont_model1R2Scotland$`hi 95`,"]"), .after = 32)
+continuous_model2ResultsScotland = continuous_model2ResultsScotland %>% add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model2_b =paste0(cont_model2R2Scotland$est,"[", cont_model2R2Scotland$`lo 95`, ";", cont_model2R2Scotland$`hi 95`,"]"), .after = 32)
+continuous_model3ResultsScotland = continuous_model3ResultsScotland %>% 
+  add_row(term = "R2", model3_b =paste0(cont_model3R2Scotland$est,"[", cont_model3R2Scotland$`lo 95`, ";", cont_model3R2Scotland$`hi 95`,"]"), .after = 32)
+
+continuous_outcomeResultsScotland = cbind(continuous_model1ResultsScotland, continuous_model2ResultsScotland, continuous_model3ResultsScotland)
+continuous_outcomeResultsScotland = continuous_outcomeResultsScotland %>% select(!3 & !5)
+
+continuous_outcomeResultsScotland = continuous_outcomeResultsScotland %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
+  add_row(term = "Caregiver vocabulary", .after = 31) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 34)
+
+
+regression_resultsTableScotland = cbind(binary_outcomeResultsScotland, continuous_outcomeResultsScotland)
+regression_resultsTableScotland [is.na(regression_resultsTableScotland )] <- "  "
+regression_resultsTableScotland = regression_resultsTableScotland %>% select(!5) %>%  
+  slice(-(1)) %>% #remove intercept row
+  add_row(term = "sex1", .after = 1) %>% #add in reference categories for factor variables
+  add_row(term = "ethnicity1", .after = 3) %>% 
+  add_row(term = "EAL1", .after = 5) %>% 
+  add_row(term = "highest_nvq1", .before = 9) %>% 
+  add_row(term = "oecd_income1", .before = 15) %>% 
+  add_row(term = "occupational_status2", .before = 20) %>% 
+  add_row(term = "wealth_quintiles1", .before = 24) %>% 
+  add_row(term = "imd1", .after = 28)
+regression_resultsTableScotland [is.na(regression_resultsTableScotland )] <- "REFERENCE"
+
+#rename variables column 
+
+regression_resultsTableScotland$term <- c("Sociodemographic confounders", "Sex (male)", "Sex (female)", 
+                                       "Ethnicity \n (White)", "Ethnicity \n (Minority)",
+                                       "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)",
+                                       "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2)", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", 
+                                       "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
+                                       "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",  
+                                       "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5",
+                                       "Relative Neighbourhood \n Deprivation \n (most deprived decile)", "Relative Neighbourhood \n Deprivation \n (10 - <20%)", "Relative Neighbourhood \n Deprivation \n (20 - <30%)", "Relative Neighbourhood \n Deprivation \n (30 - <40%)", "Relative Neighbourhood \n Deprivation \n (40 - <50%)", "Relative Neighbourhood \n Deprivation \n (50 - <60%)", "Relative Neighbourhood \n Deprivation \n (60 - <70%)", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)", "Relative Neighbourhood \n Deprivation \n (80 - <90%)", "Relative Neighbourhood \n Deprivation \n (least deprived decile)", "Caregiver Vocabulary", "Caregiver Vocabulary \n (Word Activity Test Score)", "Cohort Member Vocabulary", "Cohort Member Vocabulary \n (Naming Vocabulary Score)", "R2 (%)")
+```
+
+
+
+#results table - scotland only analysis
+```{r}
+#define border
+my_border = border= fp_border(color="black", width=1)
+results_scotland <- regression_resultsTableScotland %>% 
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2:7, align="center", part="all") %>% 
+  color(j=1:7, color="black", part="all") %>% 
+  width(j=1, width=1) %>% 
+  width(j=2:7, width=1.4) %>% 
+  line_spacing(j=2:7, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:7, part="all", border=my_border) %>% 
+  hline_bottom(j=1:7,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable",model1_OR= "Model 1",
+                    model2_OR= "Model 2",model3_OR = "Model 3", 
+                    model1_b="Model 1", model2_b = "Model 2", model3_b = "Model 3") %>% 
+  add_header_row(values = c(" ", "Binary Outcome (OR[95% CIs]", "Continuous Outcome (B[95% CIs]"), colwidths = c(1, 3, 3)) %>% 
+  font(fontname = "Times New Roman", part="header") %>% 
+  align(align="center", part="header") %>% 
+  hline_top(j = 2:7, part = "all", border = my_border) %>% 
+  bold(j = 1, i = c(1,39, 41), bold = TRUE) %>% 
+  italic(j = 1, i = c(1,39, 41), italic = TRUE) 
+
+
+
+print(results_scotland, preview = "docx") 
+```
+
+
+
+
+Ni only analyses 
+
+```{r}
+#northern_ireland####
+
+#1.binary outcome of core subjects 
+binary_unadjustedNi = with(northern_ireland_imputed, glm(benchmark_binary ~ age5_standardised,
+                                                 family = binomial,  weights = weight))
+
+binary_unadjusted_resultsNi = round(summary(pool(binary_unadjustedNi), conf.int = TRUE, exponentiate = TRUE),2)
+
+binary_model1Ni = with(northern_ireland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL + 
+                                               highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
+                                             family = binomial, weights = weight))
+
+binary_model2Ni= with(northern_ireland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL +
+                                              highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                              imd + caregiver_vocabStandardised, 
+                                            family = binomial, weights = weight))
+
+binary_model3Ni = with(northern_ireland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL +
+                                               highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                               imd + caregiver_vocabStandardised + age5_standardised, 
+                                             family = binomial, weights = weight))
+
+
+binary_model1ResultsNi = summary(pool(binary_model1Ni), conf.int = TRUE, exponentiate = TRUE)
+binary_model2ResultsNi = summary(pool(binary_model2Ni), conf.int = TRUE, exponentiate = TRUE)
+binary_model3ResultsNi = summary(pool(binary_model3Ni), conf.int = TRUE, exponentiate = TRUE)
+
+```
+
+1b. does vocabulary predict reaching a functional level of education above and beyond SEC/caregiver vocab factors?
+```{r}
+#compare model with only sociodemographic factors to a model with caregiver vocab
+#compare sociodemographics model to no predictors
+#create null model 
+null_binaryModelNi = with(northern_ireland_imputed, glm(benchmark_binary ~ 1,
+                                                family = binomial,  weights = weight))
+D1(binary_model1Ni, null_binaryModelNi)
+#model 2 compared to model 1
+D1(binary_model2Ni, binary_model1Ni) 
+#compare model with all confounders to model with vocab
+D1(binary_model3Ni, binary_model2Ni) 
+```
+
+2. Continuous outcome variable#### - Ni
+2a does vocabulary predict level of achievement in core subjects regardless of pass/ fail? 
+  
+```{r}
+#unadjusted relationship
+
+continuous_unadjustedNi = with(northern_ireland_imputed, lm(standardised_core_subjects ~ age5_standardised, weights = weight))
+
+continuous_unadjusted_resultsNi = round(summary(pool(continuous_unadjustedNi), conf.int = TRUE),2)
+
+#adjusted relationship 
+continuous_model1Ni = with(northern_ireland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+                                                  highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
+                                                weights = weight))
+
+continuous_model2Ni = with(northern_ireland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+                                                  highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                                  imd + caregiver_vocabStandardised, 
+                                                weights = weight))
+
+continuous_model3Ni = with(northern_ireland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+                                                  highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
+                                                  imd + caregiver_vocabStandardised + age5_standardised, 
+                                                weights = weight))
+
+continuous_model1ResultsNi= summary(pool(continuous_model1Ni), conf.int = TRUE)
+continuous_model2ResultsNi = summary(pool(continuous_model2Ni), conf.int = TRUE)
+continuous_model3ResultsNi = summary(pool(continuous_model3Ni), conf.int = TRUE)
+
+round(pool.r.squared(continuous_unadjustedNi),4)*100
+cont_model1R2Ni = as.data.frame(round(pool.r.squared(continuous_model1Ni),4)*100)
+cont_model2R2Ni = as.data.frame(round(pool.r.squared(continuous_model2Ni),4)*100)
+cont_model3R2Ni = as.data.frame(round(pool.r.squared(continuous_model3Ni),4)*100)
+```
+
+2b. does vocabulary predict level of achievement in core subjects above and beyond SEC/caregiver vocab factors? - Ni
+
+```{r}
+#compare sociodemographics model to no predictors
+#create null model 
+null_continuousModelNi =  with(northern_ireland_imputed, lm(standardised_core_subjects ~ 1, weights = weight))
+D1(continuous_model1Ni, null_continuousModelNi)
+#compare model with only sociodemographic factors to a model with caregiver vocab
+D1(continuous_model2Ni, continuous_model1Ni) #check if need to use a specific method ?
+#compare model with all confounders to model with vocab
+D1(continuous_model3Ni, continuous_model2Ni) 
+```
+
+
+gather relevant information for table for RQ 1 & 2
+
+```{r}
+#binary outcome ####
+#model 1 for binary outcome
+binary_model1ResultsNi$estimate = bv(binary_model1ResultsNi$estimate) #no leading 0 
+binary_model1ResultsNi$`2.5 %` = bv(binary_model1ResultsNi$`2.5 %`)
+binary_model1ResultsNi$`97.5 %` = bv(binary_model1ResultsNi$`97.5 %`)
+binary_model1ResultsNi$p.value1= ifelse(binary_model1ResultsNi$p.value< .001, "<.001" , pv1(binary_model1ResultsNi$p.value))
+binary_model1ResultsNi$coefficient = paste0(binary_model1ResultsNi$estimate, "[", binary_model1ResultsNi$`2.5 %`, ";", binary_model1ResultsNi$`97.5 %`, "]")
+binary_model1ResultsNi$stars = add.significance.stars(binary_model1ResultsNi$p.value, cutoffs=c(0.05, 0.01, 0.001))
+binary_model1ResultsNi$p1 = paste0(binary_model1ResultsNi$p.value1, "")
+binary_model1ResultsNi$p = paste0("p", binary_model1ResultsNi$p1)
+binary_model1ResultsNi$new_coef = paste0(binary_model1ResultsNi$coefficient, binary_model1ResultsNi$stars)  #combine coefficients and stars into column.
+
+#model 2 for binary outcome
+binary_model2ResultsNi$estimate = bv(binary_model2ResultsNi$estimate) #no leading 0 
+binary_model2ResultsNi$`2.5 %` = bv(binary_model2ResultsNi$`2.5 %`)
+binary_model2ResultsNi$`97.5 %` = bv(binary_model2ResultsNi$`97.5 %`)
+binary_model2ResultsNi$p.value1= ifelse(binary_model2ResultsNi$p.value< .001, "<.001" , pv1(binary_model2ResultsNi$p.value))
+binary_model2ResultsNi$coefficient = paste0(binary_model2ResultsNi$estimate, "[", binary_model2ResultsNi$`2.5 %`, ";", binary_model2ResultsNi$`97.5 %`, "]")
+binary_model2ResultsNi$stars = add.significance.stars(binary_model2ResultsNi$p.value, cutoffs=c(0.05, 0.01, 0.001))
+binary_model2ResultsNi$p1 = paste0(binary_model2ResultsNi$p.value1, "")
+binary_model2ResultsNi$p = paste0("p", binary_model2ResultsNi$p1)
+binary_model2ResultsNi$new_coef = paste0(binary_model2ResultsNi$coefficient, binary_model2ResultsNi$stars)  #combine coefficients and stars into column.
+
+#model 3 for binary outcome
+binary_model3ResultsNi$estimate = bv(binary_model3ResultsNi$estimate) #no leading 0 
+binary_model3ResultsNi$`2.5 %` = bv(binary_model3ResultsNi$`2.5 %`)
+binary_model3ResultsNi$`97.5 %` = bv(binary_model3ResultsNi$`97.5 %`)
+binary_model3ResultsNi$p.value1= ifelse(binary_model3ResultsNi$p.value< .001, "<.001" , pv1(binary_model3ResultsNi$p.value))
+binary_model3ResultsNi$coefficient = paste0(binary_model3ResultsNi$estimate, "[", binary_model3ResultsNi$`2.5 %`, ";", binary_model3ResultsNi$`97.5 %`, "]")
+binary_model3ResultsNi$stars = add.significance.stars(binary_model3ResultsNi$p.value, cutoffs=c(0.05, 0.01, 0.001))
+binary_model3ResultsNi$p1 = paste0(binary_model3ResultsNi$p.value1, "")
+binary_model3ResultsNi$p = paste0("p", binary_model3ResultsNi$p1)
+binary_model3ResultsNi$new_coef = paste0(binary_model3ResultsNi$coefficient, binary_model3ResultsNi$stars)  #combine coefficients and stars into column.
+
+#contunous outcome ####
+#model 1 for continuous outcome
+continuous_model1ResultsNi$estimate = bv(continuous_model1ResultsNi$estimate) #no leading 0 
+continuous_model1ResultsNi$`2.5 %` = bv(continuous_model1ResultsNi$`2.5 %`)
+continuous_model1ResultsNi$`97.5 %` = bv(continuous_model1ResultsNi$`97.5 %`)
+continuous_model1ResultsNi$p.value1= ifelse(continuous_model1ResultsNi$p.value< .001, "<.001" , pv1(continuous_model1ResultsNi$p.value))
+continuous_model1ResultsNi$coefficient = paste0(continuous_model1ResultsNi$estimate, "[", continuous_model1ResultsNi$`2.5 %`, ";", continuous_model1ResultsNi$`97.5 %`, "]")
+continuous_model1ResultsNi$stars = add.significance.stars(continuous_model1ResultsNi$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model1ResultsNi$p1 = paste0(continuous_model1ResultsNi$p.value1, "")
+continuous_model1ResultsNi$p = paste0("p", continuous_model1ResultsNi$p1)
+continuous_model1ResultsNi$new_coef = paste0(continuous_model1ResultsNi$coefficient, continuous_model1ResultsNi$stars)  #combine coefficients and stars into column.
+
+#model 2 for continuous outcome
+continuous_model2ResultsNi$estimate = bv(continuous_model2ResultsNi$estimate) #no leading 0 
+continuous_model2ResultsNi$`2.5 %` = bv(continuous_model2ResultsNi$`2.5 %`)
+continuous_model2ResultsNi$`97.5 %` = bv(continuous_model2ResultsNi$`97.5 %`)
+continuous_model2ResultsNi$p.value1= ifelse(continuous_model2ResultsNi$p.value< .001, "<.001" , pv1(continuous_model2ResultsNi$p.value))
+continuous_model2ResultsNi$coefficient = paste0(continuous_model2ResultsNi$estimate, "[", continuous_model2ResultsNi$`2.5 %`, ";", continuous_model2ResultsNi$`97.5 %`, "]")
+continuous_model2ResultsNi$stars = add.significance.stars(continuous_model2ResultsNi$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model2ResultsNi$p1 = paste0(continuous_model2ResultsNi$p.value1, "")
+continuous_model2ResultsNi$p = paste0("p", continuous_model2ResultsNi$p1)
+continuous_model2ResultsNi$new_coef = paste0(continuous_model2ResultsNi$coefficient, continuous_model2ResultsNi$stars)  #combine coefficients and stars into column.
+
+
+#model 3 for continuous outcome
+continuous_model3ResultsNi$estimate = bv(continuous_model3ResultsNi$estimate) #no leading 0 
+continuous_model3ResultsNi$`2.5 %` = bv(continuous_model3ResultsNi$`2.5 %`)
+continuous_model3ResultsNi$`97.5 %` = bv(continuous_model3ResultsNi$`97.5 %`)
+continuous_model3ResultsNi$p.value1= ifelse(continuous_model3ResultsNi$p.value< .001, "<.001" , pv1(continuous_model3ResultsNi$p.value))
+continuous_model3ResultsNi$coefficient = paste0(continuous_model3ResultsNi$estimate, "[", continuous_model3ResultsNi$`2.5 %`, ";", continuous_model3ResultsNi$`97.5 %`, "]")
+continuous_model3ResultsNi$stars = add.significance.stars(continuous_model3ResultsNi$p.value, cutoffs=c(0.05, 0.01, 0.001))
+continuous_model3ResultsNi$p1 = paste0(continuous_model3ResultsNi$p.value1, "")
+continuous_model3ResultsNi$p = paste0("p", continuous_model3ResultsNi$p1)
+continuous_model3ResultsNi$new_coef = paste0(continuous_model3ResultsNi$coefficient, continuous_model3ResultsNi$stars)  #combine coefficients and stars into column.
+
+
+#get odds ratios and 95% CIs for table: logistic regression
+binary_model1ResultsNi = binary_model1ResultsNi %>% select(term, new_coef, p)
+binary_model2ResultsNi = binary_model2ResultsNi %>% select(term, new_coef, p)
+binary_model3ResultsNi = binary_model3ResultsNi %>% select(term, new_coef, p)
+
+binary_model1ResultsNi$model1_OR <- paste0(binary_model1ResultsNi$new_coef,"\n", binary_model1ResultsNi$p) 
+binary_model2ResultsNi$model2_OR <- paste0(binary_model2ResultsNi$new_coef,"\n", binary_model2ResultsNi$p) 
+binary_model3ResultsNi$model3_OR <- paste0(binary_model3ResultsNi$new_coef,"\n", binary_model3ResultsNi$p) 
+
+binary_model1ResultsNi = binary_model1ResultsNi %>% select(term, model1_OR)
+binary_model2ResultsNi = binary_model2ResultsNi %>% select(term, model2_OR)
+binary_model3ResultsNi = binary_model3ResultsNi %>% select(term, model3_OR)
+
+#add column to make it the same length for all 3 models - needs to be as long as model 3 
+binary_model1ResultsNi = binary_model1ResultsNi %>% add_row(term = "caregiver_vocabStandardised") %>% 
+  add_row(term = "age5_standardised")
+binary_model2ResultsNi = binary_model2ResultsNi %>% add_row(term = "age5_standardised")
+
+binary_outcomeResultsNi = cbind(binary_model1ResultsNi, binary_model2ResultsNi, binary_model3ResultsNi)
+binary_outcomeResultsNi = binary_outcomeResultsNi %>% select(!3 & !5)
+
+binary_outcomeResultsNi = binary_outcomeResultsNi %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
+  add_row(term = "Caregiver vocabulary", .before = 32) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 34) %>% 
+  add_row(term = "R2", .after = 35)
+
+#get coefficients and 95% CIs for table: linear regression
+continuous_model1ResultsNi = continuous_model1ResultsNi %>% select(term, new_coef, p)
+continuous_model2ResultsNi = continuous_model2ResultsNi %>% select(term, new_coef, p)
+continuous_model3ResultsNi = continuous_model3ResultsNi %>% select(term, new_coef, p)
+
+continuous_model1ResultsNi$model1_b <- paste0(continuous_model1ResultsNi$new_coef,"\n", continuous_model1ResultsNi$p) 
+continuous_model2ResultsNi$model2_b <- paste0(continuous_model2ResultsNi$new_coef,"\n", continuous_model2ResultsNi$p) 
+continuous_model3ResultsNi$model3_b <- paste0(continuous_model3ResultsNi$new_coef,"\n", continuous_model3ResultsNi$p) 
+
+continuous_model1ResultsNi = continuous_model1ResultsNi %>% select(term, model1_b)
+continuous_model2ResultsNi = continuous_model2ResultsNi %>% select(term, model2_b)
+continuous_model3ResultsNi = continuous_model3ResultsNi %>% select(term, model3_b)
+
+
+#add column to make it the same length for all 3 models - needs to be as long as model 3 
+continuous_model1ResultsNi = continuous_model1ResultsNi %>% add_row(term = "caregiver_vocabStandardised") %>% 
+  add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model1_b =paste0(cont_model1R2Ni$est,"[", cont_model1R2Ni$`lo 95`, ";", cont_model1R2Ni$`hi 95`,"]"), .after = 32)
+continuous_model2ResultsNi = continuous_model2ResultsNi %>% add_row(term = "age5_standardised") %>% 
+  add_row(term = "R2", model2_b =paste0(cont_model2R2Ni$est,"[", cont_model2R2Ni$`lo 95`, ";", cont_model2R2Ni$`hi 95`,"]"), .after = 32)
+continuous_model3ResultsNi = continuous_model3ResultsNi %>% 
+  add_row(term = "R2", model3_b =paste0(cont_model3R2Ni$est,"[", cont_model3R2Ni$`lo 95`, ";", cont_model3R2Ni$`hi 95`,"]"), .after = 32)
+
+continuous_outcomeResultsNi = cbind(continuous_model1ResultsNi, continuous_model2ResultsNi, continuous_model3ResultsNi)
+continuous_outcomeResultsNi = continuous_outcomeResultsNi %>% select(!3 & !5)
+
+continuous_outcomeResultsNi = continuous_outcomeResultsNi %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
+  add_row(term = "Caregiver vocabulary", .after = 31) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 34)
+
+
+regression_resultsTableNi = cbind(binary_outcomeResultsNi, continuous_outcomeResultsNi)
+regression_resultsTableNi [is.na(regression_resultsTableNi )] <- "  "
+regression_resultsTableNi = regression_resultsTableNi %>% select(!5) %>%  
+  slice(-(1)) %>% #remove intercept row
+  add_row(term = "sex1", .after = 1) %>% #add in reference categories for factor variables
+  add_row(term = "ethnicity1", .after = 3) %>% 
+  add_row(term = "EAL1", .after = 5) %>% 
+  add_row(term = "highest_nvq1", .before = 9) %>% 
+  add_row(term = "oecd_income1", .before = 15) %>% 
+  add_row(term = "occupational_status2", .before = 20) %>% 
+  add_row(term = "wealth_quintiles1", .before = 24) %>% 
+  add_row(term = "imd1", .after = 28)
+regression_resultsTableNi [is.na(regression_resultsTableNi )] <- "REFERENCE"
+
+#rename variables column 
+
+regression_resultsTableNi$term <- c("Sociodemographic confounders", "Sex (male)", "Sex (female)", 
+                                       "Ethnicity \n (White)", "Ethnicity \n (Minority)",
+                                       "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)",
+                                       "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2)", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", 
+                                       "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
+                                       "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",  
+                                       "Wealth Quintile 1", "Wealth Quintile 2", "Wealth Quintile 3", "Wealth Quintile 4", "Wealth Quintile 5",
+                                       "Relative Neighbourhood \n Deprivation \n (most deprived decile)", "Relative Neighbourhood \n Deprivation \n (10 - <20%)", "Relative Neighbourhood \n Deprivation \n (20 - <30%)", "Relative Neighbourhood \n Deprivation \n (30 - <40%)", "Relative Neighbourhood \n Deprivation \n (40 - <50%)", "Relative Neighbourhood \n Deprivation \n (50 - <60%)", "Relative Neighbourhood \n Deprivation \n (60 - <70%)", "Relative Neighbourhood \n  Deprivation \n (70 - <80%)", "Relative Neighbourhood \n Deprivation \n (80 - <90%)", "Relative Neighbourhood \n Deprivation \n (least deprived decile)", "Caregiver Vocabulary", "Caregiver Vocabulary \n (Word Activity Test Score)", "Cohort Member Vocabulary", "Cohort Member Vocabulary \n (Naming Vocabulary Score)", "R2 (%)")
+```
+
+
+
+#results table - northern_ireland only analysis
+```{r}
+#define border
+my_border = border= fp_border(color="black", width=1)
+results_northern_ireland <- regression_resultsTableNi %>% 
+  flextable() %>% 
+  font(fontname = "Times New Roman", part="all") %>% #
+  fontsize(size=10, part = "all") %>% #
+  align(j=1, align="left", part="all") %>% 
+  align(j=2:7, align="center", part="all") %>% 
+  color(j=1:7, color="black", part="all") %>% 
+  width(j=1, width=1) %>% 
+  width(j=2:7, width=1.4) %>% 
+  line_spacing(j=2:7, space=1.5) %>% 
+  line_spacing(j=1, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:7, part="all", border=my_border) %>% 
+  hline_bottom(j=1:7,part="body",  border=my_border) %>% 
+  set_header_labels(term= "Variable",model1_OR= "Model 1",
+                    model2_OR= "Model 2",model3_OR = "Model 3", 
+                    model1_b="Model 1", model2_b = "Model 2", model3_b = "Model 3") %>% 
+  add_header_row(values = c(" ", "Binary Outcome (OR[95% CIs]", "Continuous Outcome (B[95% CIs]"), colwidths = c(1, 3, 3)) %>% 
+  font(fontname = "Times New Roman", part="header") %>% 
+  align(align="center", part="header") %>% 
+  hline_top(j = 2:7, part = "all", border = my_border) %>% 
+  bold(j = 1, i = c(1,39, 41), bold = TRUE) %>% 
+  italic(j = 1, i = c(1,39, 41), italic = TRUE) 
+
+
+
+print(results_northern_ireland, preview = "docx") 
+```
+
+
+
+#MODERATION ANALYSES: COUNTRY SPECIFIC ####
+
+1. england 
+```{r}
+#use composite SEC as the main moderator = run CFA to get composite factor score. 
+#create dataset of each individual imputed data
+england_imputed_1 <- complete(england_imputed,1)
+england_imputed_2 <- complete(england_imputed,2)
+england_imputed_3 <- complete(england_imputed,3)
+england_imputed_4 <- complete(england_imputed,4)
+england_imputed_5 <- complete(england_imputed,5)
+england_imputed_6 <- complete(england_imputed,6)
+england_imputed_7 <- complete(england_imputed,7)
+england_imputed_8 <- complete(england_imputed,8)
+england_imputed_9 <- complete(england_imputed,9)
+england_imputed_10 <- complete(england_imputed,10)
+england_imputed_11 <- complete(england_imputed,11)
+england_imputed_12 <- complete(england_imputed,12)
+england_imputed_13 <- complete(england_imputed,13)
+england_imputed_14 <- complete(england_imputed,14)
+england_imputed_15 <- complete(england_imputed,15)
+england_imputed_16 <- complete(england_imputed,16)
+england_imputed_17 <- complete(england_imputed,17)
+england_imputed_18 <- complete(england_imputed,18)
+england_imputed_19 <- complete(england_imputed,19)
+england_imputed_20<- complete(england_imputed,20)
+england_imputed_21<- complete(england_imputed,21)
+england_imputed_22<- complete(england_imputed,22)
+england_imputed_23<- complete(england_imputed,23)
+england_imputed_24<- complete(england_imputed,24)
+england_imputed_25<- complete(england_imputed,25)
+
+
+#factor analysis to get factor score####
+#factor analysis model
+
+
+#create imputed datasets as a list - this is so can run CFA over each dataset
+imputed_datasetsEngland = list(england_imputed_1, england_imputed_2, england_imputed_3, england_imputed_4, england_imputed_5, 
+                        england_imputed_6, england_imputed_7, england_imputed_8, england_imputed_9, england_imputed_10, 
+                        england_imputed_11, england_imputed_12, england_imputed_13, england_imputed_14, england_imputed_15,
+                        england_imputed_16, england_imputed_17, england_imputed_18, england_imputed_19, england_imputed_20, 
+                        england_imputed_21, england_imputed_22, england_imputed_23, england_imputed_24, england_imputed_25)
+
+#define CFA model to create SEP
+SEP_model <- 'SEP =~ highest_nvq + oecd_income + wealth_quintiles + occupational_status + imd'
+
+#run CFA across 25 imputed datasets
+cfa_imputed = function(ert){
+  fit = cfa(SEP_model, 
+            data = ert,
+            ordered = c("highest_nvq", "oecd_income","wealth_quintiles", "occupational_status", "imd"), 
+            std.lv=TRUE, 
+            estimator="WLSMV")
+  ses_latent = lavPredict(fit, type = "lv")
+}
+
+#create and add SES latent variable to each dataset
+imputed_datasetsEngland$ses_latent = lapply(imputed_datasetsEngland, cfa_imputed)
+
+#get individual datasets from list - these will now have SEP composite (pull this out for each dataset). 
+#this is so can run the regression over each dataset. 
+imputed_dataEngland1 = imputed_datasetsEngland[[1]]
+imputed_dataEngland1$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[1]], center = TRUE, scale = TRUE))
+#imputed_dataEngland1$ses_latent = scale(imputed_dataEngland1$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland2 = imputed_datasetsEngland[[2]]
+imputed_dataEngland2$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[2]], center = TRUE, scale = TRUE))
+#imputed_dataEngland2$ses_latent = scale(imputed_dataEngland2$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland3 = imputed_datasetsEngland[[3]]
+imputed_dataEngland3$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[3]], center = TRUE, scale = TRUE))
+#imputed_dataEngland3$ses_latent = scale(imputed_dataEngland3$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland4 = imputed_datasetsEngland[[4]]
+imputed_dataEngland4$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[4]], center = TRUE, scale = TRUE))
+#imputed_dataEngland4$ses_latent = scale(imputed_dataEngland4$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland5 = imputed_datasetsEngland[[5]]
+imputed_dataEngland5$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[5]], center = TRUE, scale = TRUE))
+#imputed_dataEngland5$ses_latent = scale(imputed_dataEngland5$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland6 = imputed_datasetsEngland[[6]]
+imputed_dataEngland6$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[6]], center = TRUE, scale = TRUE))
+#imputed_dataEngland6$ses_latent = scale(imputed_dataEngland6$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland7 = imputed_datasetsEngland[[7]]
+imputed_dataEngland7$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[7]], center = TRUE, scale = TRUE))
+#imputed_dataEngland7$ses_latent = scale(imputed_dataEngland7$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland8 = imputed_datasetsEngland[[8]]
+imputed_dataEngland8$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[8]], center = TRUE, scale = TRUE))
+#imputed_dataEngland8$ses_latent = scale(imputed_dataEngland8$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland9 = imputed_datasetsEngland[[9]]
+imputed_dataEngland9$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[9]], center = TRUE, scale = TRUE))
+#imputed_dataEngland9$ses_latent = scale(imputed_dataEngland9$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland10 = imputed_datasetsEngland[[10]]
+imputed_dataEngland10$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[10]], center = TRUE, scale = TRUE))
+#imputed_dataEngland10$ses_latent = scale(imputed_dataEngland10$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland11 = imputed_datasetsEngland[[11]]
+imputed_dataEngland11$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[11]],center = TRUE, scale = TRUE))
+#imputed_dataEngland11$ses_latent = scale(imputed_dataEngland11$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland12 = imputed_datasetsEngland[[12]]
+imputed_dataEngland12$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[12]], center = TRUE, scale = TRUE))
+#imputed_dataEngland12$ses_latent = scale(imputed_dataEngland12$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland13 = imputed_datasetsEngland[[13]]
+imputed_dataEngland13$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[13]], center = TRUE, scale = TRUE))
+#imputed_dataEngland13$ses_latent = scale(imputed_dataEngland13$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland14 = imputed_datasetsEngland[[14]]
+imputed_dataEngland14$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[14]], center = TRUE, scale = TRUE))
+#imputed_dataEngland14$ses_latent = scale(imputed_dataEngland14$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland15 = imputed_datasetsEngland[[15]]
+imputed_dataEngland15$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[15]], center = TRUE, scale = TRUE))
+#imputed_dataEngland15$ses_latent = scale(imputed_dataEngland15$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland16 = imputed_datasetsEngland[[16]]
+imputed_dataEngland16$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[16]], center = TRUE, scale = TRUE))
+#imputed_dataEngland16$ses_latent = scale(imputed_dataEngland16$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland17 = imputed_datasetsEngland[[17]]
+imputed_dataEngland17$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[17]], center = TRUE, scale = TRUE))
+#imputed_dataEngland17$ses_latent = scale(imputed_dataEngland17$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland18 = imputed_datasetsEngland[[18]]
+imputed_dataEngland18$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[18]], center = TRUE, scale = TRUE))
+#imputed_dataEngland18$ses_latent = scale(imputed_dataEngland18$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland19 = imputed_datasetsEngland[[19]]
+imputed_dataEngland19$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[19]], center = TRUE, scale = TRUE))
+#imputed_dataEngland19$ses_latent = scale(imputed_dataEngland19$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland20 = imputed_datasetsEngland[[20]]
+imputed_dataEngland20$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[20]], center = TRUE, scale = TRUE))
+#imputed_dataEngland20$ses_latent = scale(imputed_dataEngland20$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland21 = imputed_datasetsEngland[[21]]
+imputed_dataEngland21$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[21]], center = TRUE, scale = TRUE))
+#imputed_dataEngland21$ses_latent = scale(imputed_dataEngland21$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland22 = imputed_datasetsEngland[[22]]
+imputed_dataEngland22$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[22]], center = TRUE, scale = TRUE))
+#imputed_dataEngland22$ses_latent = scale(imputed_dataEngland22$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland23 = imputed_datasetsEngland[[23]]
+imputed_dataEngland23$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[23]], center = TRUE, scale = TRUE))
+#imputed_dataEngland23$ses_latent = scale(imputed_dataEngland23$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland24 = imputed_datasetsEngland[[24]]
+imputed_dataEngland24$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[24]], center = TRUE, scale = TRUE))
+#imputed_dataEngland24$ses_latent = scale(imputed_dataEngland24$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataEngland25 = imputed_datasetsEngland[[25]]
+imputed_dataEngland25$ses_latent = as.numeric(scale(imputed_datasetsEngland$ses_latent[[25]], center = TRUE, scale = TRUE))
+#imputed_dataEngland25$ses_latent = scale(imputed_dataEngland25$ses_latent, center = TRUE, scale = TRUE)
+
+#create composite SEC quintiles (these will be used for plotting later)
+#add composite quintiles to data
+#data 1
+imputed_dataEngland1$composite_quintiles = quantcut(imputed_dataEngland1$ses_latent,5)
+levels(imputed_dataEngland1$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland1$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland1$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland1$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland1$composite_quintiles)[5] = "5"
+#data2
+imputed_dataEngland2$composite_quintiles = quantcut(imputed_dataEngland2$ses_latent,5)
+levels(imputed_dataEngland2$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland2$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland2$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland2$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland2$composite_quintiles)[5] = "5"
+#data3
+imputed_dataEngland3$composite_quintiles = quantcut(imputed_dataEngland3$ses_latent,5)
+levels(imputed_dataEngland3$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland3$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland3$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland3$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland3$composite_quintiles)[5] = "5"
+#dat4
+imputed_dataEngland4$composite_quintiles = quantcut(imputed_dataEngland4$ses_latent,5)
+levels(imputed_dataEngland4$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland4$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland4$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland4$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland4$composite_quintiles)[5] = "5"
+#DATA5
+imputed_dataEngland5$composite_quintiles = quantcut(imputed_dataEngland5$ses_latent,5)
+levels(imputed_dataEngland5$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland5$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland5$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland5$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland5$composite_quintiles)[5] = "5"
+#data6
+imputed_dataEngland6$composite_quintiles = quantcut(imputed_dataEngland6$ses_latent,5)
+levels(imputed_dataEngland6$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland6$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland6$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland6$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland6$composite_quintiles)[5] = "5"
+#data7
+imputed_dataEngland7$composite_quintiles = quantcut(imputed_dataEngland7$ses_latent,5)
+levels(imputed_dataEngland7$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland7$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland7$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland7$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland7$composite_quintiles)[5] = "5"
+#data 8
+imputed_dataEngland8$composite_quintiles = quantcut(imputed_dataEngland8$ses_latent,5)
+levels(imputed_dataEngland8$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland8$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland8$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland8$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland8$composite_quintiles)[5] = "5"
+#data 9 
+imputed_dataEngland9$composite_quintiles = quantcut(imputed_dataEngland9$ses_latent,5)
+levels(imputed_dataEngland9$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland9$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland9$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland9$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland9$composite_quintiles)[5] = "5"
+#data10
+imputed_dataEngland10$composite_quintiles = quantcut(imputed_dataEngland10$ses_latent,5)
+levels(imputed_dataEngland10$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland10$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland10$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland10$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland10$composite_quintiles)[5] = "5"
+#data11
+imputed_dataEngland11$composite_quintiles = quantcut(imputed_dataEngland11$ses_latent,5)
+levels(imputed_dataEngland11$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland11$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland11$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland11$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland11$composite_quintiles)[5] = "5"
+#data12
+imputed_dataEngland12$composite_quintiles = quantcut(imputed_dataEngland12$ses_latent,5)
+levels(imputed_dataEngland12$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland12$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland12$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland12$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland12$composite_quintiles)[5] = "5"
+#data13
+imputed_dataEngland13$composite_quintiles = quantcut(imputed_dataEngland13$ses_latent,5)
+levels(imputed_dataEngland13$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland13$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland13$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland13$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland13$composite_quintiles)[5] = "5"
+#data14
+imputed_dataEngland14$composite_quintiles = quantcut(imputed_dataEngland14$ses_latent,5)
+levels(imputed_dataEngland14$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland14$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland14$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland14$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland14$composite_quintiles)[5] = "5"
+#data15
+imputed_dataEngland15$composite_quintiles = quantcut(imputed_dataEngland15$ses_latent,5)
+levels(imputed_dataEngland15$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland15$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland15$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland15$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland15$composite_quintiles)[5] = "5"
+#data16
+imputed_dataEngland16$composite_quintiles = quantcut(imputed_dataEngland16$ses_latent,5)
+levels(imputed_dataEngland16$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland16$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland16$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland16$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland16$composite_quintiles)[5] = "5"
+#data 17
+imputed_dataEngland17$composite_quintiles = quantcut(imputed_dataEngland17$ses_latent,5)
+levels(imputed_dataEngland17$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland17$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland17$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland17$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland17$composite_quintiles)[5] = "5"
+#data18
+imputed_dataEngland18$composite_quintiles = quantcut(imputed_dataEngland18$ses_latent,5)
+levels(imputed_dataEngland18$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland18$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland18$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland18$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland18$composite_quintiles)[5] = "5"
+#data 19
+imputed_dataEngland19$composite_quintiles = quantcut(imputed_dataEngland19$ses_latent,5)
+levels(imputed_dataEngland19$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland19$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland19$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland19$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland19$composite_quintiles)[5] = "5"
+#data 20
+imputed_dataEngland20$composite_quintiles = quantcut(imputed_dataEngland20$ses_latent,5)
+levels(imputed_dataEngland20$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland20$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland20$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland20$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland20$composite_quintiles)[5] = "5"
+#data 21
+imputed_dataEngland21$composite_quintiles = quantcut(imputed_dataEngland21$ses_latent,5)
+levels(imputed_dataEngland21$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland21$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland21$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland21$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland21$composite_quintiles)[5] = "5"
+#data22
+imputed_dataEngland22$composite_quintiles = quantcut(imputed_dataEngland22$ses_latent,5)
+levels(imputed_dataEngland22$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland22$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland22$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland22$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland22$composite_quintiles)[5] = "5"
+#data 23
+imputed_dataEngland23$composite_quintiles = quantcut(imputed_dataEngland23$ses_latent,5)
+levels(imputed_dataEngland23$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland23$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland23$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland23$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland23$composite_quintiles)[5] = "5"
+#data 24
+imputed_dataEngland24$composite_quintiles = quantcut(imputed_dataEngland24$ses_latent,5)
+levels(imputed_dataEngland24$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland24$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland24$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland24$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland24$composite_quintiles)[5] = "5"
+#data 25
+imputed_dataEngland25$composite_quintiles = quantcut(imputed_dataEngland25$ses_latent,5)
+levels(imputed_dataEngland25$composite_quintiles)[1] = "1"
+levels(imputed_dataEngland25$composite_quintiles)[2] = "2"
+levels(imputed_dataEngland25$composite_quintiles)[3] = "3"
+levels(imputed_dataEngland25$composite_quintiles)[4] = "4"
+levels(imputed_dataEngland25$composite_quintiles)[5] = "5"
+
+#regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
+
+compositeModerator_england_england <- function(df) {
+  fit <- glm(success ~ sex + ethnicity + EAL + country +
+               + caregiver_vocabStandardised + ses_latent*age5_standardised, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+compositeModerator_england <- lapply(list(imputed_dataEngland1, imputed_dataEngland2, imputed_dataEngland3, imputed_dataEngland4, imputed_dataEngland5,
+                                  imputed_dataEngland6, imputed_dataEngland7, imputed_dataEngland8, imputed_dataEngland9, imputed_dataEngland10,
+                                  imputed_dataEngland11, imputed_dataEngland12, imputed_dataEngland13, imputed_dataEngland14, imputed_dataEngland15,
+                                  imputed_dataEngland16, imputed_dataEngland17, imputed_dataEngland18, imputed_dataEngland19, imputed_dataEngland20,
+                                  imputed_dataEngland21, imputed_dataEngland22, imputed_dataEngland23, imputed_dataEngland24, imputed_dataEngland25),
+                             compositeModerator_england_england)
+moderator_compositeEngland <- summary(pool(as.mira(compositeModerator_england)),conf.int = TRUE, conf.level = 0.95,  exponentiate = TRUE) 
+
+#model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
+nocompositeModerator_england<- function(df) {
+  fit1 <- glm(success ~ sex + ethnicity + EAL + country +
+                + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
+              family = binomial, weights = weight, data=df)
+  return(fit1)
+}
+
+#run regression across list of 25 imputed datasets that have latent variable in 
+nocompositeModerator_england <- lapply(list(imputed_dataEngland1, imputed_dataEngland2, imputed_dataEngland3, imputed_dataEngland4, imputed_dataEngland5,
+                                    imputed_dataEngland6, imputed_dataEngland7, imputed_dataEngland8, imputed_dataEngland9, imputed_dataEngland10,
+                                    imputed_dataEngland11, imputed_dataEngland12, imputed_dataEngland13, imputed_dataEngland14, imputed_dataEngland15,
+                                    imputed_dataEngland16, imputed_dataEngland17, imputed_dataEngland18, imputed_dataEngland19, imputed_dataEngland20,
+                                    imputed_dataEngland21, imputed_dataEngland22, imputed_dataEngland23, imputed_dataEngland24, imputed_dataEngland25),
+                               nocompositeModerator_england_england)
+
+#convert into mira objects so that D1 function works to compare the nested models (mira - multiple imputation repeated analyses)
+#The as.mira() function takes the results of repeated complete-data analysis stored as a list, and turns it into a mira object that can be pooled.
+moderatorEngland = as.mira(compositeModerator_england)
+noModeratorEngland = as.mira(nocompositeModerator_england)
+#nested model comparison
+D1(moderatorEngland, noModeratorEngland)
+```
+
+
+#Wales
+```{r}
+#use composite SEC as the main moderator = run CFA to get composite factor score. 
+#create dataset of each individual imputed data
+wales_imputed_1 <- complete(wales_imputed,1)
+wales_imputed_2 <- complete(wales_imputed,2)
+wales_imputed_3 <- complete(wales_imputed,3)
+wales_imputed_4 <- complete(wales_imputed,4)
+wales_imputed_5 <- complete(wales_imputed,5)
+wales_imputed_6 <- complete(wales_imputed,6)
+wales_imputed_7 <- complete(wales_imputed,7)
+wales_imputed_8 <- complete(wales_imputed,8)
+wales_imputed_9 <- complete(wales_imputed,9)
+wales_imputed_10 <- complete(wales_imputed,10)
+wales_imputed_11 <- complete(wales_imputed,11)
+wales_imputed_12 <- complete(wales_imputed,12)
+wales_imputed_13 <- complete(wales_imputed,13)
+wales_imputed_14 <- complete(wales_imputed,14)
+wales_imputed_15 <- complete(wales_imputed,15)
+wales_imputed_16 <- complete(wales_imputed,16)
+wales_imputed_17 <- complete(wales_imputed,17)
+wales_imputed_18 <- complete(wales_imputed,18)
+wales_imputed_19 <- complete(wales_imputed,19)
+wales_imputed_20<- complete(wales_imputed,20)
+wales_imputed_21<- complete(wales_imputed,21)
+wales_imputed_22<- complete(wales_imputed,22)
+wales_imputed_23<- complete(wales_imputed,23)
+wales_imputed_24<- complete(wales_imputed,24)
+wales_imputed_25<- complete(wales_imputed,25)
+
+
+#factor analysis to get factor score####
+#factor analysis model
+
+
+#create imputed datasets as a list - this is so can run CFA over each dataset
+imputed_datasetsWales = list(wales_imputed_1, wales_imputed_2, wales_imputed_3, wales_imputed_4, wales_imputed_5, 
+                        wales_imputed_6, wales_imputed_7, wales_imputed_8, wales_imputed_9, wales_imputed_10, 
+                        wales_imputed_11, wales_imputed_12, wales_imputed_13, wales_imputed_14, wales_imputed_15,
+                        wales_imputed_16, wales_imputed_17, wales_imputed_18, wales_imputed_19, wales_imputed_20, 
+                        wales_imputed_21, wales_imputed_22, wales_imputed_23, wales_imputed_24, wales_imputed_25)
+
+#define CFA model to create SEP
+SEP_model <- 'SEP =~ highest_nvq + oecd_income + wealth_quintiles + occupational_status + imd'
+
+#run CFA across 25 imputed datasets
+cfa_imputed = function(ert){
+  fit = cfa(SEP_model, 
+            data = ert,
+            ordered = c("highest_nvq", "oecd_income","wealth_quintiles", "occupational_status", "imd"), 
+            std.lv=TRUE, 
+            estimator="WLSMV")
+  ses_latent = lavPredict(fit, type = "lv")
+}
+
+#create and add SES latent variable to each dataset
+imputed_datasetsWales$ses_latent = lapply(imputed_datasetsWales, cfa_imputed)
+
+#get individual datasets from list - these will now have SEP composite (pull this out for each dataset). 
+#this is so can run the regression over each dataset. 
+imputed_dataWales1 = imputed_datasetsWales[[1]]
+imputed_dataWales1$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[1]], center = TRUE, scale = TRUE))
+#imputed_dataWales1$ses_latent = scale(imputed_dataWales1$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales2 = imputed_datasetsWales[[2]]
+imputed_dataWales2$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[2]], center = TRUE, scale = TRUE))
+#imputed_dataWales2$ses_latent = scale(imputed_dataWales2$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales3 = imputed_datasetsWales[[3]]
+imputed_dataWales3$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[3]], center = TRUE, scale = TRUE))
+#imputed_dataWales3$ses_latent = scale(imputed_dataWales3$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales4 = imputed_datasetsWales[[4]]
+imputed_dataWales4$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[4]], center = TRUE, scale = TRUE))
+#imputed_dataWales4$ses_latent = scale(imputed_dataWales4$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales5 = imputed_datasetsWales[[5]]
+imputed_dataWales5$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[5]], center = TRUE, scale = TRUE))
+#imputed_dataWales5$ses_latent = scale(imputed_dataWales5$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales6 = imputed_datasetsWales[[6]]
+imputed_dataWales6$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[6]], center = TRUE, scale = TRUE))
+#imputed_dataWales6$ses_latent = scale(imputed_dataWales6$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales7 = imputed_datasetsWales[[7]]
+imputed_dataWales7$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[7]], center = TRUE, scale = TRUE))
+#imputed_dataWales7$ses_latent = scale(imputed_dataWales7$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales8 = imputed_datasetsWales[[8]]
+imputed_dataWales8$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[8]], center = TRUE, scale = TRUE))
+#imputed_dataWales8$ses_latent = scale(imputed_dataWales8$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales9 = imputed_datasetsWales[[9]]
+imputed_dataWales9$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[9]], center = TRUE, scale = TRUE))
+#imputed_dataWales9$ses_latent = scale(imputed_dataWales9$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales10 = imputed_datasetsWales[[10]]
+imputed_dataWales10$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[10]], center = TRUE, scale = TRUE))
+#imputed_dataWales10$ses_latent = scale(imputed_dataWales10$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales11 = imputed_datasetsWales[[11]]
+imputed_dataWales11$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[11]],center = TRUE, scale = TRUE))
+#imputed_dataWales11$ses_latent = scale(imputed_dataWales11$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales12 = imputed_datasetsWales[[12]]
+imputed_dataWales12$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[12]], center = TRUE, scale = TRUE))
+#imputed_dataWales12$ses_latent = scale(imputed_dataWales12$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales13 = imputed_datasetsWales[[13]]
+imputed_dataWales13$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[13]], center = TRUE, scale = TRUE))
+#imputed_dataWales13$ses_latent = scale(imputed_dataWales13$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales14 = imputed_datasetsWales[[14]]
+imputed_dataWales14$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[14]], center = TRUE, scale = TRUE))
+#imputed_dataWales14$ses_latent = scale(imputed_dataWales14$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales15 = imputed_datasetsWales[[15]]
+imputed_dataWales15$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[15]], center = TRUE, scale = TRUE))
+#imputed_dataWales15$ses_latent = scale(imputed_dataWales15$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales16 = imputed_datasetsWales[[16]]
+imputed_dataWales16$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[16]], center = TRUE, scale = TRUE))
+#imputed_dataWales16$ses_latent = scale(imputed_dataWales16$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales17 = imputed_datasetsWales[[17]]
+imputed_dataWales17$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[17]], center = TRUE, scale = TRUE))
+#imputed_dataWales17$ses_latent = scale(imputed_dataWales17$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales18 = imputed_datasetsWales[[18]]
+imputed_dataWales18$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[18]], center = TRUE, scale = TRUE))
+#imputed_dataWales18$ses_latent = scale(imputed_dataWales18$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales19 = imputed_datasetsWales[[19]]
+imputed_dataWales19$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[19]], center = TRUE, scale = TRUE))
+#imputed_dataWales19$ses_latent = scale(imputed_dataWales19$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales20 = imputed_datasetsWales[[20]]
+imputed_dataWales20$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[20]], center = TRUE, scale = TRUE))
+#imputed_dataWales20$ses_latent = scale(imputed_dataWales20$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales21 = imputed_datasetsWales[[21]]
+imputed_dataWales21$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[21]], center = TRUE, scale = TRUE))
+#imputed_dataWales21$ses_latent = scale(imputed_dataWales21$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales22 = imputed_datasetsWales[[22]]
+imputed_dataWales22$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[22]], center = TRUE, scale = TRUE))
+#imputed_dataWales22$ses_latent = scale(imputed_dataWales22$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales23 = imputed_datasetsWales[[23]]
+imputed_dataWales23$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[23]], center = TRUE, scale = TRUE))
+#imputed_dataWales23$ses_latent = scale(imputed_dataWales23$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales24 = imputed_datasetsWales[[24]]
+imputed_dataWales24$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[24]], center = TRUE, scale = TRUE))
+#imputed_dataWales24$ses_latent = scale(imputed_dataWales24$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataWales25 = imputed_datasetsWales[[25]]
+imputed_dataWales25$ses_latent = as.numeric(scale(imputed_datasetsWales$ses_latent[[25]], center = TRUE, scale = TRUE))
+#imputed_dataWales25$ses_latent = scale(imputed_dataWales25$ses_latent, center = TRUE, scale = TRUE)
+
+#create composite SEC quintiles (these will be used for plotting later)
+#add composite quintiles to data
+#data 1
+imputed_dataWales1$composite_quintiles = quantcut(imputed_dataWales1$ses_latent,5)
+levels(imputed_dataWales1$composite_quintiles)[1] = "1"
+levels(imputed_dataWales1$composite_quintiles)[2] = "2"
+levels(imputed_dataWales1$composite_quintiles)[3] = "3"
+levels(imputed_dataWales1$composite_quintiles)[4] = "4"
+levels(imputed_dataWales1$composite_quintiles)[5] = "5"
+#data2
+imputed_dataWales2$composite_quintiles = quantcut(imputed_dataWales2$ses_latent,5)
+levels(imputed_dataWales2$composite_quintiles)[1] = "1"
+levels(imputed_dataWales2$composite_quintiles)[2] = "2"
+levels(imputed_dataWales2$composite_quintiles)[3] = "3"
+levels(imputed_dataWales2$composite_quintiles)[4] = "4"
+levels(imputed_dataWales2$composite_quintiles)[5] = "5"
+#data3
+imputed_dataWales3$composite_quintiles = quantcut(imputed_dataWales3$ses_latent,5)
+levels(imputed_dataWales3$composite_quintiles)[1] = "1"
+levels(imputed_dataWales3$composite_quintiles)[2] = "2"
+levels(imputed_dataWales3$composite_quintiles)[3] = "3"
+levels(imputed_dataWales3$composite_quintiles)[4] = "4"
+levels(imputed_dataWales3$composite_quintiles)[5] = "5"
+#dat4
+imputed_dataWales4$composite_quintiles = quantcut(imputed_dataWales4$ses_latent,5)
+levels(imputed_dataWales4$composite_quintiles)[1] = "1"
+levels(imputed_dataWales4$composite_quintiles)[2] = "2"
+levels(imputed_dataWales4$composite_quintiles)[3] = "3"
+levels(imputed_dataWales4$composite_quintiles)[4] = "4"
+levels(imputed_dataWales4$composite_quintiles)[5] = "5"
+#DATA5
+imputed_dataWales5$composite_quintiles = quantcut(imputed_dataWales5$ses_latent,5)
+levels(imputed_dataWales5$composite_quintiles)[1] = "1"
+levels(imputed_dataWales5$composite_quintiles)[2] = "2"
+levels(imputed_dataWales5$composite_quintiles)[3] = "3"
+levels(imputed_dataWales5$composite_quintiles)[4] = "4"
+levels(imputed_dataWales5$composite_quintiles)[5] = "5"
+#data6
+imputed_dataWales6$composite_quintiles = quantcut(imputed_dataWales6$ses_latent,5)
+levels(imputed_dataWales6$composite_quintiles)[1] = "1"
+levels(imputed_dataWales6$composite_quintiles)[2] = "2"
+levels(imputed_dataWales6$composite_quintiles)[3] = "3"
+levels(imputed_dataWales6$composite_quintiles)[4] = "4"
+levels(imputed_dataWales6$composite_quintiles)[5] = "5"
+#data7
+imputed_dataWales7$composite_quintiles = quantcut(imputed_dataWales7$ses_latent,5)
+levels(imputed_dataWales7$composite_quintiles)[1] = "1"
+levels(imputed_dataWales7$composite_quintiles)[2] = "2"
+levels(imputed_dataWales7$composite_quintiles)[3] = "3"
+levels(imputed_dataWales7$composite_quintiles)[4] = "4"
+levels(imputed_dataWales7$composite_quintiles)[5] = "5"
+#data 8
+imputed_dataWales8$composite_quintiles = quantcut(imputed_dataWales8$ses_latent,5)
+levels(imputed_dataWales8$composite_quintiles)[1] = "1"
+levels(imputed_dataWales8$composite_quintiles)[2] = "2"
+levels(imputed_dataWales8$composite_quintiles)[3] = "3"
+levels(imputed_dataWales8$composite_quintiles)[4] = "4"
+levels(imputed_dataWales8$composite_quintiles)[5] = "5"
+#data 9 
+imputed_dataWales9$composite_quintiles = quantcut(imputed_dataWales9$ses_latent,5)
+levels(imputed_dataWales9$composite_quintiles)[1] = "1"
+levels(imputed_dataWales9$composite_quintiles)[2] = "2"
+levels(imputed_dataWales9$composite_quintiles)[3] = "3"
+levels(imputed_dataWales9$composite_quintiles)[4] = "4"
+levels(imputed_dataWales9$composite_quintiles)[5] = "5"
+#data10
+imputed_dataWales10$composite_quintiles = quantcut(imputed_dataWales10$ses_latent,5)
+levels(imputed_dataWales10$composite_quintiles)[1] = "1"
+levels(imputed_dataWales10$composite_quintiles)[2] = "2"
+levels(imputed_dataWales10$composite_quintiles)[3] = "3"
+levels(imputed_dataWales10$composite_quintiles)[4] = "4"
+levels(imputed_dataWales10$composite_quintiles)[5] = "5"
+#data11
+imputed_dataWales11$composite_quintiles = quantcut(imputed_dataWales11$ses_latent,5)
+levels(imputed_dataWales11$composite_quintiles)[1] = "1"
+levels(imputed_dataWales11$composite_quintiles)[2] = "2"
+levels(imputed_dataWales11$composite_quintiles)[3] = "3"
+levels(imputed_dataWales11$composite_quintiles)[4] = "4"
+levels(imputed_dataWales11$composite_quintiles)[5] = "5"
+#data12
+imputed_dataWales12$composite_quintiles = quantcut(imputed_dataWales12$ses_latent,5)
+levels(imputed_dataWales12$composite_quintiles)[1] = "1"
+levels(imputed_dataWales12$composite_quintiles)[2] = "2"
+levels(imputed_dataWales12$composite_quintiles)[3] = "3"
+levels(imputed_dataWales12$composite_quintiles)[4] = "4"
+levels(imputed_dataWales12$composite_quintiles)[5] = "5"
+#data13
+imputed_dataWales13$composite_quintiles = quantcut(imputed_dataWales13$ses_latent,5)
+levels(imputed_dataWales13$composite_quintiles)[1] = "1"
+levels(imputed_dataWales13$composite_quintiles)[2] = "2"
+levels(imputed_dataWales13$composite_quintiles)[3] = "3"
+levels(imputed_dataWales13$composite_quintiles)[4] = "4"
+levels(imputed_dataWales13$composite_quintiles)[5] = "5"
+#data14
+imputed_dataWales14$composite_quintiles = quantcut(imputed_dataWales14$ses_latent,5)
+levels(imputed_dataWales14$composite_quintiles)[1] = "1"
+levels(imputed_dataWales14$composite_quintiles)[2] = "2"
+levels(imputed_dataWales14$composite_quintiles)[3] = "3"
+levels(imputed_dataWales14$composite_quintiles)[4] = "4"
+levels(imputed_dataWales14$composite_quintiles)[5] = "5"
+#data15
+imputed_dataWales15$composite_quintiles = quantcut(imputed_dataWales15$ses_latent,5)
+levels(imputed_dataWales15$composite_quintiles)[1] = "1"
+levels(imputed_dataWales15$composite_quintiles)[2] = "2"
+levels(imputed_dataWales15$composite_quintiles)[3] = "3"
+levels(imputed_dataWales15$composite_quintiles)[4] = "4"
+levels(imputed_dataWales15$composite_quintiles)[5] = "5"
+#data16
+imputed_dataWales16$composite_quintiles = quantcut(imputed_dataWales16$ses_latent,5)
+levels(imputed_dataWales16$composite_quintiles)[1] = "1"
+levels(imputed_dataWales16$composite_quintiles)[2] = "2"
+levels(imputed_dataWales16$composite_quintiles)[3] = "3"
+levels(imputed_dataWales16$composite_quintiles)[4] = "4"
+levels(imputed_dataWales16$composite_quintiles)[5] = "5"
+#data 17
+imputed_dataWales17$composite_quintiles = quantcut(imputed_dataWales17$ses_latent,5)
+levels(imputed_dataWales17$composite_quintiles)[1] = "1"
+levels(imputed_dataWales17$composite_quintiles)[2] = "2"
+levels(imputed_dataWales17$composite_quintiles)[3] = "3"
+levels(imputed_dataWales17$composite_quintiles)[4] = "4"
+levels(imputed_dataWales17$composite_quintiles)[5] = "5"
+#data18
+imputed_dataWales18$composite_quintiles = quantcut(imputed_dataWales18$ses_latent,5)
+levels(imputed_dataWales18$composite_quintiles)[1] = "1"
+levels(imputed_dataWales18$composite_quintiles)[2] = "2"
+levels(imputed_dataWales18$composite_quintiles)[3] = "3"
+levels(imputed_dataWales18$composite_quintiles)[4] = "4"
+levels(imputed_dataWales18$composite_quintiles)[5] = "5"
+#data 19
+imputed_dataWales19$composite_quintiles = quantcut(imputed_dataWales19$ses_latent,5)
+levels(imputed_dataWales19$composite_quintiles)[1] = "1"
+levels(imputed_dataWales19$composite_quintiles)[2] = "2"
+levels(imputed_dataWales19$composite_quintiles)[3] = "3"
+levels(imputed_dataWales19$composite_quintiles)[4] = "4"
+levels(imputed_dataWales19$composite_quintiles)[5] = "5"
+#data 20
+imputed_dataWales20$composite_quintiles = quantcut(imputed_dataWales20$ses_latent,5)
+levels(imputed_dataWales20$composite_quintiles)[1] = "1"
+levels(imputed_dataWales20$composite_quintiles)[2] = "2"
+levels(imputed_dataWales20$composite_quintiles)[3] = "3"
+levels(imputed_dataWales20$composite_quintiles)[4] = "4"
+levels(imputed_dataWales20$composite_quintiles)[5] = "5"
+#data 21
+imputed_dataWales21$composite_quintiles = quantcut(imputed_dataWales21$ses_latent,5)
+levels(imputed_dataWales21$composite_quintiles)[1] = "1"
+levels(imputed_dataWales21$composite_quintiles)[2] = "2"
+levels(imputed_dataWales21$composite_quintiles)[3] = "3"
+levels(imputed_dataWales21$composite_quintiles)[4] = "4"
+levels(imputed_dataWales21$composite_quintiles)[5] = "5"
+#data22
+imputed_dataWales22$composite_quintiles = quantcut(imputed_dataWales22$ses_latent,5)
+levels(imputed_dataWales22$composite_quintiles)[1] = "1"
+levels(imputed_dataWales22$composite_quintiles)[2] = "2"
+levels(imputed_dataWales22$composite_quintiles)[3] = "3"
+levels(imputed_dataWales22$composite_quintiles)[4] = "4"
+levels(imputed_dataWales22$composite_quintiles)[5] = "5"
+#data 23
+imputed_dataWales23$composite_quintiles = quantcut(imputed_dataWales23$ses_latent,5)
+levels(imputed_dataWales23$composite_quintiles)[1] = "1"
+levels(imputed_dataWales23$composite_quintiles)[2] = "2"
+levels(imputed_dataWales23$composite_quintiles)[3] = "3"
+levels(imputed_dataWales23$composite_quintiles)[4] = "4"
+levels(imputed_dataWales23$composite_quintiles)[5] = "5"
+#data 24
+imputed_dataWales24$composite_quintiles = quantcut(imputed_dataWales24$ses_latent,5)
+levels(imputed_dataWales24$composite_quintiles)[1] = "1"
+levels(imputed_dataWales24$composite_quintiles)[2] = "2"
+levels(imputed_dataWales24$composite_quintiles)[3] = "3"
+levels(imputed_dataWales24$composite_quintiles)[4] = "4"
+levels(imputed_dataWales24$composite_quintiles)[5] = "5"
+#data 25
+imputed_dataWales25$composite_quintiles = quantcut(imputed_dataWales25$ses_latent,5)
+levels(imputed_dataWales25$composite_quintiles)[1] = "1"
+levels(imputed_dataWales25$composite_quintiles)[2] = "2"
+levels(imputed_dataWales25$composite_quintiles)[3] = "3"
+levels(imputed_dataWales25$composite_quintiles)[4] = "4"
+levels(imputed_dataWales25$composite_quintiles)[5] = "5"
+
+#regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
+
+compositeModerator_wales <- function(df) {
+  fit <- glm(success ~ sex + ethnicity_binary + EAL + country +
+               + caregiver_vocabStandardised + ses_latent*age5_standardised, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+compositeModerator_wales <- lapply(list(imputed_dataWales1, imputed_dataWales2, imputed_dataWales3, imputed_dataWales4, imputed_dataWales5,
+                                  imputed_dataWales6, imputed_dataWales7, imputed_dataWales8, imputed_dataWales9, imputed_dataWales10,
+                                  imputed_dataWales11, imputed_dataWales12, imputed_dataWales13, imputed_dataWales14, imputed_dataWales15,
+                                  imputed_dataWales16, imputed_dataWales17, imputed_dataWales18, imputed_dataWales19, imputed_dataWales20,
+                                  imputed_dataWales21, imputed_dataWales22, imputed_dataWales23, imputed_dataWales24, imputed_dataWales25),
+                             compositeModerator_wales_wales)
+moderator_compositeWales <- summary(pool(as.mira(compositeModerator_wales)),conf.int = TRUE, conf.level = 0.95,  exponentiate = TRUE) 
+
+#model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
+nocompositeModerator_wales<- function(df) {
+  fit1 <- glm(success ~ sex + ethnicity_binary + EAL + country +
+                + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
+              family = binomial, weights = weight, data=df)
+  return(fit1)
+}
+
+#run regression across list of 25 imputed datasets that have latent variable in 
+nocompositeModerator_wales <- lapply(list(imputed_dataWales1, imputed_dataWales2, imputed_dataWales3, imputed_dataWales4, imputed_dataWales5,
+                                    imputed_dataWales6, imputed_dataWales7, imputed_dataWales8, imputed_dataWales9, imputed_dataWales10,
+                                    imputed_dataWales11, imputed_dataWales12, imputed_dataWales13, imputed_dataWales14, imputed_dataWales15,
+                                    imputed_dataWales16, imputed_dataWales17, imputed_dataWales18, imputed_dataWales19, imputed_dataWales20,
+                                    imputed_dataWales21, imputed_dataWales22, imputed_dataWales23, imputed_dataWales24, imputed_dataWales25),
+                               nocompositeModerator_wales)
+
+#convert into mira objects so that D1 function works to compare the nested models (mira - multiple imputation repeated analyses)
+#The as.mira() function takes the results of repeated complete-data analysis stored as a list, and turns it into a mira object that can be pooled.
+moderatorWales = as.mira(compositeModerator_wales)
+noModeratorWales = as.mira(nocompositeModerator_wales)
+#nested model comparison
+D1(moderatorWales, noModeratorWales)
+```
+
+#scotland 
+```{r}
+#use composite SEC as the main moderator = run CFA to get composite factor score. 
+#create dataset of each individual imputed data
+scotland_imputed_1 <- complete(scotland_imputed,1)
+scotland_imputed_2 <- complete(scotland_imputed,2)
+scotland_imputed_3 <- complete(scotland_imputed,3)
+scotland_imputed_4 <- complete(scotland_imputed,4)
+scotland_imputed_5 <- complete(scotland_imputed,5)
+scotland_imputed_6 <- complete(scotland_imputed,6)
+scotland_imputed_7 <- complete(scotland_imputed,7)
+scotland_imputed_8 <- complete(scotland_imputed,8)
+scotland_imputed_9 <- complete(scotland_imputed,9)
+scotland_imputed_10 <- complete(scotland_imputed,10)
+scotland_imputed_11 <- complete(scotland_imputed,11)
+scotland_imputed_12 <- complete(scotland_imputed,12)
+scotland_imputed_13 <- complete(scotland_imputed,13)
+scotland_imputed_14 <- complete(scotland_imputed,14)
+scotland_imputed_15 <- complete(scotland_imputed,15)
+scotland_imputed_16 <- complete(scotland_imputed,16)
+scotland_imputed_17 <- complete(scotland_imputed,17)
+scotland_imputed_18 <- complete(scotland_imputed,18)
+scotland_imputed_19 <- complete(scotland_imputed,19)
+scotland_imputed_20<- complete(scotland_imputed,20)
+scotland_imputed_21<- complete(scotland_imputed,21)
+scotland_imputed_22<- complete(scotland_imputed,22)
+scotland_imputed_23<- complete(scotland_imputed,23)
+scotland_imputed_24<- complete(scotland_imputed,24)
+scotland_imputed_25<- complete(scotland_imputed,25)
+
+
+#factor analysis to get factor score####
+#factor analysis model
+
+
+#create imputed datasets as a list - this is so can run CFA over each dataset
+imputed_datasetsScotland = list(scotland_imputed_1, scotland_imputed_2, scotland_imputed_3, scotland_imputed_4, scotland_imputed_5, 
+                        scotland_imputed_6, scotland_imputed_7, scotland_imputed_8, scotland_imputed_9, scotland_imputed_10, 
+                        scotland_imputed_11, scotland_imputed_12, scotland_imputed_13, scotland_imputed_14, scotland_imputed_15,
+                        scotland_imputed_16, scotland_imputed_17, scotland_imputed_18, scotland_imputed_19, scotland_imputed_20, 
+                        scotland_imputed_21, scotland_imputed_22, scotland_imputed_23, scotland_imputed_24, scotland_imputed_25)
+
+#define CFA model to create SEP
+SEP_model <- 'SEP =~ highest_nvq + oecd_income + wealth_quintiles + occupational_status + imd'
+
+#run CFA across 25 imputed datasets
+cfa_imputed = function(ert){
+  fit = cfa(SEP_model, 
+            data = ert,
+            ordered = c("highest_nvq", "oecd_income","wealth_quintiles", "occupational_status", "imd"), 
+            std.lv=TRUE, 
+            estimator="WLSMV")
+  ses_latent = lavPredict(fit, type = "lv")
+}
+
+#create and add SES latent variable to each dataset
+imputed_datasetsScotland$ses_latent = lapply(imputed_datasetsScotland, cfa_imputed)
+
+#get individual datasets from list - these will now have SEP composite (pull this out for each dataset). 
+#this is so can run the regression over each dataset. 
+imputed_dataScotland1 = imputed_datasetsScotland[[1]]
+imputed_dataScotland1$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[1]], center = TRUE, scale = TRUE))
+#imputed_dataScotland1$ses_latent = scale(imputed_dataScotland1$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland2 = imputed_datasetsScotland[[2]]
+imputed_dataScotland2$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[2]], center = TRUE, scale = TRUE))
+#imputed_dataScotland2$ses_latent = scale(imputed_dataScotland2$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland3 = imputed_datasetsScotland[[3]]
+imputed_dataScotland3$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[3]], center = TRUE, scale = TRUE))
+#imputed_dataScotland3$ses_latent = scale(imputed_dataScotland3$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland4 = imputed_datasetsScotland[[4]]
+imputed_dataScotland4$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[4]], center = TRUE, scale = TRUE))
+#imputed_dataScotland4$ses_latent = scale(imputed_dataScotland4$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland5 = imputed_datasetsScotland[[5]]
+imputed_dataScotland5$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[5]], center = TRUE, scale = TRUE))
+#imputed_dataScotland5$ses_latent = scale(imputed_dataScotland5$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland6 = imputed_datasetsScotland[[6]]
+imputed_dataScotland6$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[6]], center = TRUE, scale = TRUE))
+#imputed_dataScotland6$ses_latent = scale(imputed_dataScotland6$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland7 = imputed_datasetsScotland[[7]]
+imputed_dataScotland7$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[7]], center = TRUE, scale = TRUE))
+#imputed_dataScotland7$ses_latent = scale(imputed_dataScotland7$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland8 = imputed_datasetsScotland[[8]]
+imputed_dataScotland8$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[8]], center = TRUE, scale = TRUE))
+#imputed_dataScotland8$ses_latent = scale(imputed_dataScotland8$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland9 = imputed_datasetsScotland[[9]]
+imputed_dataScotland9$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[9]], center = TRUE, scale = TRUE))
+#imputed_dataScotland9$ses_latent = scale(imputed_dataScotland9$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland10 = imputed_datasetsScotland[[10]]
+imputed_dataScotland10$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[10]], center = TRUE, scale = TRUE))
+#imputed_dataScotland10$ses_latent = scale(imputed_dataScotland10$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland11 = imputed_datasetsScotland[[11]]
+imputed_dataScotland11$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[11]],center = TRUE, scale = TRUE))
+#imputed_dataScotland11$ses_latent = scale(imputed_dataScotland11$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland12 = imputed_datasetsScotland[[12]]
+imputed_dataScotland12$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[12]], center = TRUE, scale = TRUE))
+#imputed_dataScotland12$ses_latent = scale(imputed_dataScotland12$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland13 = imputed_datasetsScotland[[13]]
+imputed_dataScotland13$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[13]], center = TRUE, scale = TRUE))
+#imputed_dataScotland13$ses_latent = scale(imputed_dataScotland13$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland14 = imputed_datasetsScotland[[14]]
+imputed_dataScotland14$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[14]], center = TRUE, scale = TRUE))
+#imputed_dataScotland14$ses_latent = scale(imputed_dataScotland14$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland15 = imputed_datasetsScotland[[15]]
+imputed_dataScotland15$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[15]], center = TRUE, scale = TRUE))
+#imputed_dataScotland15$ses_latent = scale(imputed_dataScotland15$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland16 = imputed_datasetsScotland[[16]]
+imputed_dataScotland16$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[16]], center = TRUE, scale = TRUE))
+#imputed_dataScotland16$ses_latent = scale(imputed_dataScotland16$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland17 = imputed_datasetsScotland[[17]]
+imputed_dataScotland17$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[17]], center = TRUE, scale = TRUE))
+#imputed_dataScotland17$ses_latent = scale(imputed_dataScotland17$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland18 = imputed_datasetsScotland[[18]]
+imputed_dataScotland18$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[18]], center = TRUE, scale = TRUE))
+#imputed_dataScotland18$ses_latent = scale(imputed_dataScotland18$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland19 = imputed_datasetsScotland[[19]]
+imputed_dataScotland19$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[19]], center = TRUE, scale = TRUE))
+#imputed_dataScotland19$ses_latent = scale(imputed_dataScotland19$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland20 = imputed_datasetsScotland[[20]]
+imputed_dataScotland20$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[20]], center = TRUE, scale = TRUE))
+#imputed_dataScotland20$ses_latent = scale(imputed_dataScotland20$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland21 = imputed_datasetsScotland[[21]]
+imputed_dataScotland21$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[21]], center = TRUE, scale = TRUE))
+#imputed_dataScotland21$ses_latent = scale(imputed_dataScotland21$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland22 = imputed_datasetsScotland[[22]]
+imputed_dataScotland22$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[22]], center = TRUE, scale = TRUE))
+#imputed_dataScotland22$ses_latent = scale(imputed_dataScotland22$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland23 = imputed_datasetsScotland[[23]]
+imputed_dataScotland23$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[23]], center = TRUE, scale = TRUE))
+#imputed_dataScotland23$ses_latent = scale(imputed_dataScotland23$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland24 = imputed_datasetsScotland[[24]]
+imputed_dataScotland24$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[24]], center = TRUE, scale = TRUE))
+#imputed_dataScotland24$ses_latent = scale(imputed_dataScotland24$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataScotland25 = imputed_datasetsScotland[[25]]
+imputed_dataScotland25$ses_latent = as.numeric(scale(imputed_datasetsScotland$ses_latent[[25]], center = TRUE, scale = TRUE))
+#imputed_dataScotland25$ses_latent = scale(imputed_dataScotland25$ses_latent, center = TRUE, scale = TRUE)
+
+#create composite SEC quintiles (these will be used for plotting later)
+#add composite quintiles to data
+#data 1
+imputed_dataScotland1$composite_quintiles = quantcut(imputed_dataScotland1$ses_latent,5)
+levels(imputed_dataScotland1$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland1$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland1$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland1$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland1$composite_quintiles)[5] = "5"
+#data2
+imputed_dataScotland2$composite_quintiles = quantcut(imputed_dataScotland2$ses_latent,5)
+levels(imputed_dataScotland2$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland2$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland2$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland2$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland2$composite_quintiles)[5] = "5"
+#data3
+imputed_dataScotland3$composite_quintiles = quantcut(imputed_dataScotland3$ses_latent,5)
+levels(imputed_dataScotland3$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland3$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland3$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland3$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland3$composite_quintiles)[5] = "5"
+#dat4
+imputed_dataScotland4$composite_quintiles = quantcut(imputed_dataScotland4$ses_latent,5)
+levels(imputed_dataScotland4$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland4$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland4$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland4$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland4$composite_quintiles)[5] = "5"
+#DATA5
+imputed_dataScotland5$composite_quintiles = quantcut(imputed_dataScotland5$ses_latent,5)
+levels(imputed_dataScotland5$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland5$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland5$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland5$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland5$composite_quintiles)[5] = "5"
+#data6
+imputed_dataScotland6$composite_quintiles = quantcut(imputed_dataScotland6$ses_latent,5)
+levels(imputed_dataScotland6$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland6$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland6$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland6$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland6$composite_quintiles)[5] = "5"
+#data7
+imputed_dataScotland7$composite_quintiles = quantcut(imputed_dataScotland7$ses_latent,5)
+levels(imputed_dataScotland7$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland7$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland7$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland7$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland7$composite_quintiles)[5] = "5"
+#data 8
+imputed_dataScotland8$composite_quintiles = quantcut(imputed_dataScotland8$ses_latent,5)
+levels(imputed_dataScotland8$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland8$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland8$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland8$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland8$composite_quintiles)[5] = "5"
+#data 9 
+imputed_dataScotland9$composite_quintiles = quantcut(imputed_dataScotland9$ses_latent,5)
+levels(imputed_dataScotland9$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland9$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland9$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland9$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland9$composite_quintiles)[5] = "5"
+#data10
+imputed_dataScotland10$composite_quintiles = quantcut(imputed_dataScotland10$ses_latent,5)
+levels(imputed_dataScotland10$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland10$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland10$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland10$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland10$composite_quintiles)[5] = "5"
+#data11
+imputed_dataScotland11$composite_quintiles = quantcut(imputed_dataScotland11$ses_latent,5)
+levels(imputed_dataScotland11$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland11$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland11$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland11$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland11$composite_quintiles)[5] = "5"
+#data12
+imputed_dataScotland12$composite_quintiles = quantcut(imputed_dataScotland12$ses_latent,5)
+levels(imputed_dataScotland12$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland12$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland12$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland12$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland12$composite_quintiles)[5] = "5"
+#data13
+imputed_dataScotland13$composite_quintiles = quantcut(imputed_dataScotland13$ses_latent,5)
+levels(imputed_dataScotland13$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland13$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland13$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland13$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland13$composite_quintiles)[5] = "5"
+#data14
+imputed_dataScotland14$composite_quintiles = quantcut(imputed_dataScotland14$ses_latent,5)
+levels(imputed_dataScotland14$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland14$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland14$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland14$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland14$composite_quintiles)[5] = "5"
+#data15
+imputed_dataScotland15$composite_quintiles = quantcut(imputed_dataScotland15$ses_latent,5)
+levels(imputed_dataScotland15$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland15$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland15$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland15$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland15$composite_quintiles)[5] = "5"
+#data16
+imputed_dataScotland16$composite_quintiles = quantcut(imputed_dataScotland16$ses_latent,5)
+levels(imputed_dataScotland16$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland16$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland16$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland16$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland16$composite_quintiles)[5] = "5"
+#data 17
+imputed_dataScotland17$composite_quintiles = quantcut(imputed_dataScotland17$ses_latent,5)
+levels(imputed_dataScotland17$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland17$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland17$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland17$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland17$composite_quintiles)[5] = "5"
+#data18
+imputed_dataScotland18$composite_quintiles = quantcut(imputed_dataScotland18$ses_latent,5)
+levels(imputed_dataScotland18$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland18$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland18$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland18$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland18$composite_quintiles)[5] = "5"
+#data 19
+imputed_dataScotland19$composite_quintiles = quantcut(imputed_dataScotland19$ses_latent,5)
+levels(imputed_dataScotland19$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland19$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland19$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland19$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland19$composite_quintiles)[5] = "5"
+#data 20
+imputed_dataScotland20$composite_quintiles = quantcut(imputed_dataScotland20$ses_latent,5)
+levels(imputed_dataScotland20$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland20$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland20$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland20$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland20$composite_quintiles)[5] = "5"
+#data 21
+imputed_dataScotland21$composite_quintiles = quantcut(imputed_dataScotland21$ses_latent,5)
+levels(imputed_dataScotland21$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland21$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland21$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland21$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland21$composite_quintiles)[5] = "5"
+#data22
+imputed_dataScotland22$composite_quintiles = quantcut(imputed_dataScotland22$ses_latent,5)
+levels(imputed_dataScotland22$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland22$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland22$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland22$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland22$composite_quintiles)[5] = "5"
+#data 23
+imputed_dataScotland23$composite_quintiles = quantcut(imputed_dataScotland23$ses_latent,5)
+levels(imputed_dataScotland23$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland23$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland23$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland23$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland23$composite_quintiles)[5] = "5"
+#data 24
+imputed_dataScotland24$composite_quintiles = quantcut(imputed_dataScotland24$ses_latent,5)
+levels(imputed_dataScotland24$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland24$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland24$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland24$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland24$composite_quintiles)[5] = "5"
+#data 25
+imputed_dataScotland25$composite_quintiles = quantcut(imputed_dataScotland25$ses_latent,5)
+levels(imputed_dataScotland25$composite_quintiles)[1] = "1"
+levels(imputed_dataScotland25$composite_quintiles)[2] = "2"
+levels(imputed_dataScotland25$composite_quintiles)[3] = "3"
+levels(imputed_dataScotland25$composite_quintiles)[4] = "4"
+levels(imputed_dataScotland25$composite_quintiles)[5] = "5"
+
+#regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
+
+compositeModerator_scotland <- function(df) {
+  fit <- glm(success ~ sex + ethnicity_binary + EAL + country +
+               + caregiver_vocabStandardised + ses_latent*age5_standardised, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+compositeModerator_scotland <- lapply(list(imputed_dataScotland1, imputed_dataScotland2, imputed_dataScotland3, imputed_dataScotland4, imputed_dataScotland5,
+                                  imputed_dataScotland6, imputed_dataScotland7, imputed_dataScotland8, imputed_dataScotland9, imputed_dataScotland10,
+                                  imputed_dataScotland11, imputed_dataScotland12, imputed_dataScotland13, imputed_dataScotland14, imputed_dataScotland15,
+                                  imputed_dataScotland16, imputed_dataScotland17, imputed_dataScotland18, imputed_dataScotland19, imputed_dataScotland20,
+                                  imputed_dataScotland21, imputed_dataScotland22, imputed_dataScotland23, imputed_dataScotland24, imputed_dataScotland25),
+                             compositeModerator_scotland)
+moderator_compositeScotland <- summary(pool(as.mira(compositeModerator_scotland)),conf.int = TRUE, conf.level = 0.95,  exponentiate = TRUE) 
+
+#model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
+nocompositeModerator_scotland<- function(df) {
+  fit1 <- glm(success ~ sex + ethnicity_binary + EAL + country +
+                + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
+              family = binomial, weights = weight, data=df)
+  return(fit1)
+}
+
+#run regression across list of 25 imputed datasets that have latent variable in 
+nocompositeModerator_scotland <- lapply(list(imputed_dataScotland1, imputed_dataScotland2, imputed_dataScotland3, imputed_dataScotland4, imputed_dataScotland5,
+                                    imputed_dataScotland6, imputed_dataScotland7, imputed_dataScotland8, imputed_dataScotland9, imputed_dataScotland10,
+                                    imputed_dataScotland11, imputed_dataScotland12, imputed_dataScotland13, imputed_dataScotland14, imputed_dataScotland15,
+                                    imputed_dataScotland16, imputed_dataScotland17, imputed_dataScotland18, imputed_dataScotland19, imputed_dataScotland20,
+                                    imputed_dataScotland21, imputed_dataScotland22, imputed_dataScotland23, imputed_dataScotland24, imputed_dataScotland25),
+                               nocompositeModerator_scotland)
+
+#convert into mira objects so that D1 function works to compare the nested models (mira - multiple imputation repeated analyses)
+#The as.mira() function takes the results of repeated complete-data analysis stored as a list, and turns it into a mira object that can be pooled.
+moderatorScotland = as.mira(compositeModerator_scotland)
+noModeratorScotland = as.mira(nocompositeModerator_scotland)
+#nested model comparison
+D1(moderatorScotland, noModeratorScotland)
+```
+
+
+#northern ireland
+```{r}
+#use composite SEC as the main moderator = run CFA to get composite factor score. 
+#create dataset of each individual imputed data
+northern_ireland_imputed_1 <- complete(northern_ireland_imputed,1)
+northern_ireland_imputed_2 <- complete(northern_ireland_imputed,2)
+northern_ireland_imputed_3 <- complete(northern_ireland_imputed,3)
+northern_ireland_imputed_4 <- complete(northern_ireland_imputed,4)
+northern_ireland_imputed_5 <- complete(northern_ireland_imputed,5)
+northern_ireland_imputed_6 <- complete(northern_ireland_imputed,6)
+northern_ireland_imputed_7 <- complete(northern_ireland_imputed,7)
+northern_ireland_imputed_8 <- complete(northern_ireland_imputed,8)
+northern_ireland_imputed_9 <- complete(northern_ireland_imputed,9)
+northern_ireland_imputed_10 <- complete(northern_ireland_imputed,10)
+northern_ireland_imputed_11 <- complete(northern_ireland_imputed,11)
+northern_ireland_imputed_12 <- complete(northern_ireland_imputed,12)
+northern_ireland_imputed_13 <- complete(northern_ireland_imputed,13)
+northern_ireland_imputed_14 <- complete(northern_ireland_imputed,14)
+northern_ireland_imputed_15 <- complete(northern_ireland_imputed,15)
+northern_ireland_imputed_16 <- complete(northern_ireland_imputed,16)
+northern_ireland_imputed_17 <- complete(northern_ireland_imputed,17)
+northern_ireland_imputed_18 <- complete(northern_ireland_imputed,18)
+northern_ireland_imputed_19 <- complete(northern_ireland_imputed,19)
+northern_ireland_imputed_20<- complete(northern_ireland_imputed,20)
+northern_ireland_imputed_21<- complete(northern_ireland_imputed,21)
+northern_ireland_imputed_22<- complete(northern_ireland_imputed,22)
+northern_ireland_imputed_23<- complete(northern_ireland_imputed,23)
+northern_ireland_imputed_24<- complete(northern_ireland_imputed,24)
+northern_ireland_imputed_25<- complete(northern_ireland_imputed,25)
+
+
+#factor analysis to get factor score####
+#factor analysis model
+
+
+#create imputed datasets as a list - this is so can run CFA over each dataset
+imputed_datasetsNI = list(northern_ireland_imputed_1, northern_ireland_imputed_2, northern_ireland_imputed_3, northern_ireland_imputed_4, northern_ireland_imputed_5, 
+                        northern_ireland_imputed_6, northern_ireland_imputed_7, northern_ireland_imputed_8, northern_ireland_imputed_9, northern_ireland_imputed_10, 
+                        northern_ireland_imputed_11, northern_ireland_imputed_12, northern_ireland_imputed_13, northern_ireland_imputed_14, northern_ireland_imputed_15,
+                        northern_ireland_imputed_16, northern_ireland_imputed_17, northern_ireland_imputed_18, northern_ireland_imputed_19, northern_ireland_imputed_20, 
+                        northern_ireland_imputed_21, northern_ireland_imputed_22, northern_ireland_imputed_23, northern_ireland_imputed_24, northern_ireland_imputed_25)
+
+#define CFA model to create SEP
+SEP_model <- 'SEP =~ highest_nvq + oecd_income + wealth_quintiles + occupational_status + imd'
+
+#run CFA across 25 imputed datasets
+cfa_imputed = function(ert){
+  fit = cfa(SEP_model, 
+            data = ert,
+            ordered = c("highest_nvq", "oecd_income","wealth_quintiles", "occupational_status", "imd"), 
+            std.lv=TRUE, 
+            estimator="WLSMV")
+  ses_latent = lavPredict(fit, type = "lv")
+}
+
+#create and add SES latent variable to each dataset
+imputed_datasetsNI$ses_latent = lapply(imputed_datasetsNI, cfa_imputed)
+
+#get individual datasets from list - these will now have SEP composite (pull this out for each dataset). 
+#this is so can run the regression over each dataset. 
+imputed_dataNI1 = imputed_datasetsNI[[1]]
+imputed_dataNI1$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[1]], center = TRUE, scale = TRUE))
+#imputed_dataNI1$ses_latent = scale(imputed_dataNI1$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI2 = imputed_datasetsNI[[2]]
+imputed_dataNI2$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[2]], center = TRUE, scale = TRUE))
+#imputed_dataNI2$ses_latent = scale(imputed_dataNI2$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI3 = imputed_datasetsNI[[3]]
+imputed_dataNI3$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[3]], center = TRUE, scale = TRUE))
+#imputed_dataNI3$ses_latent = scale(imputed_dataNI3$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI4 = imputed_datasetsNI[[4]]
+imputed_dataNI4$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[4]], center = TRUE, scale = TRUE))
+#imputed_dataNI4$ses_latent = scale(imputed_dataNI4$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI5 = imputed_datasetsNI[[5]]
+imputed_dataNI5$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[5]], center = TRUE, scale = TRUE))
+#imputed_dataNI5$ses_latent = scale(imputed_dataNI5$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI6 = imputed_datasetsNI[[6]]
+imputed_dataNI6$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[6]], center = TRUE, scale = TRUE))
+#imputed_dataNI6$ses_latent = scale(imputed_dataNI6$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI7 = imputed_datasetsNI[[7]]
+imputed_dataNI7$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[7]], center = TRUE, scale = TRUE))
+#imputed_dataNI7$ses_latent = scale(imputed_dataNI7$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI8 = imputed_datasetsNI[[8]]
+imputed_dataNI8$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[8]], center = TRUE, scale = TRUE))
+#imputed_dataNI8$ses_latent = scale(imputed_dataNI8$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI9 = imputed_datasetsNI[[9]]
+imputed_dataNI9$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[9]], center = TRUE, scale = TRUE))
+#imputed_dataNI9$ses_latent = scale(imputed_dataNI9$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI10 = imputed_datasetsNI[[10]]
+imputed_dataNI10$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[10]], center = TRUE, scale = TRUE))
+#imputed_dataNI10$ses_latent = scale(imputed_dataNI10$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI11 = imputed_datasetsNI[[11]]
+imputed_dataNI11$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[11]],center = TRUE, scale = TRUE))
+#imputed_dataNI11$ses_latent = scale(imputed_dataNI11$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI12 = imputed_datasetsNI[[12]]
+imputed_dataNI12$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[12]], center = TRUE, scale = TRUE))
+#imputed_dataNI12$ses_latent = scale(imputed_dataNI12$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI13 = imputed_datasetsNI[[13]]
+imputed_dataNI13$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[13]], center = TRUE, scale = TRUE))
+#imputed_dataNI13$ses_latent = scale(imputed_dataNI13$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI14 = imputed_datasetsNI[[14]]
+imputed_dataNI14$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[14]], center = TRUE, scale = TRUE))
+#imputed_dataNI14$ses_latent = scale(imputed_dataNI14$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI15 = imputed_datasetsNI[[15]]
+imputed_dataNI15$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[15]], center = TRUE, scale = TRUE))
+#imputed_dataNI15$ses_latent = scale(imputed_dataNI15$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI16 = imputed_datasetsNI[[16]]
+imputed_dataNI16$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[16]], center = TRUE, scale = TRUE))
+#imputed_dataNI16$ses_latent = scale(imputed_dataNI16$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI17 = imputed_datasetsNI[[17]]
+imputed_dataNI17$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[17]], center = TRUE, scale = TRUE))
+#imputed_dataNI17$ses_latent = scale(imputed_dataNI17$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI18 = imputed_datasetsNI[[18]]
+imputed_dataNI18$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[18]], center = TRUE, scale = TRUE))
+#imputed_dataNI18$ses_latent = scale(imputed_dataNI18$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI19 = imputed_datasetsNI[[19]]
+imputed_dataNI19$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[19]], center = TRUE, scale = TRUE))
+#imputed_dataNI19$ses_latent = scale(imputed_dataNI19$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI20 = imputed_datasetsNI[[20]]
+imputed_dataNI20$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[20]], center = TRUE, scale = TRUE))
+#imputed_dataNI20$ses_latent = scale(imputed_dataNI20$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI21 = imputed_datasetsNI[[21]]
+imputed_dataNI21$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[21]], center = TRUE, scale = TRUE))
+#imputed_dataNI21$ses_latent = scale(imputed_dataNI21$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI22 = imputed_datasetsNI[[22]]
+imputed_dataNI22$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[22]], center = TRUE, scale = TRUE))
+#imputed_dataNI22$ses_latent = scale(imputed_dataNI22$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI23 = imputed_datasetsNI[[23]]
+imputed_dataNI23$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[23]], center = TRUE, scale = TRUE))
+#imputed_dataNI23$ses_latent = scale(imputed_dataNI23$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI24 = imputed_datasetsNI[[24]]
+imputed_dataNI24$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[24]], center = TRUE, scale = TRUE))
+#imputed_dataNI24$ses_latent = scale(imputed_dataNI24$ses_latent, center = TRUE, scale = TRUE)
+imputed_dataNI25 = imputed_datasetsNI[[25]]
+imputed_dataNI25$ses_latent = as.numeric(scale(imputed_datasetsNI$ses_latent[[25]], center = TRUE, scale = TRUE))
+#imputed_dataNI25$ses_latent = scale(imputed_dataNI25$ses_latent, center = TRUE, scale = TRUE)
+
+#create composite SEC quintiles (these will be used for plotting later)
+#add composite quintiles to data
+#data 1
+imputed_dataNI1$composite_quintiles = quantcut(imputed_dataNI1$ses_latent,5)
+levels(imputed_dataNI1$composite_quintiles)[1] = "1"
+levels(imputed_dataNI1$composite_quintiles)[2] = "2"
+levels(imputed_dataNI1$composite_quintiles)[3] = "3"
+levels(imputed_dataNI1$composite_quintiles)[4] = "4"
+levels(imputed_dataNI1$composite_quintiles)[5] = "5"
+#data2
+imputed_dataNI2$composite_quintiles = quantcut(imputed_dataNI2$ses_latent,5)
+levels(imputed_dataNI2$composite_quintiles)[1] = "1"
+levels(imputed_dataNI2$composite_quintiles)[2] = "2"
+levels(imputed_dataNI2$composite_quintiles)[3] = "3"
+levels(imputed_dataNI2$composite_quintiles)[4] = "4"
+levels(imputed_dataNI2$composite_quintiles)[5] = "5"
+#data3
+imputed_dataNI3$composite_quintiles = quantcut(imputed_dataNI3$ses_latent,5)
+levels(imputed_dataNI3$composite_quintiles)[1] = "1"
+levels(imputed_dataNI3$composite_quintiles)[2] = "2"
+levels(imputed_dataNI3$composite_quintiles)[3] = "3"
+levels(imputed_dataNI3$composite_quintiles)[4] = "4"
+levels(imputed_dataNI3$composite_quintiles)[5] = "5"
+#dat4
+imputed_dataNI4$composite_quintiles = quantcut(imputed_dataNI4$ses_latent,5)
+levels(imputed_dataNI4$composite_quintiles)[1] = "1"
+levels(imputed_dataNI4$composite_quintiles)[2] = "2"
+levels(imputed_dataNI4$composite_quintiles)[3] = "3"
+levels(imputed_dataNI4$composite_quintiles)[4] = "4"
+levels(imputed_dataNI4$composite_quintiles)[5] = "5"
+#DATA5
+imputed_dataNI5$composite_quintiles = quantcut(imputed_dataNI5$ses_latent,5)
+levels(imputed_dataNI5$composite_quintiles)[1] = "1"
+levels(imputed_dataNI5$composite_quintiles)[2] = "2"
+levels(imputed_dataNI5$composite_quintiles)[3] = "3"
+levels(imputed_dataNI5$composite_quintiles)[4] = "4"
+levels(imputed_dataNI5$composite_quintiles)[5] = "5"
+#data6
+imputed_dataNI6$composite_quintiles = quantcut(imputed_dataNI6$ses_latent,5)
+levels(imputed_dataNI6$composite_quintiles)[1] = "1"
+levels(imputed_dataNI6$composite_quintiles)[2] = "2"
+levels(imputed_dataNI6$composite_quintiles)[3] = "3"
+levels(imputed_dataNI6$composite_quintiles)[4] = "4"
+levels(imputed_dataNI6$composite_quintiles)[5] = "5"
+#data7
+imputed_dataNI7$composite_quintiles = quantcut(imputed_dataNI7$ses_latent,5)
+levels(imputed_dataNI7$composite_quintiles)[1] = "1"
+levels(imputed_dataNI7$composite_quintiles)[2] = "2"
+levels(imputed_dataNI7$composite_quintiles)[3] = "3"
+levels(imputed_dataNI7$composite_quintiles)[4] = "4"
+levels(imputed_dataNI7$composite_quintiles)[5] = "5"
+#data 8
+imputed_dataNI8$composite_quintiles = quantcut(imputed_dataNI8$ses_latent,5)
+levels(imputed_dataNI8$composite_quintiles)[1] = "1"
+levels(imputed_dataNI8$composite_quintiles)[2] = "2"
+levels(imputed_dataNI8$composite_quintiles)[3] = "3"
+levels(imputed_dataNI8$composite_quintiles)[4] = "4"
+levels(imputed_dataNI8$composite_quintiles)[5] = "5"
+#data 9 
+imputed_dataNI9$composite_quintiles = quantcut(imputed_dataNI9$ses_latent,5)
+levels(imputed_dataNI9$composite_quintiles)[1] = "1"
+levels(imputed_dataNI9$composite_quintiles)[2] = "2"
+levels(imputed_dataNI9$composite_quintiles)[3] = "3"
+levels(imputed_dataNI9$composite_quintiles)[4] = "4"
+levels(imputed_dataNI9$composite_quintiles)[5] = "5"
+#data10
+imputed_dataNI10$composite_quintiles = quantcut(imputed_dataNI10$ses_latent,5)
+levels(imputed_dataNI10$composite_quintiles)[1] = "1"
+levels(imputed_dataNI10$composite_quintiles)[2] = "2"
+levels(imputed_dataNI10$composite_quintiles)[3] = "3"
+levels(imputed_dataNI10$composite_quintiles)[4] = "4"
+levels(imputed_dataNI10$composite_quintiles)[5] = "5"
+#data11
+imputed_dataNI11$composite_quintiles = quantcut(imputed_dataNI11$ses_latent,5)
+levels(imputed_dataNI11$composite_quintiles)[1] = "1"
+levels(imputed_dataNI11$composite_quintiles)[2] = "2"
+levels(imputed_dataNI11$composite_quintiles)[3] = "3"
+levels(imputed_dataNI11$composite_quintiles)[4] = "4"
+levels(imputed_dataNI11$composite_quintiles)[5] = "5"
+#data12
+imputed_dataNI12$composite_quintiles = quantcut(imputed_dataNI12$ses_latent,5)
+levels(imputed_dataNI12$composite_quintiles)[1] = "1"
+levels(imputed_dataNI12$composite_quintiles)[2] = "2"
+levels(imputed_dataNI12$composite_quintiles)[3] = "3"
+levels(imputed_dataNI12$composite_quintiles)[4] = "4"
+levels(imputed_dataNI12$composite_quintiles)[5] = "5"
+#data13
+imputed_dataNI13$composite_quintiles = quantcut(imputed_dataNI13$ses_latent,5)
+levels(imputed_dataNI13$composite_quintiles)[1] = "1"
+levels(imputed_dataNI13$composite_quintiles)[2] = "2"
+levels(imputed_dataNI13$composite_quintiles)[3] = "3"
+levels(imputed_dataNI13$composite_quintiles)[4] = "4"
+levels(imputed_dataNI13$composite_quintiles)[5] = "5"
+#data14
+imputed_dataNI14$composite_quintiles = quantcut(imputed_dataNI14$ses_latent,5)
+levels(imputed_dataNI14$composite_quintiles)[1] = "1"
+levels(imputed_dataNI14$composite_quintiles)[2] = "2"
+levels(imputed_dataNI14$composite_quintiles)[3] = "3"
+levels(imputed_dataNI14$composite_quintiles)[4] = "4"
+levels(imputed_dataNI14$composite_quintiles)[5] = "5"
+#data15
+imputed_dataNI15$composite_quintiles = quantcut(imputed_dataNI15$ses_latent,5)
+levels(imputed_dataNI15$composite_quintiles)[1] = "1"
+levels(imputed_dataNI15$composite_quintiles)[2] = "2"
+levels(imputed_dataNI15$composite_quintiles)[3] = "3"
+levels(imputed_dataNI15$composite_quintiles)[4] = "4"
+levels(imputed_dataNI15$composite_quintiles)[5] = "5"
+#data16
+imputed_dataNI16$composite_quintiles = quantcut(imputed_dataNI16$ses_latent,5)
+levels(imputed_dataNI16$composite_quintiles)[1] = "1"
+levels(imputed_dataNI16$composite_quintiles)[2] = "2"
+levels(imputed_dataNI16$composite_quintiles)[3] = "3"
+levels(imputed_dataNI16$composite_quintiles)[4] = "4"
+levels(imputed_dataNI16$composite_quintiles)[5] = "5"
+#data 17
+imputed_dataNI17$composite_quintiles = quantcut(imputed_dataNI17$ses_latent,5)
+levels(imputed_dataNI17$composite_quintiles)[1] = "1"
+levels(imputed_dataNI17$composite_quintiles)[2] = "2"
+levels(imputed_dataNI17$composite_quintiles)[3] = "3"
+levels(imputed_dataNI17$composite_quintiles)[4] = "4"
+levels(imputed_dataNI17$composite_quintiles)[5] = "5"
+#data18
+imputed_dataNI18$composite_quintiles = quantcut(imputed_dataNI18$ses_latent,5)
+levels(imputed_dataNI18$composite_quintiles)[1] = "1"
+levels(imputed_dataNI18$composite_quintiles)[2] = "2"
+levels(imputed_dataNI18$composite_quintiles)[3] = "3"
+levels(imputed_dataNI18$composite_quintiles)[4] = "4"
+levels(imputed_dataNI18$composite_quintiles)[5] = "5"
+#data 19
+imputed_dataNI19$composite_quintiles = quantcut(imputed_dataNI19$ses_latent,5)
+levels(imputed_dataNI19$composite_quintiles)[1] = "1"
+levels(imputed_dataNI19$composite_quintiles)[2] = "2"
+levels(imputed_dataNI19$composite_quintiles)[3] = "3"
+levels(imputed_dataNI19$composite_quintiles)[4] = "4"
+levels(imputed_dataNI19$composite_quintiles)[5] = "5"
+#data 20
+imputed_dataNI20$composite_quintiles = quantcut(imputed_dataNI20$ses_latent,5)
+levels(imputed_dataNI20$composite_quintiles)[1] = "1"
+levels(imputed_dataNI20$composite_quintiles)[2] = "2"
+levels(imputed_dataNI20$composite_quintiles)[3] = "3"
+levels(imputed_dataNI20$composite_quintiles)[4] = "4"
+levels(imputed_dataNI20$composite_quintiles)[5] = "5"
+#data 21
+imputed_dataNI21$composite_quintiles = quantcut(imputed_dataNI21$ses_latent,5)
+levels(imputed_dataNI21$composite_quintiles)[1] = "1"
+levels(imputed_dataNI21$composite_quintiles)[2] = "2"
+levels(imputed_dataNI21$composite_quintiles)[3] = "3"
+levels(imputed_dataNI21$composite_quintiles)[4] = "4"
+levels(imputed_dataNI21$composite_quintiles)[5] = "5"
+#data22
+imputed_dataNI22$composite_quintiles = quantcut(imputed_dataNI22$ses_latent,5)
+levels(imputed_dataNI22$composite_quintiles)[1] = "1"
+levels(imputed_dataNI22$composite_quintiles)[2] = "2"
+levels(imputed_dataNI22$composite_quintiles)[3] = "3"
+levels(imputed_dataNI22$composite_quintiles)[4] = "4"
+levels(imputed_dataNI22$composite_quintiles)[5] = "5"
+#data 23
+imputed_dataNI23$composite_quintiles = quantcut(imputed_dataNI23$ses_latent,5)
+levels(imputed_dataNI23$composite_quintiles)[1] = "1"
+levels(imputed_dataNI23$composite_quintiles)[2] = "2"
+levels(imputed_dataNI23$composite_quintiles)[3] = "3"
+levels(imputed_dataNI23$composite_quintiles)[4] = "4"
+levels(imputed_dataNI23$composite_quintiles)[5] = "5"
+#data 24
+imputed_dataNI24$composite_quintiles = quantcut(imputed_dataNI24$ses_latent,5)
+levels(imputed_dataNI24$composite_quintiles)[1] = "1"
+levels(imputed_dataNI24$composite_quintiles)[2] = "2"
+levels(imputed_dataNI24$composite_quintiles)[3] = "3"
+levels(imputed_dataNI24$composite_quintiles)[4] = "4"
+levels(imputed_dataNI24$composite_quintiles)[5] = "5"
+#data 25
+imputed_dataNI25$composite_quintiles = quantcut(imputed_dataNI25$ses_latent,5)
+levels(imputed_dataNI25$composite_quintiles)[1] = "1"
+levels(imputed_dataNI25$composite_quintiles)[2] = "2"
+levels(imputed_dataNI25$composite_quintiles)[3] = "3"
+levels(imputed_dataNI25$composite_quintiles)[4] = "4"
+levels(imputed_dataNI25$composite_quintiles)[5] = "5"
+
+#regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
+
+compositeModerator_northern_ireland <- function(df) {
+  fit <- glm(success ~ sex + ethnicity_binary + EAL + country +
+               + caregiver_vocabStandardised + ses_latent*age5_standardised, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+compositeModerator_northern_ireland <- lapply(list(imputed_dataNI1, imputed_dataNI2, imputed_dataNI3, imputed_dataNI4, imputed_dataNI5,
+                                  imputed_dataNI6, imputed_dataNI7, imputed_dataNI8, imputed_dataNI9, imputed_dataNI10,
+                                  imputed_dataNI11, imputed_dataNI12, imputed_dataNI13, imputed_dataNI14, imputed_dataNI15,
+                                  imputed_dataNI16, imputed_dataNI17, imputed_dataNI18, imputed_dataNI19, imputed_dataNI20,
+                                  imputed_dataNI21, imputed_dataNI22, imputed_dataNI23, imputed_dataNI24, imputed_dataNI25),
+                             compositeModerator_northern_ireland)
+moderator_compositeNI <- summary(pool(as.mira(compositeModerator_northern_ireland)),conf.int = TRUE, conf.level = 0.95,  exponentiate = TRUE) 
+
+#model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
+nocompositeModerator_northern_ireland<- function(df) {
+  fit1 <- glm(success ~ sex + ethnicity_binary + EAL + country +
+                + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
+              family = binomial, weights = weight, data=df)
+  return(fit1)
+}
+
+#run regression across list of 25 imputed datasets that have latent variable in 
+nocompositeModerator_northern_ireland <- lapply(list(imputed_dataNI1, imputed_dataNI2, imputed_dataNI3, imputed_dataNI4, imputed_dataNI5,
+                                    imputed_dataNI6, imputed_dataNI7, imputed_dataNI8, imputed_dataNI9, imputed_dataNI10,
+                                    imputed_dataNI11, imputed_dataNI12, imputed_dataNI13, imputed_dataNI14, imputed_dataNI15,
+                                    imputed_dataNI16, imputed_dataNI17, imputed_dataNI18, imputed_dataNI19, imputed_dataNI20,
+                                    imputed_dataNI21, imputed_dataNI22, imputed_dataNI23, imputed_dataNI24, imputed_dataNI25),
+                               nocompositeModerator_northern_ireland)
+
+#convert into mira objects so that D1 function works to compare the nested models (mira - multiple imputation repeated analyses)
+#The as.mira() function takes the results of repeated complete-data analysis stored as a list, and turns it into a mira object that can be pooled.
+moderatorNI = as.mira(compositeModerator_northern_ireland)
+noModeratorNI = as.mira(nocompositeModerator_northern_ireland)
+#nested model comparison
+D1(moderatorNI, noModeratorNI)
+```
+
