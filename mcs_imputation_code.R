@@ -178,9 +178,16 @@ predM[c("vocab.imd2", "vocab.imd3", "vocab.imd4", "vocab.imd5",
       c("vocab.imd2", "vocab.imd3", "vocab.imd4", "vocab.imd5", 
         "vocab.imd6", "vocab.imd7", "vocab.imd8", "vocab.imd9", "vocab.imd10")] = 0
 
+vis = c("mcsid", "weight","sex","ethnicity","EAL","age_atBirth","housing_tenure","accommodation_type" , 
+        "highest_nvq", "vocab.nvq1", "vocab.nvq2","vocab.nvq3","vocab.nvq4", "vocab.nvq5", "cm_breastfed","carers_in_hh",
+        "oecd_income" , "vocab.income2","vocab.income3","vocab.income4","vocab.income5" ,
+        "imd", "vocab.imd2","vocab.imd3","vocab.imd4","vocab.imd5","vocab.imd6" ,"vocab.imd7","vocab.imd8" ,"vocab.imd9",   
+        "vocab.imd10","occupational_status", "vocab.occupation2","vocab.occupation3","vocab.occupation4",
+        "mortgage","houseValue", "savings", "debt","country","caregiver_vocab",
+        "age5_vocab","benchmark_binary", "standardised_core_subjects")
 #now lets run the imputation (m=25) imputations
 
-imputed_mcs2 = mice(vocabulary_education, blocks=blocksvec, method=meth, seed = 1895, predictorMatrix=predM, m=25) #can change this to a smaller numebr so runs quicker when figuring out. 
+imputed_mcs2 = mice(vocabulary_education, blocks=blocksvec, method=meth, visitSequence = vis, seed = 1895, predictorMatrix=predM, m=25) #can change this to a smaller numebr so runs quicker when figuring out. 
 
 #deriving post imputation variables####
 long_format_mcs <- mice::complete(imputed_mcs2, "long", include=TRUE)
@@ -205,7 +212,7 @@ long_format_mcs$highest_nvq <- with(long_format_mcs, relevel(highest_nvq, ref = 
 long_format_mcs$highest_nvq <- as.factor(long_format_mcs$highest_nvq)
 long_format_mcs$occupational_status <- with(long_format_mcs, relevel(occupational_status, ref = "2"))
 long_format_mcs$occupational_status <- as.factor(long_format_mcs$occupational_status)
-long_format_mcs$benchmark_binary <- as.factor(long_format_mcs$benchmark_binary)
+long_format_mcs$success <- as.factor(long_format_mcs$benchmark_binary)
 long_format_mcs$wealth_quintiles <- with(long_format_mcs, quantcut(standardised_wealth,5))
 levels(long_format_mcs$wealth_quintiles)[1] = "1"
 levels(long_format_mcs$wealth_quintiles)[2] = "2"
