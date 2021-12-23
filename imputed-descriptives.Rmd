@@ -86,6 +86,8 @@ weighted_proportions_imputed_datasets<- function (dataAll,variable) {
   return (results)
 }
 
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-20_vocabulary_education_imputedMAIN/2021-12-20_vocabulary_education_imputedMAIN.Rdata")
+imputed_mcs2 = mi.res
 
 #convert imputed data to long format without observed data
 long_format_mcs <- mice::complete(imputed_mcs2, "long", include=FALSE)
