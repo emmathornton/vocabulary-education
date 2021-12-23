@@ -45,7 +45,7 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-17_vocabulary_education_imputed_continuousCompleteCases/2021-12-17_vocabulary_education_imputed_continuousCompleteCases.Rdata")
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-20_vocabulary_education_continuousOutcomeComplete/2021-12-20_vocabulary_education_continuousOutcomeComplete.Rdata")
 imputed_mcs2 = mi.res
 
 ```
@@ -232,7 +232,10 @@ results_continuousCC <- regression_resultsTable %>%
   align(align="center", part="header") %>% 
   hline_top(j = 2:4, part = "all", border = my_border) %>% 
   bold(j = 1, i = c(1,47, 49), bold = TRUE) %>% 
-  italic(j = 1, i = c(1,47, 49), italic = TRUE) 
+  italic(j = 1, i = c(1,47, 49), italic = TRUE) %>% 
+  add_header_lines(values = c("Table S2: Predicting Educational Attainment (average grade on core subjects, complete cases) (N=7,664)"))
+
+ print(results_continuousCC, preview = "docx") 
 
 ```
 
