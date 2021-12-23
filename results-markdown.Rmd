@@ -9,6 +9,7 @@ editor_options:
 ---
 
 ```{r}
+#load packages and data####
 library(mice)
 library(pander)
 library(xtable)
@@ -43,7 +44,7 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-17_vocabulary_education_imputedRQ1/2021-12-17_vocabulary_education_imputedRQ1.Rdata")
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-20_vocabulary_education_imputedMAIN/2021-12-20_vocabulary_education_imputedMAIN.Rdata")
 imputed_mcs2 = mi.res
 
 
@@ -56,7 +57,8 @@ RQ1 & 2 - DOES VOCAB PREDICT EDUCATIONAL ATTAINMENT?
 remember, having grade 4/c above in core subjects is the reference category.
 
 ```{r}
-#unadjusted relationship
+#binary outcome ####
+#unadjusted relationship 
 
 binary_unadjusted = with(imputed_mcs2, glm(success ~ age5_standardised,
                                         family = binomial,  weights = weight))
@@ -85,6 +87,7 @@ binary_model3Results = summary(pool(binary_model3), conf.int = TRUE, exponentiat
 
 1b. does vocabulary predict reaching a functional level of education above and beyond SEC/caregiver vocab factors?
 ```{r}
+#binary model comparisons####
 #compare model with only sociodemographic factors to a model with caregiver vocab
 #compare sociodemographics model to no predictors
 #create null model 
@@ -101,6 +104,7 @@ D1(binary_model3, binary_model2)
 2a does vocabulary predict level of achievement in core subjects regardless of pass/ fail? 
 
 ```{r}
+#continuous outcome####
 #unadjusted relationship
 
 continuous_unadjusted = with(imputed_mcs2, lm(standardised_core_subjects ~ age5_standardised, weights = weight))
@@ -135,6 +139,7 @@ cont_model3R2 = as.data.frame(round(pool.r.squared(continuous_model3),4)*100)
 2b. does vocabulary predict level of achievement in core subjects above and beyond SEC/caregiver vocab factors?
 
 ```{r}
+#continuous model comparisons ####
 #compare sociodemographics model to no predictors
 #create null model 
 null_continuousModel =  with(imputed_mcs2, lm(standardised_core_subjects ~ 1, weights = weight))
@@ -148,7 +153,7 @@ D1(continuous_model3, continuous_model2)
 gather relevant information for table for RQ 1 & 2
 
 ```{r}
-#binary outcome ####
+#RQ 1&2: tale preparation####
 #model 1 for binary outcome
 binary_model1Results$estimate = bv(binary_model1Results$estimate) #no leading 0 
 binary_model1Results$`2.5 %` = bv(binary_model1Results$`2.5 %`)
@@ -307,6 +312,7 @@ regression_resultsTable$term <- c("Sociodemographic confounders", "Sex (male)", 
 Create results table using flextable package - this can be exported straight into word. 
 
 ```{r}
+#results with flextable####
 #define border
 my_border = border= fp_border(color="black", width=1)
 results_Rq1Rq2 <- regression_resultsTable %>% 
@@ -331,7 +337,8 @@ results_Rq1Rq2 <- regression_resultsTable %>%
   align(align="center", part="header") %>% 
   hline_top(j = 2:7, part = "all", border = my_border) %>% 
   bold(j = 1, i = c(1,47, 49), bold = TRUE) %>% 
-  italic(j = 1, i = c(1,47, 49), italic = TRUE) 
+  italic(j = 1, i = c(1,47, 49), italic = TRUE) %>% 
+  add_header_lines(values = c("Table 3: Predicting Educational Attainment (≥grade 4 on core subjects and average grade) (N=15,576)"))
   
   
 
@@ -702,6 +709,7 @@ D1(moderator, noModerator)
 MODERATOR ANALYSIS ON EACH INDIVIDUAL SEC PREDICTOR
 
 ```{r}
+#individual moderator indicators####
 #1. parent education as the moderator 
 #vocabulary*NVQ interaction term
 NVQ_moderator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
@@ -791,7 +799,7 @@ D1(imd_moderator, imd_noModerator)
 results table for main moderator analysis (with SEC composite)
 
 ```{r}
-#get relevant results for table - composite
+#get relevant results for table - composite#####
 moderator_composite$estimate = bv(moderator_composite$estimate) #no leading 0 
 moderator_composite$`2.5 %` = bv(moderator_composite$`2.5 %`)
 moderator_composite$`97.5 %` = bv(moderator_composite$`97.5 %`)
@@ -826,6 +834,7 @@ moderator_composite1$term <- c("Sex (male)", "Sex (female)",
 
 parent education as the moderator - results 
 ```{r}
+#parent education as the moderator - results ####
 #get relevant results for table - composite
 NVQ_moderatorResults$estimate = bv(NVQ_moderatorResults$estimate) #no leading 0 
 NVQ_moderatorResults$`2.5 %` = bv(NVQ_moderatorResults$`2.5 %`)
@@ -868,7 +877,7 @@ NVQ_moderatorResults1$term <- c("Sex (male)", "Sex (female)",
 
 occupational status as the moderator - results
 ```{r}
-#get relevant results for table - composite
+# occupation: get relevant results for table #####
 occupation_moderatorResults$estimate = bv(occupation_moderatorResults$estimate) #no leading 0 
 occupation_moderatorResults$`2.5 %` = bv(occupation_moderatorResults$`2.5 %`)
 occupation_moderatorResults$`97.5 %` = bv(occupation_moderatorResults$`97.5 %`)
@@ -910,6 +919,7 @@ occupation_moderatorResults1$term <- c("Sex (male)", "Sex (female)",
 
 income moderator: results 
 ```{r}
+#income moderator: results ####
 #get relevant results for table - composite
 income_moderatorResults$estimate = bv(income_moderatorResults$estimate) #no leading 0 
 income_moderatorResults$`2.5 %` = bv(income_moderatorResults$`2.5 %`)
@@ -952,6 +962,7 @@ income_moderatorResults1$term <- c("Sex (male)", "Sex (female)",
 
 wealth as moderator: results 
 ```{r}
+#wealth as moderator: results ####
 #get relevant results for table - composite
 wealth_moderatorResults$estimate = bv(wealth_moderatorResults$estimate) #no leading 0 
 wealth_moderatorResults$`2.5 %` = bv(wealth_moderatorResults$`2.5 %`)
@@ -996,6 +1007,7 @@ wealth_moderatorResults1$term <- c("Sex (male)", "Sex (female)",
 
 imd as moderator: results
 ```{r}
+#imd as moderator: results####
 #get relevant results for table - composite
 imd_moderatorResults$estimate = bv(imd_moderatorResults$estimate) #no leading 0 
 imd_moderatorResults$`2.5 %` = bv(imd_moderatorResults$`2.5 %`)
@@ -1041,6 +1053,7 @@ imd_moderatorResults1$term <- c("Sex (male)", "Sex (female)",
 results table for composite moderator - created with flextable
 
 ```{r}
+#composite moderator table####
 secModerator_table <- moderator_composite1 %>% 
   flextable() %>% 
   font(fontname = "Times New Roman", part="all") %>% #
@@ -1063,6 +1076,7 @@ secModerator_table <- moderator_composite1 %>%
 
 results for NVQ moderator - made with flextable
 ```{r}
+#nvq moderator table####
 nvqModerator_table <- NVQ_moderatorResults1 %>% 
   flextable() %>% 
   font(fontname = "Times New Roman", part="all") %>% #
@@ -1083,6 +1097,7 @@ nvqModerator_table <- NVQ_moderatorResults1 %>%
 
 results for occupation moderator - made with flextable
 ```{r}
+#occupation moderator table####
 occupationModerator_table <- occupation_moderatorResults1 %>% 
   flextable() %>% 
   font(fontname = "Times New Roman", part="all") %>% #
@@ -1103,6 +1118,7 @@ occupationModerator_table <- occupation_moderatorResults1 %>%
 
 results for icnome moderator - made with flextable
 ```{r}
+#income moderator table####
 incomeModerator_table <- income_moderatorResults1 %>% 
   flextable() %>% 
   font(fontname = "Times New Roman", part="all") %>% #
@@ -1124,6 +1140,7 @@ incomeModerator_table <- income_moderatorResults1 %>%
 
 results for wealth moderator - made with flextable
 ```{r}
+#wealth moderator table####
 wealthModerator_table <- wealth_moderatorResults1 %>% 
   flextable() %>% 
   font(fontname = "Times New Roman", part="all") %>% #
@@ -1144,6 +1161,7 @@ wealthModerator_table <- wealth_moderatorResults1 %>%
 
 results for IMD moderator - made with flextable
 ```{r}
+#imd moderator table####
 imdModerator_table <- imd_moderatorResults1 %>%
   flextable() %>% 
   font(fontname = "Times New Roman", part="all") %>% #
@@ -1165,6 +1183,7 @@ imdModerator_table <- imd_moderatorResults1 %>%
 
 try and put moderator results all into one table? 
 ```{r}
+#moderator results all in one table####
 moderator_results = full_join(moderator_composite1,NVQ_moderatorResults1, keep = TRUE, by = "term") %>% 
   mutate(term = case_when(!is.na(term.x)~term.x, 
                               is.na(term.x)~term.y)) %>% 
@@ -1189,6 +1208,7 @@ moderator_results = full_join(moderator_composite1,NVQ_moderatorResults1, keep =
 
 put into flextable
 ```{r}
+#moderator analyses results with confounds####
 moderator_table <- moderator_results %>%
   flextable() %>% 
   font(fontname = "Times New Roman", part="all") %>% #
@@ -1214,6 +1234,7 @@ moderator_table <- moderator_results %>%
 
 or, could have this table so that it is just the main effects and interaction terms, and not the confounding variables? so would be SEC composite, language, parent education, income, occupation, wealth, imd?
 ```{r}
+#main effects and interaction terms table####
 moderator_composite2 = moderator_composite1[17:19,]
 moderator_composite2 = moderator_composite2 %>% select(term, composite_secMod)
 NVQ_moderatorResults2 = NVQ_moderatorResults1 [41:53,]
@@ -1275,6 +1296,7 @@ moderator_results3 = moderator_results3 %>%  add_column(z= c(" ", "SEC Composite
 
 create table with flextable
 ```{r}
+#moderator table with all moderators in same table####
 moderator_table2 <- moderator_results3 %>%
   flextable() %>% 
   font(fontname = "Times New Roman", part="all") %>% #
@@ -1351,17 +1373,41 @@ compositeQuintiles_plot = plot(pool_predictions(composite_quintiles), ci = FALSE
                     labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
   labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
        y = "Achieving ≥ Grade 4 on Core Subjects ", 
-       title = "SEC Composite ") +
+       title = "Figure 1:Predicted Probabilities of Achieving the Benchmark Threshold for Vocabulary in each SEC Quintile",
+       caption = "*Predicted probabilities when sex, ethnicity, EAL status and country set to reference levels and mean caregiver vocabulary score.\n See table SX for predicted values") +
   labs(colour = "SEC Composite") +
   theme_classic() +
   scale_x_continuous(breaks=seq(-3, 4, .5)) +
   theme(panel.grid.major.y = element_line(colour = "gainsboro", size = 0.2),
         panel.grid.minor.x = element_blank(),
         panel.grid.minor.y = element_blank(), 
-        plot.title = element_text(size = 10, face = "italic"))
+        plot.title = element_text(size = 12, face = "italic", family = "Times"), 
+        plot.caption = element_text(size = 10, face = "italic", family = "Times")) 
+ 
+ggsave("composite-moderator.png", compositeQuintiles_plot, width=10, height=9, units= "in" ,dpi=300)
 
-
-  
+#plot for combined plot with other indicators 
+compositeQuintiles_plot1 = plot(pool_predictions(composite_quintiles), ci = FALSE,
+                               limits = c(0, 1), 
+                               breaks = seq(0, 1, by = 0.1)) +
+  scale_colour_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                      name="SEC Composite", 
+                      breaks=c("1", "2", "3", "4", "5"),
+                      labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile"))+
+  scale_fill_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                    name="SEC Composite",
+                    breaks=c("1", "2", "3", "4", "5"),
+                    labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
+  labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
+       y = "Achieving ≥ Grade 4 on Core Subjects ", 
+       title = "SEC Composite") +
+  labs(colour = "SEC Composite") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(-3, 4, .5)) +
+  theme(panel.grid.major.y = element_line(colour = "gainsboro", size = 0.2),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(), 
+        plot.title = element_text(size = 12, face = "italic", family = "Times")) 
 
 #nvq
 nvq1 <- function(df) {
@@ -1575,17 +1621,23 @@ imd_plot = plot(pool_predictions(predicted_imd), ci = FALSE,
 
 
 #put plots all together 
-plots = ggarrange(compositeQuintiles_plot, nvq_plot, income_plot, occupation_plot, wealth_plot, imd_plot, 
+plots = ggarrange(compositeQuintiles_plot1, nvq_plot, income_plot, occupation_plot, wealth_plot, imd_plot, 
                   ncol =2, nrow=3,  align = c( "hv"))
 
-plots = annotate_figure(plots, top = text_grob("Predicted Probabilities of Achieving the Benchmark Threshold for Vocabulary Moderated by each SEC Indicator", 
-                                                      color = "black", face = "italic", size = 14))
+plots = annotate_figure(plots, top = text_grob("Figure 2: Predicted Probabilities of Achieving the Benchmark Threshold for Vocabulary Moderated by each SEC Indicator", 
+                                                      color = "black", face = "italic", size = 20, family = "Times"))
+
+plots = plots + labs(caption ="*Predicted probabilities when categorical potential confounders (sex, ethnicity, EAL status, country and remaining SEC indicators for individual indicator moderatiins) set to reference levels and mean caregiver vocabulary score.\n See table SX for predicted probabilities values") +
+  theme(plot.caption = element_text(size = 10, face = "italic", family = "Times"))
+
+ggsave("interaction-plots.png", plots, width=12, height=10, units= "in" ,dpi=300)
 ```
 
 
 
 tables of predicted probabilities
 ```{r}
+#tables of predicted probabilities####
 composite_predictions = pool_predictions(composite_quintiles)
 composite_predictions$predicted = bv(composite_predictions$predicted)
 composite_predictions$conf.low = bv(composite_predictions$conf.low)
@@ -1715,13 +1767,14 @@ predicted_table <- predictions %>%
 ```
 
 
-sensitivity check for interactions. 
+
 
 To control for potential confounding effects on the interaction term, all potential confounders and interaction terms between the potential confounders and the predictor, and potential confounders and the moderator, must be entered into the model (Keller, 2014). 
 We therefore ran sensitivity analyses for our SEC* vocabulary moderations, whereby we included interaction terms between potential confounders (remaining SEC variables) and between the predictor (vocabulary) and potential confounders and the moderator (each SEC variable in turn), to ensure the confounding effect of SEC on the interaction term was accounted for. 
 
 ```{r}
-#1. parent education moderator ####
+#sensitivity check for interactions. ####
+#1. parent education moderator 
 
 #vocabulary*NVQ interaction term
 NVQ_moderatorSensitivity = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
@@ -1732,22 +1785,38 @@ NVQ_moderatorSensitivity = with(imputed_mcs2, glm(success ~ sex + ethnicity + EA
                                          caregiver_vocabStandardised + highest_nvq*age5_standardised, 
                                          family = binomial, weights = weight))
 
-#pooled results of models 
-NVQ_moderatorSensitivityResults = summary(pool(NVQ_moderatorSensitivity), conf.int = TRUE, exponentiate = TRUE)
+NVQ_moderatorSensitivity_noInt = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
+                                                          oecd_income*age5_standardised + oecd_income*highest_nvq + 
+                                                    occupational_status*age5_standardised +occupational_status*highest_nvq +
+                                                    wealth_quintiles*age5_standardised + wealth_quintiles*highest_nvq + 
+                                                    imd*age5_standardised + imd*highest_nvq + 
+                                         caregiver_vocabStandardised + highest_nvq + age5_standardised, 
+                                         family = binomial, weights = weight))
+
+
+#model comparison of interaction term vs without
+D1(NVQ_moderatorSensitivity, NVQ_moderatorSensitivity_noInt)
 
 #2. occupational status as the moderator 
 #vocabulary*occupation interaction term
 occupation_moderatorSensitivity = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                                            highest_nvq*age5_standardised + highest_nvq*occupational_status+
                                                            oecd_income*age5_standardised + oecd_income*occupational_status + 
-                                                    occupational_status*age5_standardised +occupational_status*occupational_status +
                                                     wealth_quintiles*age5_standardised + wealth_quintiles*occupational_status + 
                                                     imd*age5_standardised + imd*occupational_status + 
                                          caregiver_vocabStandardised + occupational_status*age5_standardised, 
                                        family = binomial, weights = weight))
 
-#pooled results of models 
-occupation_moderatorSensitivityResults = summary(pool(occupation_moderatorSensitivity), conf.int = TRUE, exponentiate = TRUE)
+occupation_moderatorSensitivity_noInt = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
+                                                           highest_nvq*age5_standardised + highest_nvq*occupational_status+
+                                                           oecd_income*age5_standardised + oecd_income*occupational_status + 
+                                                    wealth_quintiles*age5_standardised + wealth_quintiles*occupational_status + 
+                                                    imd*age5_standardised + imd*occupational_status + 
+                                         caregiver_vocabStandardised + occupational_status + age5_standardised, 
+                                       family = binomial, weights = weight))
+
+D1(occupation_moderatorSensitivity, occupation_moderatorSensitivity_noInt)
+
 
 #3. income as the moderator 
 #vocabulary*income interaction term
@@ -1759,8 +1828,15 @@ income_moderatorSensitivity = with(imputed_mcs2, glm(success ~ sex + ethnicity +
                                                       caregiver_vocabStandardised + oecd_income*age5_standardised, 
                                                     family = binomial, weights = weight))
 
-#pooled results of models 
-income_moderatorSensitivityResults = summary(pool(income_moderatorSensitivity), conf.int = TRUE, exponentiate = TRUE)
+income_moderatorSensitivity_noInt = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
+                                                       highest_nvq*age5_standardised + highest_nvq*oecd_income+
+                                                    occupational_status*age5_standardised +occupational_status*oecd_income +
+                                                    wealth_quintiles*age5_standardised + wealth_quintiles*oecd_income + 
+                                                    imd*age5_standardised + imd*oecd_income + 
+                                                      caregiver_vocabStandardised + oecd_income + age5_standardised, 
+                                                    family = binomial, weights = weight))
+
+D1(income_moderatorSensitivity, income_moderatorSensitivity_noInt)
 
 #4. wealth as the moderator 
 #vocabulary*wealth interaction term
@@ -1772,8 +1848,15 @@ wealth_moderatorSensitivity = with(imputed_mcs2, glm(success ~ sex + ethnicity +
                                             caregiver_vocabStandardised + wealth_quintiles*age5_standardised, 
                                           family = binomial, weights = weight))
 
-#pooled results of models 
-wealth_moderatorResultsSensitivity = summary(pool(wealth_moderatorSensitivity), conf.int = TRUE, exponentiate = TRUE)
+wealth_moderatorSensitivity_noInt = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
+                                            highest_nvq*age5_standardised + highest_nvq*wealth_quintiles +
+                                              oecd_income*age5_standardised + oecd_income*wealth_quintiles + 
+                                              occupational_status*age5_standardised + occupational_status*wealth_quintiles +
+                                              imd*age5_standardised + imd*wealth_quintiles + 
+                                            caregiver_vocabStandardised + wealth_quintiles + age5_standardised, 
+                                          family = binomial, weights = weight))
+
+D1(wealth_moderatorSensitivity, wealth_moderatorSensitivity_noInt)
 
 #5. imd as the moderator 
 #vocabulary*wealth interaction term
@@ -1785,8 +1868,15 @@ imd_moderatorSensitivity  = with(imputed_mcs2, glm(success ~ sex + ethnicity + E
                                             caregiver_vocabStandardised + imd*age5_standardised, 
                                           family = binomial, weights = weight))
 
-#pooled results of models 
-imd_moderatorResultsSensitivity  = summary(pool(imd_moderatorSensitivity ), conf.int = TRUE, exponentiate = TRUE)
+imd_moderatorSensitivity_noInt  = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
+                                            highest_nvq*age5_standardised + highest_nvq*imd +
+                                              oecd_income*age5_standardised + oecd_income*imd + 
+                                              occupational_status*age5_standardised +occupational_status*imd +
+                                              wealth_quintiles*age5_standardised + wealth_quintiles*imd + 
+                                            caregiver_vocabStandardised + imd + age5_standardised, 
+                                          family = binomial, weights = weight))
+
+D1(imd_moderatorSensitivity, imd_moderatorSensitivity_noInt)
 
 ```
 
