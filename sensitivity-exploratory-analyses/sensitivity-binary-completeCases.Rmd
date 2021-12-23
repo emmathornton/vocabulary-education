@@ -43,7 +43,7 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-14_vocabulary_education_binaryCompleteCases/2021-12-14_vocabulary_education_binaryCompleteCases.Rdata")
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-20_vocabulary_education_binaryOutcomeCompleteCases/2021-12-20_vocabulary_education_binaryOutcomeCompleteCases.Rdata")
 imputed_mcs2 = mi.res
 ```
 
@@ -216,11 +216,12 @@ results_binaryCC <- regression_resultsTable %>%
   align(align="center", part="header") %>% 
   hline_top(j = 2:4, part = "all", border = my_border) %>% 
   bold(j = 1, i = c(1,47, 49), bold = TRUE) %>% 
-  italic(j = 1, i = c(1,47, 49), italic = TRUE) 
+  italic(j = 1, i = c(1,47, 49), italic = TRUE) %>% 
+  add_header_lines(values = c("Table S1: Predicting Educational Attainment (≥grade 4 on core subjects, complete cases) (N=9,866)"))
   
   
 
- print(results_Rq1Rq2, preview = "docx") 
+ print(results_binaryCC, preview = "docx") 
 
 ```
 
