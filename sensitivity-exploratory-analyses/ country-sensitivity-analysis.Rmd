@@ -41,7 +41,7 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-13_vocabulary_education_imputed_countrySpecificData/2021-12-13_vocabulary_education_imputed_countrySpecificData.Rdata")
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-20_vocabulary_education_countrySpecificData/2021-12-20_vocabulary_education_countrySpecificData.Rdata")
 imputed_mcs2 = mi.res
 ```
 
@@ -354,11 +354,12 @@ results_england <- regression_resultsTableEngland %>%
   align(align="center", part="header") %>% 
   hline_top(j = 2:7, part = "all", border = my_border) %>% 
   bold(j = 1, i = c(1,43, 45), bold = TRUE) %>% 
-  italic(j = 1, i = c(1,43, 45), italic = TRUE) 
+  italic(j = 1, i = c(1,43, 45), italic = TRUE) %>% 
+  add_header_lines(values = c("Table S4: Predicting Educational Attainment in England (≥grade 4 on core subjects and average grade) (N=10,076)"))
   
   
 
- print(results_Rq1Rq2, preview = "docx") 
+ print(results_england, preview = "docx") 
 ```
 
 Wales only analyses 
@@ -640,7 +641,8 @@ results_wales <- regression_resultsTableWales %>%
   align(align="center", part="header") %>% 
   hline_top(j = 2:7, part = "all", border = my_border) %>% 
   bold(j = 1, i = c(1,39, 41), bold = TRUE) %>% 
-  italic(j = 1, i = c(1,39, 41), italic = TRUE) 
+  italic(j = 1, i = c(1,39, 41), italic = TRUE) %>% 
+  add_header_lines(values = c("Table S5: Predicting Educational Attainment in Wales (≥grade 4 on core subjects and average grade) (N=2,144)"))
 
 
 
@@ -927,7 +929,8 @@ results_scotland <- regression_resultsTableScotland %>%
   align(align="center", part="header") %>% 
   hline_top(j = 2:7, part = "all", border = my_border) %>% 
   bold(j = 1, i = c(1,39, 41), bold = TRUE) %>% 
-  italic(j = 1, i = c(1,39, 41), italic = TRUE) 
+  italic(j = 1, i = c(1,39, 41), italic = TRUE) %>% 
+  add_header_lines(values = c("Table S6: Predicting Educational Attainment in Scotland (≥grade 4 on core subjects and average grade) (N=1,821)"))
 
 
 
@@ -1216,7 +1219,9 @@ results_northern_ireland <- regression_resultsTableNi %>%
   align(align="center", part="header") %>% 
   hline_top(j = 2:7, part = "all", border = my_border) %>% 
   bold(j = 1, i = c(1,39, 41), bold = TRUE) %>% 
-  italic(j = 1, i = c(1,39, 41), italic = TRUE) 
+  italic(j = 1, i = c(1,39, 41), italic = TRUE)  %>% 
+  add_header_lines(values = c("Table S7: Predicting Educational Attainment in Northern Ireland (≥grade 4 on core subjects and average grade) (N=1,535)"))
+
 
 
 
@@ -1543,8 +1548,8 @@ levels(imputed_dataEngland25$composite_quintiles)[5] = "5"
 
 #regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
 
-compositeModerator_england_england <- function(df) {
-  fit <- glm(success ~ sex + ethnicity + EAL + country +
+compositeModerator_england <- function(df) {
+  fit <- glm(success ~ sex + ethnicity + EAL + 
                + caregiver_vocabStandardised + ses_latent*age5_standardised, 
              family = binomial, weights = weight, data=df)
   return(fit)
@@ -1556,12 +1561,12 @@ compositeModerator_england <- lapply(list(imputed_dataEngland1, imputed_dataEngl
                                   imputed_dataEngland11, imputed_dataEngland12, imputed_dataEngland13, imputed_dataEngland14, imputed_dataEngland15,
                                   imputed_dataEngland16, imputed_dataEngland17, imputed_dataEngland18, imputed_dataEngland19, imputed_dataEngland20,
                                   imputed_dataEngland21, imputed_dataEngland22, imputed_dataEngland23, imputed_dataEngland24, imputed_dataEngland25),
-                             compositeModerator_england_england)
+                             compositeModerator_england)
 moderator_compositeEngland <- summary(pool(as.mira(compositeModerator_england)),conf.int = TRUE, conf.level = 0.95,  exponentiate = TRUE) 
 
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 nocompositeModerator_england<- function(df) {
-  fit1 <- glm(success ~ sex + ethnicity + EAL + country +
+  fit1 <- glm(success ~ sex + ethnicity + EAL + 
                 + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
               family = binomial, weights = weight, data=df)
   return(fit1)
@@ -1573,7 +1578,7 @@ nocompositeModerator_england <- lapply(list(imputed_dataEngland1, imputed_dataEn
                                     imputed_dataEngland11, imputed_dataEngland12, imputed_dataEngland13, imputed_dataEngland14, imputed_dataEngland15,
                                     imputed_dataEngland16, imputed_dataEngland17, imputed_dataEngland18, imputed_dataEngland19, imputed_dataEngland20,
                                     imputed_dataEngland21, imputed_dataEngland22, imputed_dataEngland23, imputed_dataEngland24, imputed_dataEngland25),
-                               nocompositeModerator_england_england)
+                               nocompositeModerator_england)
 
 #convert into mira objects so that D1 function works to compare the nested models (mira - multiple imputation repeated analyses)
 #The as.mira() function takes the results of repeated complete-data analysis stored as a list, and turns it into a mira object that can be pooled.
@@ -1901,7 +1906,7 @@ levels(imputed_dataWales25$composite_quintiles)[5] = "5"
 #regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
 
 compositeModerator_wales <- function(df) {
-  fit <- glm(success ~ sex + ethnicity_binary + EAL + country +
+  fit <- glm(success ~ sex + ethnicity_binary + EAL + 
                + caregiver_vocabStandardised + ses_latent*age5_standardised, 
              family = binomial, weights = weight, data=df)
   return(fit)
@@ -1913,12 +1918,12 @@ compositeModerator_wales <- lapply(list(imputed_dataWales1, imputed_dataWales2, 
                                   imputed_dataWales11, imputed_dataWales12, imputed_dataWales13, imputed_dataWales14, imputed_dataWales15,
                                   imputed_dataWales16, imputed_dataWales17, imputed_dataWales18, imputed_dataWales19, imputed_dataWales20,
                                   imputed_dataWales21, imputed_dataWales22, imputed_dataWales23, imputed_dataWales24, imputed_dataWales25),
-                             compositeModerator_wales_wales)
+                             compositeModerator_wales)
 moderator_compositeWales <- summary(pool(as.mira(compositeModerator_wales)),conf.int = TRUE, conf.level = 0.95,  exponentiate = TRUE) 
 
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 nocompositeModerator_wales<- function(df) {
-  fit1 <- glm(success ~ sex + ethnicity_binary + EAL + country +
+  fit1 <- glm(success ~ sex + ethnicity_binary + EAL + 
                 + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
               family = binomial, weights = weight, data=df)
   return(fit1)
@@ -2257,7 +2262,7 @@ levels(imputed_dataScotland25$composite_quintiles)[5] = "5"
 #regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
 
 compositeModerator_scotland <- function(df) {
-  fit <- glm(success ~ sex + ethnicity_binary + EAL + country +
+  fit <- glm(success ~ sex + ethnicity_binary + EAL +  
                + caregiver_vocabStandardised + ses_latent*age5_standardised, 
              family = binomial, weights = weight, data=df)
   return(fit)
@@ -2274,7 +2279,7 @@ moderator_compositeScotland <- summary(pool(as.mira(compositeModerator_scotland)
 
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 nocompositeModerator_scotland<- function(df) {
-  fit1 <- glm(success ~ sex + ethnicity_binary + EAL + country +
+  fit1 <- glm(success ~ sex + ethnicity_binary + EAL +
                 + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
               family = binomial, weights = weight, data=df)
   return(fit1)
@@ -2614,7 +2619,7 @@ levels(imputed_dataNI25$composite_quintiles)[5] = "5"
 #regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
 
 compositeModerator_northern_ireland <- function(df) {
-  fit <- glm(success ~ sex + ethnicity_binary + EAL + country +
+  fit <- glm(success ~ sex + ethnicity_binary + EAL +
                + caregiver_vocabStandardised + ses_latent*age5_standardised, 
              family = binomial, weights = weight, data=df)
   return(fit)
@@ -2631,7 +2636,7 @@ moderator_compositeNI <- summary(pool(as.mira(compositeModerator_northern_irelan
 
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 nocompositeModerator_northern_ireland<- function(df) {
-  fit1 <- glm(success ~ sex + ethnicity_binary + EAL + country +
+  fit1 <- glm(success ~ sex + ethnicity_binary + EAL + 
                 + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
               family = binomial, weights = weight, data=df)
   return(fit1)
@@ -2651,5 +2656,189 @@ moderatorNI = as.mira(compositeModerator_northern_ireland)
 noModeratorNI = as.mira(nocompositeModerator_northern_ireland)
 #nested model comparison
 D1(moderatorNI, noModeratorNI)
+```
+
+
+plot for moderation analysis in each country 
+```{r}
+#plots####
+
+#england 
+
+compositeQuintiles_englandModel <- function(df) {
+  fit <- glm(success ~ sex + ethnicity + EAL + 
+               + caregiver_vocabStandardised + composite_quintiles*age5_standardised, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+compositeQuintiles_england <- lapply(list(imputed_dataEngland1, imputed_dataEngland2, imputed_dataEngland3, imputed_dataEngland4, imputed_dataEngland5,
+                                  imputed_dataEngland6, imputed_dataEngland7, imputed_dataEngland8, imputed_dataEngland9, imputed_dataEngland10,
+                                  imputed_dataEngland11, imputed_dataEngland12, imputed_dataEngland13, imputed_dataEngland14, imputed_dataEngland15,
+                                  imputed_dataEngland16, imputed_dataEngland17, imputed_dataEngland18, imputed_dataEngland19, imputed_dataEngland20,
+                                  imputed_dataEngland21, imputed_dataEngland22, imputed_dataEngland23, imputed_dataEngland24, imputed_dataEngland25),
+                             compositeQuintiles_englandModel)
+#get probabilities
+composite_quintiles_england = lapply(compositeQuintiles_england, ggpredict, terms = c("age5_standardised", "composite_quintiles"))
+
+
+#wales
+compositeQuintiles_walesModel <- function(df) {
+  fit <- glm(success ~ sex + ethnicity_binary + EAL + 
+               + caregiver_vocabStandardised + composite_quintiles*age5_standardised, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+compositeQuintiles_wales <- lapply(list(imputed_dataWales1, imputed_dataWales2, imputed_dataWales3, imputed_dataWales4, imputed_dataWales5,
+                                          imputed_dataWales6, imputed_dataWales7, imputed_dataWales8, imputed_dataWales9, imputed_dataWales10,
+                                          imputed_dataWales11, imputed_dataWales12, imputed_dataWales13, imputed_dataWales14, imputed_dataWales15,
+                                          imputed_dataWales16, imputed_dataWales17, imputed_dataWales18, imputed_dataWales19, imputed_dataWales20,
+                                          imputed_dataWales21, imputed_dataWales22, imputed_dataWales23, imputed_dataWales24, imputed_dataWales25),
+                                     compositeQuintiles_walesModel)
+#get probabilities
+composite_quintiles_wales = lapply(compositeQuintiles_wales, ggpredict, terms = c("age5_standardised", "composite_quintiles"))
+
+#scotland
+compositeQuintiles_scotlandModel <- function(df) {
+  fit <- glm(success ~ sex + ethnicity_binary + EAL + 
+               + caregiver_vocabStandardised + composite_quintiles*age5_standardised, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+compositeQuintiles_scotland <- lapply(list(imputed_dataScotland1, imputed_dataScotland2, imputed_dataScotland3, imputed_dataScotland4, imputed_dataScotland5,
+                                          imputed_dataScotland6, imputed_dataScotland7, imputed_dataScotland8, imputed_dataScotland9, imputed_dataScotland10,
+                                          imputed_dataScotland11, imputed_dataScotland12, imputed_dataScotland13, imputed_dataScotland14, imputed_dataScotland15,
+                                          imputed_dataScotland16, imputed_dataScotland17, imputed_dataScotland18, imputed_dataScotland19, imputed_dataScotland20,
+                                          imputed_dataScotland21, imputed_dataScotland22, imputed_dataScotland23, imputed_dataScotland24, imputed_dataScotland25),
+                                     compositeQuintiles_scotlandModel)
+#get probabilities
+composite_quintiles_scotland = lapply(compositeQuintiles_scotland, ggpredict, terms = c("age5_standardised", "composite_quintiles"))
+
+
+#northern ireland
+compositeQuintiles_northern_irelandModel <- function(df) {
+  fit <- glm(success ~ sex + ethnicity_binary + EAL +
+               + caregiver_vocabStandardised + composite_quintiles*age5_standardised, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+compositeQuintiles_northern_ireland <- lapply(list(imputed_dataNI1, imputed_dataNI2, imputed_dataNI3, imputed_dataNI4, imputed_dataNI5,
+                                  imputed_dataNI6, imputed_dataNI7, imputed_dataNI8, imputed_dataNI9, imputed_dataNI10,
+                                  imputed_dataNI11, imputed_dataNI12, imputed_dataNI13, imputed_dataNI14, imputed_dataNI15,
+                                  imputed_dataNI16, imputed_dataNI17, imputed_dataNI18, imputed_dataNI19, imputed_dataNI20,
+                                  imputed_dataNI21, imputed_dataNI22, imputed_dataNI23, imputed_dataNI24, imputed_dataNI25),
+                             compositeQuintiles_northern_irelandModel)
+
+#get predicted probabilities
+composite_quintiles_northern_ireland = lapply(compositeQuintiles_northern_ireland, ggpredict, terms = c("age5_standardised", "composite_quintiles"))
+
+#plot 
+ 
+england_plot = plot(pool_predictions(composite_quintiles_england), ci = FALSE,
+                               limits = c(0, 1), 
+                               breaks = seq(0, 1, by = 0.1)) +
+  scale_colour_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                      name="SEC Composite", 
+                      breaks=c("1", "2", "3", "4", "5"),
+                      labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile"))+
+  scale_fill_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                    name="SEC Composite",
+                    breaks=c("1", "2", "3", "4", "5"),
+                    labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
+  labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
+       y = "Achieving ≥ Grade 4 on Core Subjects ", 
+       title = "England") +
+  labs(colour = "SEC Composite") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(-3, 4, .5)) +
+  theme(panel.grid.major.y = element_line(colour = "gainsboro", size = 0.2),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(), 
+        plot.title = element_text(size = 12, face = "italic", family = "Times")) 
+
+wales_plot = plot(pool_predictions(composite_quintiles_wales), ci = FALSE,
+                               limits = c(0, 1), 
+                               breaks = seq(0, 1, by = 0.1)) +
+  scale_colour_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                      name="SEC Composite", 
+                      breaks=c("1", "2", "3", "4", "5"),
+                      labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile"))+
+  scale_fill_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                    name="SEC Composite",
+                    breaks=c("1", "2", "3", "4", "5"),
+                    labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
+  labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
+       y = "Achieving ≥ Grade 4 on Core Subjects ", 
+       title = "Wales") +
+  labs(colour = "SEC Composite") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(-3, 4, .5)) +
+  theme(panel.grid.major.y = element_line(colour = "gainsboro", size = 0.2),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(), 
+        plot.title = element_text(size = 12, face = "italic", family = "Times")) 
+
+scotland_plot = plot(pool_predictions(composite_quintiles_scotland), ci = FALSE,
+                               limits = c(0, 1), 
+                               breaks = seq(0, 1, by = 0.1)) +
+  scale_colour_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                      name="SEC Composite", 
+                      breaks=c("1", "2", "3", "4", "5"),
+                      labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile"))+
+  scale_fill_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                    name="SEC Composite",
+                    breaks=c("1", "2", "3", "4", "5"),
+                    labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
+  labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
+       y = "Achieving ≥ Grade 4 on Core Subjects ", 
+       title = "Scotland") +
+  labs(colour = "SEC Composite") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(-3, 4, .5)) +
+  theme(panel.grid.major.y = element_line(colour = "gainsboro", size = 0.2),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(), 
+        plot.title = element_text(size = 12, face = "italic", family = "Times")) 
+
+
+NI_plot = plot(pool_predictions(composite_quintiles_northern_ireland), ci = FALSE,
+                               limits = c(0, 1), 
+                               breaks = seq(0, 1, by = 0.1)) +
+  scale_colour_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                      name="SEC Composite", 
+                      breaks=c("1", "2", "3", "4", "5"),
+                      labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile"))+
+  scale_fill_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                    name="SEC Composite",
+                    breaks=c("1", "2", "3", "4", "5"),
+                    labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
+  labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
+       y = "Achieving ≥ Grade 4 on Core Subjects ", 
+       title = "Northern Ireland") +
+  labs(colour = "SEC Composite") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(-3, 4, .5)) +
+  theme(panel.grid.major.y = element_line(colour = "gainsboro", size = 0.2),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(), 
+        plot.title = element_text(size = 12, face = "italic", family = "Times")) 
+
+plots = ggarrange(england_plot, wales_plot, scotland_plot, NI_plot, 
+                  ncol =2, nrow=2,  align = c( "hv"))
+
+plots = annotate_figure(plots, top = text_grob("Figure S2: Predicted Probabilities of Achieving the Benchmark Threshold for Vocabulary Moderated by SEC in each country", 
+                                                      color = "black", face = "italic", size = 20, family = "Times"))
+
+plots = plots + labs(caption ="*Predicted probabilities when categorical potential confounders (sex, ethnicity and EAL status set to reference levels and mean caregiver vocabulary score.") +
+  theme(plot.caption = element_text(size = 14, face = "italic", family = "Times"))
+
+ggsave("country-interaction-plots.png", plots, width=15, height=10, units= "in" ,dpi=300)
 ```
 
