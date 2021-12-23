@@ -45,7 +45,7 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-17_vocabulary_education_welshSensitivity/2021-12-17_vocabulary_education_welshSensitivity.Rdata")
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-20_vocabulary_education_welshSensitivity/2021-12-20_vocabulary_education_welshSensitivity.Rdata")
 imputed_mcs2 = mi.res
 
 ```
@@ -332,7 +332,8 @@ results_Rq1Rq2 <- regression_resultsTable %>%
   align(align="center", part="header") %>% 
   hline_top(j = 2:7, part = "all", border = my_border) %>% 
   bold(j = 1, i = c(1,47, 49), bold = TRUE) %>% 
-  italic(j = 1, i = c(1,47, 49), italic = TRUE) 
+  italic(j = 1, i = c(1,47, 49), italic = TRUE) %>% 
+  add_header_lines(values = c("Table S3: Predicting Educational Attainment (≥grade 4 on core subjects and average grade, including Welsh as a core subject) (N=15,576)"))
   
   
 
