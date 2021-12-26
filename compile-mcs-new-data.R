@@ -1997,9 +1997,9 @@ write.csv(continuous_educationComplete, file = "continuous_educationComplete_dat
 age5_countryWeight = mcs_family %>% select(mcsid, covwt1)
 sample_countryWeight = mcs_family %>% select(mcsid, weight1)
 countryWeight = merge(all=TRUE, age5_countryWeight, sample_countryWeight, by="mcsid") %>% 
-  mutate(weight = case_when(!is.na(covwt1) ~ covwt1, 
+  mutate(countryWeight = case_when(!is.na(covwt1) ~ covwt1, 
                             is.na(covwt1) ~ weight1)) %>% 
-  select(mcsid, weight)
+  select(mcsid, countryWeight)
 
 #create analysis data. split into country post imputation. 
 
@@ -2244,3 +2244,34 @@ exploratory_analysis = exploratory_analysisData %>% filter((!is.na(age5_vocab)) 
 #save analysis data as a csv file ####
 write.csv(exploratory_analysis, file = "exploratory_analysisData.csv")
 
+#data for continuous descriptives ####
+
+education_main_outcomesDescriptives = merge(all=TRUE, core_grades_binary, core_subjects_score, by = "mcsid")
+education_main_outcomesDescriptives = merge(all=TRUE, education_main_outcomesDescriptives, n5_core_subjects_score, by="mcsid")
+
+descriptives_data = merge(all=TRUE, weight, sex, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, countryWeight, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, ethnicity, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, EAL, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, age_atBirth, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, tenure, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, accommodation, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, parent_nvq, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, breastfed, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, carers_in_hh, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, income, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, imd, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, occupational_status, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, wealth_variables, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, country_17, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, caregiver_vocabTotal, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, age5_vocab, by = "mcsid")
+descriptives_data = merge(all=TRUE, descriptives_data, education_main_outcomesDescriptives, by = "mcsid")
+
+#select sample - those with a response on age 5 vocabulary test OR an educaion outcome
+descriptives_analysis = descriptives_data %>% filter((!is.na(age5_vocab)) | (!is.na(benchmark_binary)))
+write.csv(descriptives_analysis, file = "education_dataForContDescriptives1.csv")
+
+
+#save full cohort sample as a csv file- to get descriptives
+write.csv(descriptives_data, file = "cohort_data.csv")
