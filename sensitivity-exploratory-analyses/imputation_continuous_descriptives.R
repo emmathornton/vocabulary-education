@@ -12,7 +12,7 @@ library(mice)
 library(miceadds)
 
 #open mcs data####
-vocabulary_education<-read.csv("education_dataForContDescriptives.csv")
+vocabulary_education<-read.csv("education_dataForContDescriptives1.csv")
 vocabulary_education[,1]<- NULL
 
 #make dummy variables for imputation - n - 1 levels as one will be the reference category. by default in regressions this is the lowest number so  take out first level 
@@ -110,6 +110,7 @@ predM = init$predictorMatrix
 
 meth[c("mcsid")]=""
 meth[c("weight")]=""
+meth[c("countryWeight")]=""
 
 #Now let specify the methods for imputing the missing values. 
 #There are specific methods for continuous, binary and ordinal variables. 
@@ -151,10 +152,11 @@ meth[c("vocab.imd2", "vocab.imd3", "vocab.imd4", "vocab.imd4", "vocab.imd5",
 
 
 blocksvec=names(meth)
+
 #set predictor matrix so that interaction terms and main effects arent predicting themselves
 #if dont want a variable as a predictor, set it to 0 in the predictor matrix 
 predM = predM[blocksvec,]
-predM[,c("mcsid")]=0
+predM[,c("mcsid", "countryWeight")]=0
 predM[c("vocab.nvq1", "vocab.nvq2", "vocab.nvq3", "vocab.nvq4", "vocab.nvq5"), 
       c("highest_nvq", "age5_vocab")] = 0
 predM[c("vocab.nvq1", "vocab.nvq2", "vocab.nvq3", "vocab.nvq4", "vocab.nvq5"), 
@@ -180,17 +182,19 @@ predM[c("vocab.imd2", "vocab.imd3", "vocab.imd4", "vocab.imd5",
 predM[c("benchmark_binary", "average_grade", "average_grade_n5"), 
       c("country")] = 0 
 predM[c("average_grade"), 
-      c("average_grade_n5")] = 0
+      c("average_grade_n5")] = 0 
 predM[c("average_grade_n5"), 
       c("average_grade")] = 0 
 
-vis = c("mcsid", "weight","sex","ethnicity","EAL","age_atBirth","housing_tenure","accommodation_type" , 
+
+
+vis = c("mcsid", "weight","countryWeight", "sex","ethnicity","EAL","age_atBirth","housing_tenure","accommodation_type" , 
         "highest_nvq", "vocab.nvq1", "vocab.nvq2","vocab.nvq3","vocab.nvq4", "vocab.nvq5", "cm_breastfed","carers_in_hh",
         "oecd_income" , "vocab.income2","vocab.income3","vocab.income4","vocab.income5" ,
         "imd", "vocab.imd2","vocab.imd3","vocab.imd4","vocab.imd5","vocab.imd6" ,"vocab.imd7","vocab.imd8" ,"vocab.imd9",   
         "vocab.imd10","occupational_status", "vocab.occupation2","vocab.occupation3","vocab.occupation4",
         "mortgage","houseValue", "savings", "debt","country","caregiver_vocab",
-        "age5_vocab","benchmark_binary", "standardised_core_subjects")
+        "age5_vocab","benchmark_binary", "average_grade", "average_grade_n5")
 #now lets run the imputation (m=25) imputations
 
 imputed_mcs2 = mice(vocabulary_education, blocks=blocksvec, method=meth, visitSequence = vis, seed = 1895, predictorMatrix=predM, m=25) #can change this to a smaller numebr so runs quicker when figuring out. 
