@@ -18,7 +18,6 @@ library(xtable)
 library(dplyr)
 library(gt)
 library(glue)
-library(tidyverse)
 library(miceadds)
 library(swfscMisc)
 library(imputools)
@@ -33,6 +32,7 @@ library(officer)
 library(flextable)
 library(ftExtra)
 library(dummies)
+library(tidyverse)
 
 weighted_descriptives_imputed_datasets<- function (dataAll,variable) {
   variable=deparse(substitute(variable))
@@ -88,10 +88,39 @@ weighted_proportions_imputed_datasets<- function (dataAll,variable) {
 
 load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-20_vocabulary_education_imputedMAIN/2021-12-20_vocabulary_education_imputedMAIN.Rdata")
 imputed_mcs2 = mi.res
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-24_vocabulary_education_imputedContinuousDescriptives/2021-12-24_vocabulary_education_imputedContinuousDescriptives.Rdata")
+continuous_descriptives_imputed = mi.res
 
 #convert imputed data to long format without observed data
 long_format_mcs <- mice::complete(imputed_mcs2, "long", include=FALSE)
+#redorder nvq and occupational status to have same order as whole cohort data - for occupational status and nvq
+long_format_mcs$highest_nvq = factor(long_format_mcs$highest_nvq, levels = c("1", "2", "3", "4", "5", "0"))
+long_format_mcs$occupational_status = factor(long_format_mcs$occupational_status, levels = c( "2", "3", "4", "1"))
+long_format_descriptives <- mice::complete(continuous_descriptives_imputed , "long", include=TRUE)
+
 ```
+
+for continuous outcome variable: need GCSE for england, wales and northern ireland (country !=3)
+for N5 need scotland (country = 3)
+
+```{r}
+gcse= filter(long_format_descriptives, country !=3) %>% 
+  select(!country)
+n5 = filter(long_format_descriptives, country == 3) %>% 
+  select(!country)
+
+gcse_imputed = as.mids(gcse)
+n5_imputed = as.mids(n5)
+
+long_format_gcse = mice::complete(gcse_imputed, "long", include=FALSE)
+long_format_n5 = mice::complete(n5_imputed, "long", include=FALSE)
+
+```
+
+
+
+
+
 run descritpives
 ```{r include = FALSE}
 
@@ -99,7 +128,8 @@ run descritpives
 #calculate descriptives across imputed datasets
 vocabDescriptives = weighted_descriptives_imputed_datasets(long_format_mcs, age5_vocab)
 caregiverVocabDescriptives = weighted_descriptives_imputed_datasets(long_format_mcs, caregiver_vocab)
-continuous_outcomeDescriptives = weighted_descriptives_imputed_datasets(long_format_mcs, standardised_core_subjects)
+gcseDescriptives = weighted_descriptives_imputed_datasets(long_format_gcse, average_grade)
+n5Descriptives = weighted_descriptives_imputed_datasets(long_format_n5, average_grade_n5)
 
 #combine across imputed datasets
 combined_vocabDescriptives = round(combine_imputed_descriptives(vocabDescriptives),2) %>% 
@@ -108,7 +138,10 @@ combined_vocabDescriptives = round(combine_imputed_descriptives(vocabDescriptive
 combined_caregiverVocabDescriptives = round(combine_imputed_descriptives(caregiverVocabDescriptives),2) %>% 
   select(!Imputed) %>% 
   slice_head(n=1)
-combined_continuousOutcomeDescriptives = round(combine_imputed_descriptives(continuous_outcomeDescriptives),2) %>% 
+combined_gcseOutcomeDescriptives = round(combine_imputed_descriptives(gcseDescriptives),2) %>% 
+  select(!Imputed) %>% 
+  slice_head(n=1)
+combined_n5OutcomeDescriptives = round(combine_imputed_descriptives(n5Descriptives),2) %>% 
   select(!Imputed) %>% 
   slice_head(n=1)
 
@@ -177,11 +210,11 @@ countryCombined = as.data.frame(t(countryCombined)) %>%
 nvqCombined = round(combine_imputed_descriptives(nvqProportions)*100,2)%>% 
   slice_head(n=1) %>% 
   rename("Parent Education \n (NVQ1)" = Level1, 
-         "Parent Education \n (None of these/overseas qualifications)" = Level2, 
-         "Parent Education \n (NVQ2)"= Level3, 
-         "Parent Education \n (NVQ3)" = Level4,
-         "Parent Education \n (NVQ4)" = Level5,
-         "Parent Education \n (NVQ5)" = Level6)
+         "Parent Education \n (NVQ2)"= Level2, 
+         "Parent Education \n (NVQ3)" = Level3,
+         "Parent Education \n (NVQ4)" = Level4,
+         "Parent Education \n (NVQ5)" = Level5,
+         "Parent Education \n (None of these/overseas qualifications)" = Level6)
 nvqCombined = as.data.frame(t(nvqCombined)) %>% 
   rownames_to_column() %>% 
   rename("Variable" = rowname,
@@ -200,9 +233,9 @@ incomeCombined = as.data.frame(t(incomeCombined)) %>%
 occupationCombined = round(combine_imputed_descriptives(occupationProportions)*100,2)%>% 
   slice_head(n=1) %>% 
   rename("Occupational Status \n (routine)" = Level1, 
-         "Occupational Status \n (unemployed)" = Level2, 
-         "Occupational Status \n (intermediate)" = Level3,
-         "Occupational Status \n (higher managerial)" = Level4)
+         "Occupational Status \n (intermediate)" = Level2,
+         "Occupational Status \n (higher managerial)" = Level3,
+         "Occupational Status \n (unemployed)" = Level4)
 occupationCombined = as.data.frame(t(occupationCombined)) %>% 
   rownames_to_column() %>% 
   rename("Variable" = rowname,
@@ -236,8 +269,8 @@ imdCombined = as.data.frame(t(imdCombined)) %>%
          "Proportion (%) or \n Mean(±SD) [95% CIs]" = V1) 
 benchmarkCombined = round(combine_imputed_descriptives(benchmarkProportions)*100,2)%>% 
   slice_head(n=1) %>% 
-  rename("Core Subjects Grade ≥ 4: Yes" = Level1, 
-        "Core Subjects Grade ≥ 4: No" = Level2)  
+  rename("Core Subjects Grade ≥ 4: No" = Level1, 
+        "Core Subjects Grade ≥ 4: Yes" = Level2)  
 benchmarkCombined = as.data.frame(t(benchmarkCombined))%>% 
   rownames_to_column() %>% 
   rename("Variable" = rowname,
@@ -260,22 +293,28 @@ caregiverVocabDescriptives = combined_caregiverVocabDescriptives %>% add_column(
   select(Variable, caregiverVocab)  %>% 
   rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = caregiverVocab) 
    
-continuous_outcomeDescriptives = combined_continuousOutcomeDescriptives  %>% add_column(paste0(combined_continuousOutcomeDescriptives$Mean,"(±",combined_continuousOutcomeDescriptives$SD,")", "\n", "[", combined_continuousOutcomeDescriptives$lower, ";", combined_continuousOutcomeDescriptives$upper,"]")) %>% 
-  rename("contOutcome" = `paste0(...)`) %>% 
-  add_column("Variable" = "Continuous Outcome") %>% 
-  select(Variable, contOutcome)  %>% 
-  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = contOutcome) 
+gcse_outcomeDescriptives = combined_gcseOutcomeDescriptives  %>% add_column(paste0(combined_gcseOutcomeDescriptives$Mean,"(±",combined_gcseOutcomeDescriptives$SD,")", "\n", "[", combined_gcseOutcomeDescriptives$lower, ";", combined_gcseOutcomeDescriptives$upper,"]")) %>% 
+  rename("gcseOutcome" = `paste0(...)`) %>% 
+  add_column("Variable" = "Average GCSE grade \n (England, Wales & Northern Ireland)") %>% 
+  select(Variable, gcseOutcome)  %>% 
+  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = gcseOutcome) 
+
+n5_outcomeDescriptives = combined_n5OutcomeDescriptives  %>% add_column(paste0(combined_n5OutcomeDescriptives$Mean,"(±",combined_n5OutcomeDescriptives$SD,")", "\n", "[", combined_n5OutcomeDescriptives$lower, ";", combined_n5OutcomeDescriptives$upper,"]")) %>% 
+  rename("n5Outcome" = `paste0(...)`) %>% 
+  add_column("Variable" = "Average N5 grade \n (Scotland)") %>% 
+  select(Variable, n5Outcome)  %>% 
+  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = n5Outcome) 
 
 
 #put into one overall dataframe that can then  put into flex table
 
-descriptivesTable = rbind(vocabDescriptives, caregiverVocabDescriptives, benchmarkCombined, continuous_outcomeDescriptives, 
+descriptivesTable = rbind(vocabDescriptives, caregiverVocabDescriptives, benchmarkCombined, gcse_outcomeDescriptives, n5_outcomeDescriptives,
                           sexCombined, ethnicityCombined, ealCombined, countryCombined,
                           nvqCombined, incomeCombined, wealthCombined, occupationCombined, imdCombined) %>% 
   add_row(Variable = "Vocabulary", .before = 1) %>%  #add in rows to divide table up 
   add_row(Variable = "Cohort Member Education", .after = 3) %>% 
-  add_row(Variable = "Demographics", .before = 8) %>% 
-  add_row(Variable = "Socioeconomic Circumstances", .before = 24)
+  add_row(Variable = "Demographics", .before = 9) %>% 
+  add_row(Variable = "Socioeconomic Circumstances", .before = 25)
 descriptivesTable [is.na(descriptivesTable )] <- " "
 ```
 
@@ -286,7 +325,9 @@ whole cohort descriptives , so can compare full cohort to analytic sample.
 #read in full cohort data
 mcs_cohort<-read.csv("cohort_data.csv")
 mcs_cohort[,1]<- NULL
-
+#redorder nvq and occupational status variables 
+mcs_cohort$highest_nvq = factor(mcs_cohort$highest_nvq, levels = c("1", "2", "3", "4", "5", "0"))
+mcs_cohort$occupational_status = factor(mcs_cohort$occupational_status, levels = c( "2", "3", "4", "1"))
 #get weighted proportions - need to remove NA values 
 #sex
 cohort_sex = round(get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$sex),]$sex,
@@ -336,11 +377,11 @@ cohort_nvq = round(get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$highest
 cohort_nvq =  as_tibble(cohort_nvq) %>% 
   rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = value) %>% 
            add_column(Variable = c("Parent Education \n (NVQ1)",
-                                   "Parent Education \n (None of these/overseas qualifications)",
                                    "Parent Education \n (NVQ2)",
                                    "Parent Education \n (NVQ3)",
                                    "Parent Education \n (NVQ4)", 
-                                   "Parent Education \n (NVQ5)"), .before = 1)
+                                   "Parent Education \n (NVQ5)",
+                                   "Parent Education \n (None of these/overseas qualifications)"), .before = 1)
 
 #income
 cohort_income = round(get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$oecd_income),]$oecd_income,
@@ -361,9 +402,9 @@ cohort_occupation = round(get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$
 cohort_occupation =  as_tibble(cohort_occupation) %>% 
   rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = value) %>% 
            add_column(Variable = c("Occupational Status \n (routine)",
-                                   "Occupational Status \n (unemployed)",
                                    "Occupational Status \n (intermediate)",
-                                   "Occupational Status \n (higher managerial)"), .before = 1)
+                                   "Occupational Status \n (higher managerial)",
+                                    "Occupational Status \n (unemployed)"), .before = 1)
 
 #imd
 cohort_imd = round(get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$imd),]$imd,
@@ -383,13 +424,12 @@ cohort_imd =  as_tibble(cohort_imd) %>%
 
 #benchmark reached 
 mcs_cohort$benchmark_binary = as.factor(mcs_cohort$benchmark_binary)
-mcs_cohort$benchmark_binary = relevel(mcs_cohort$benchmark_binary, ref = "1")
 cohort_benchmark = round(get_weighted_proportions(mcs_cohort[!is.na(mcs_cohort$benchmark_binary),]$benchmark_binary,
                          mcs_cohort[!is.na(mcs_cohort$benchmark_binary),]$weight)*100,2)
 cohort_benchmark =  as_tibble(cohort_benchmark) %>% 
   rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = value) %>% 
-           add_column(Variable = c("Core Subjects Grade ≥ 4: Yes",
-                                   "Core Subjects Grade ≥ 4: No"), .before = 1)
+           add_column(Variable = c("Core Subjects Grade ≥ 4: No",
+                                   "Core Subjects Grade ≥ 4: Yes"), .before = 1)
 
 #means and SDs
 #vocabulary
@@ -424,33 +464,49 @@ cohort_caregiverVocab = cohort_caregiverVocab %>% add_column(paste0(cohort_careg
   select(`Proportion (%) or \n Mean(±SD) [95% CIs]`) %>% 
   add_column(Variable = c("Caregiver Vocabulary \n (Word Activity Test Score)"), .before = 1)
 
-#continuous education 
-cohort_ed = round(get_weighted_descriptives(mcs_cohort[!is.na(mcs_cohort$standardised_core_subjects),]$standardised_core_subjects,
-                          mcs_cohort[!is.na(mcs_cohort$standardised_core_subjects),]$weight),2)
+#continuous education - GCSE for england, wales and NI
+cohort_gcse = round(get_weighted_descriptives(mcs_cohort[!is.na(mcs_cohort$average_grade),]$average_grade,
+                          mcs_cohort[!is.na(mcs_cohort$average_grade),]$weight),2)
 
-cohort_ed = as.data.frame(t(cohort_ed)) %>% 
+cohort_gcse= as.data.frame(t(cohort_gcse)) %>% 
   rename("mean" = V1, 
          "sd" = V2, 
          "lower" = V3, 
          "upper" = V4) 
-cohort_ed = cohort_ed %>% add_column(paste0(cohort_ed$mean,"(±",cohort_ed$sd,")", 
-                                                  "\n", "[", cohort_ed$lower, ";", cohort_ed$upper,"]")) %>% 
+cohort_gcse = cohort_gcse %>% add_column(paste0(cohort_gcse$mean,"(±",cohort_gcse$sd,")", 
+                                                  "\n", "[", cohort_gcse$lower, ";", cohort_gcse$upper,"]")) %>% 
   rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = `paste0(...)`) %>% 
   select(`Proportion (%) or \n Mean(±SD) [95% CIs]`) %>% 
-  add_column(Variable = c("Continuous Outcome"), .before = 1)
+  add_column(Variable = c("Average GCSE grade \n (England, Wales & Northern Ireland)"), .before = 1)
 
-descriptivesCohort = rbind(cohort_vocab, cohort_caregiverVocab, cohort_benchmark, cohort_ed, 
+
+#continuous education - N5 for Scotland
+cohort_n5 = round(get_weighted_descriptives(mcs_cohort[!is.na(mcs_cohort$average_grade_n5),]$average_grade_n5,
+                          mcs_cohort[!is.na(mcs_cohort$average_grade_n5),]$weight),2)
+
+cohort_n5= as.data.frame(t(cohort_n5)) %>% 
+  rename("mean" = V1, 
+         "sd" = V2, 
+         "lower" = V3, 
+         "upper" = V4) 
+cohort_n5 = cohort_n5 %>% add_column(paste0(cohort_n5$mean,"(±",cohort_n5$sd,")", 
+                                                  "\n", "[", cohort_n5$lower, ";", cohort_n5$upper,"]")) %>% 
+  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = `paste0(...)`) %>% 
+  select(`Proportion (%) or \n Mean(±SD) [95% CIs]`) %>% 
+  add_column(Variable = c("Average N5 grade \n (Scotland)"), .before = 1)
+
+descriptivesCohort = rbind(cohort_vocab, cohort_caregiverVocab, cohort_benchmark, cohort_gcse, cohort_n5,
                           cohort_sex, cohort_ethnicity, cohort_eal, cohort_country,
                           cohort_nvq, cohort_income, cohort_occupation, cohort_imd) %>% 
   add_row(Variable = "Vocabulary", .before = 1) %>%  #add in rows to divide table up 
   add_row(Variable = "Cohort Member Education", .after = 3) %>% 
-  add_row(Variable = "Demographics", .before = 8) %>% 
-  add_row(Variable = "Socioeconomic Circumstances", .before = 24) %>% 
-  add_row(Variable = "Wealth Quntile 1", .after = 35) %>% 
-  add_row(Variable = "Wealth Quntile 2", .after = 36) %>% 
-  add_row(Variable = "Wealth Quntile 3", .after = 37) %>% 
-  add_row(Variable = "Wealth Quntile 4", .after = 38) %>% 
-  add_row(Variable = "Wealth Quntile 5", .after = 39) 
+  add_row(Variable = "Demographics", .before = 9) %>% 
+  add_row(Variable = "Socioeconomic Circumstances", .before = 25) %>% 
+  add_row(Variable = "Wealth Quintile 1", .after = 36) %>% 
+  add_row(Variable = "Wealth Quintile 2", .after = 37) %>% 
+  add_row(Variable = "Wealth Quintile 3", .after = 38) %>% 
+  add_row(Variable = "Wealth Quintile 4", .after = 39) %>% 
+  add_row(Variable = "Wealth Quintile 5", .after = 40) 
     
 descriptivesCohort [is.na(descriptivesCohort )] <- " "
 
@@ -479,16 +535,29 @@ full_descriptives <- fullDescriptives %>%
   border_remove() %>% 
   hline_top(j=1:3, part="all", border=my_border) %>% 
   hline_bottom(j=1:3,part="body",  border=my_border) %>% 
-  bold(j = 1, i = c(1,4,8,24), bold = TRUE) %>% 
-  italic(j = 1, i = c(1,4,8,24), italic = TRUE) %>% 
+  bold(j = 1, i = c(1,4,9,25), bold = TRUE) %>% 
+  italic(j = 1, i = c(1,4,9,25), italic = TRUE) %>% 
+  set_header_labels(Variable= "Variable", `Full Cohort` = "Whole Cohort \n (N= 19243)", 
+                    `Analytical Sample` = "Analytical Sample (N=15,576)") %>% 
   add_header_row(values = c(" ", "Proportion (%) or \n Mean(±SD) [95% CIs]" ), colwidths = c(1, 2)) %>% 
   font(fontname = "Times New Roman", part="header") %>% 
   align(align="center", part="header") %>% 
-  hline_top(j = 2:3, part = "all", border = my_border)
+  hline_top(j = 2:3, part = "all", border = my_border)  %>% 
+  add_footer_lines(values = "Average GCSE grade refers to the average grade across English, Mathematics and Science subjects and was calculated post imputation on data from England, Wales and Northern Ireland.\nAverage N5 (National Five) grade refers to the average grade across English, Mathematics and Science subjects and was calculated post imputation on data from Scotland.\nWealth was derived post imputation and therefore we do not present the proportions for Wealth quintiles in the whole cohort, due to the high level of missing data among the wealth components.\nIn analyses, the average GCSE grade and average N5 grade were converted into z scores and combined into one variable pre-imputation.\nNote that descriptives for the whole cohort (N=19,243) do not indicate the level of missing data for these variables in the whole cohort.\nMissing data proportions for the analytical sample can be found in Figure S2.\nAnalytical sample descriptive statistics were calculated and pooled across 25 imputed datasets and are weighted to account for the sample design of the MCS2001 and attrition.") %>% 
+  font(fontname = "Times New Roman", part = "footer") %>% 
+  fontsize(size = 9, part = "footer") %>% 
+  italic(part = "footer", italic = TRUE) %>% 
+  align(align="left", part="footer") %>% 
+  add_header_lines(values = c("Table 2: Descriptive Statistics for Analytical Sample (N = 15,576) and Whole MCS2001 Cohort (N=19,243)")) %>% 
+  font(fontname = "Times New Roman", part = "header") %>% 
+  fontsize(size = 12, part = "header") %>% 
+  italic(part = "header", italic = TRUE)
+
+  
   
   
 
- print(descriptives_table, preview = "docx") 
+ print(full_descriptives, preview = "docx") 
 
 
 ```
