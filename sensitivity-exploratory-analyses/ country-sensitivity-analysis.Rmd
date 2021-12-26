@@ -29,6 +29,8 @@ library(ggpubr)
 library(officer)
 library(flextable)
 library(ftExtra)
+library(gtools)
+library(ggeffects)
 
 #this will take a float (e.g. a p value) and return a string with 3 digits and no leading 0
 
@@ -60,12 +62,22 @@ northern_ireland= filter(long_format_mcs, country == 4) %>%
   select(!country)
 
 #for wales, scotland and NI, not many minorities - split ethnicity into a binary variable of White vs minority here
+england = england %>% mutate(ethnicity_binary = case_when(ethnicity == 1 ~ 0, 
+                                                      TRUE ~ 1))%>% 
+  mutate(EAL_binary = case_when(EAL == 1 ~ 0, 
+                                TRUE ~1))
 wales = wales %>% mutate(ethnicity_binary = case_when(ethnicity == 1 ~ 0, 
-                                                      TRUE ~ 1))
+                                                      TRUE ~ 1))%>% 
+  mutate(EAL_binary = case_when(EAL == 1 ~ 0, 
+                                TRUE ~1))
 scotland = scotland %>% mutate(ethnicity_binary = case_when(ethnicity == 1 ~ 0, 
-                                                      TRUE ~ 1))
+                                                      TRUE ~ 1)) %>% 
+  mutate(EAL_binary = case_when(EAL == 1 ~ 0, 
+                                TRUE ~1))
 northern_ireland =northern_ireland %>% mutate(ethnicity_binary = case_when(ethnicity == 1 ~ 0, 
-                                                      TRUE ~ 1))
+                                                      TRUE ~ 1))%>% 
+  mutate(EAL_binary = case_when(EAL == 1 ~ 0, 
+                                TRUE ~1))
 
 
 #convert bag to mids for analysis
@@ -86,16 +98,16 @@ binary_unadjustedEngland = with(england_imputed, glm(benchmark_binary ~ age5_sta
 
 binary_unadjusted_resultsEngland = round(summary(pool(binary_unadjustedEngland), conf.int = TRUE, exponentiate = TRUE),2)
 
-binary_model1England = with(england_imputed, glm(benchmark_binary ~ sex + ethnicity + EAL + 
+binary_model1England = with(england_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary + 
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
                                        family = binomial, weights = weight))
 
-binary_model2England= with(england_imputed, glm(benchmark_binary ~ sex + ethnicity + EAL +
+binary_model2England= with(england_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                          imd + caregiver_vocabStandardised, 
                                        family = binomial, weights = weight))
 
-binary_model3England = with(england_imputed, glm(benchmark_binary ~ sex + ethnicity + EAL +
+binary_model3England = with(england_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                          imd + caregiver_vocabStandardised + age5_standardised, 
                                        family = binomial, weights = weight))
@@ -132,16 +144,16 @@ continuous_unadjustedEngland = with(england_imputed, lm(standardised_core_subjec
 continuous_unadjusted_resultsEngland = round(summary(pool(continuous_unadjustedEngland), conf.int = TRUE),2)
 
 #adjusted relationship 
-continuous_model1England = with(england_imputed, lm(standardised_core_subjects ~ sex + ethnicity + EAL + 
+continuous_model1England = with(england_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
                                        weights = weight))
 
-continuous_model2England = with(england_imputed, lm(standardised_core_subjects ~ sex + ethnicity + EAL + 
+continuous_model2England = with(england_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                          imd + caregiver_vocabStandardised, 
                                         weights = weight))
 
-continuous_model3England = with(england_imputed, lm(standardised_core_subjects ~ sex + ethnicity + EAL + 
+continuous_model3England = with(england_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                          imd + caregiver_vocabStandardised + age5_standardised, 
                                         weights = weight))
@@ -264,10 +276,11 @@ binary_model2ResultsEngland = binary_model2ResultsEngland %>% add_row(term = "ag
 binary_outcomeResultsEngland = cbind(binary_model1ResultsEngland, binary_model2ResultsEngland, binary_model3ResultsEngland)
 binary_outcomeResultsEngland = binary_outcomeResultsEngland %>% select(!3 & !5)
 
-binary_outcomeResultsEngland = binary_outcomeResultsEngland %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
-  add_row(term = "Caregiver vocabulary", .before = 36) %>% 
-  add_row(term = "Cohort member vocabulary", .before  = 38) %>% 
-  add_row(term = "R2", .after = 39)
+binary_outcomeResultsEngland = binary_outcomeResultsEngland %>% 
+  add_row(term = "Sociodemographic confounders", .after = 1) %>% 
+  add_row(term = "Caregiver vocabulary", .before = 31) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 33) %>% 
+  add_row(term = "R2", .after = 34)
 
 #get coefficients and 95% CIs for table: linear regression
 continuous_model1ResultsEngland = continuous_model1ResultsEngland %>% select(term, new_coef, p)
@@ -296,8 +309,8 @@ continuous_outcomeResultsEngland = cbind(continuous_model1ResultsEngland, contin
 continuous_outcomeResultsEngland = continuous_outcomeResultsEngland %>% select(!3 & !5)
 
 continuous_outcomeResultsEngland = continuous_outcomeResultsEngland %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
-  add_row(term = "Caregiver vocabulary", .before = 36) %>% 
-  add_row(term = "Cohort member vocabulary", .before  = 38)
+  add_row(term = "Caregiver vocabulary", .before = 31) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 33)
 
 
 regression_resultsTableEngland = cbind(binary_outcomeResultsEngland, continuous_outcomeResultsEngland)
@@ -306,19 +319,19 @@ regression_resultsTableEngland = regression_resultsTableEngland %>% select(!5) %
   slice(-(1)) %>% #remove intercept row
   add_row(term = "sex1", .after = 1) %>% #add in reference categories for factor variables
   add_row(term = "ethnicity1", .after = 3) %>% 
-  add_row(term = "EAL1", .after = 9) %>% 
-  add_row(term = "highest_nvq1", .before = 13) %>% 
-  add_row(term = "oecd_income1", .before = 19) %>% 
-  add_row(term = "occupational_status2", .before = 24) %>% 
-  add_row(term = "wealth_quintiles1", .before = 28) %>% 
-  add_row(term = "imd1", .before = 33)
+  add_row(term = "EAL1", .after = 5) %>% 
+  add_row(term = "highest_nvq1", .after = 7) %>% 
+  add_row(term = "oecd_income1", .before = 14) %>% 
+  add_row(term = "occupational_status2", .before = 19) %>% 
+  add_row(term = "wealth_quintiles1", .before = 23) %>% 
+  add_row(term = "imd1", .before = 28)
 regression_resultsTableEngland [is.na(regression_resultsTableEngland )] <- "REFERENCE"
   
 #rename variables column 
 
 regression_resultsTableEngland$term <- c("Sociodemographic confounders", "Sex (male)", "Sex (female)", 
-                                  "Ethnicity \n (White)", "Ethnicity \n (mixed)", "Ethnicity \n (Indian)", "Ethnicity \n (Pakistani & Bangladeshi)", "Ethnicity \n (Black/ Black British)", "Ethnicity \n (other incl. Chinese)", 
-                                  "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)",
+                                  "Ethnicity \n (White)", "Ethnicity \n (minority)",
+                                  "EAL \n (English only)", "EAL \n (another language present)",
                                   "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2)", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", 
                            "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
                            "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",  
@@ -353,9 +366,9 @@ results_england <- regression_resultsTableEngland %>%
   font(fontname = "Times New Roman", part="header") %>% 
   align(align="center", part="header") %>% 
   hline_top(j = 2:7, part = "all", border = my_border) %>% 
-  bold(j = 1, i = c(1,43, 45), bold = TRUE) %>% 
-  italic(j = 1, i = c(1,43, 45), italic = TRUE) %>% 
-  add_header_lines(values = c("Table S4: Predicting Educational Attainment in England (≥grade 4 on core subjects and average grade) (N=10,076)"))
+  bold(j = 1, i = c(1,38, 40), bold = TRUE) %>% 
+  italic(j = 1, i = c(1,38, 40), italic = TRUE) %>% 
+  add_header_lines(values = c("Table S5: Predicting Educational Attainment in England (≥grade 4 on core subjects and average grade) (N=10,076)"))
   
   
 
@@ -373,16 +386,16 @@ binary_unadjustedWales = with(wales_imputed, glm(benchmark_binary ~ age5_standar
 
 binary_unadjusted_resultsWales = round(summary(pool(binary_unadjustedWales), conf.int = TRUE, exponentiate = TRUE),2)
 
-binary_model1Wales = with(wales_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL + 
+binary_model1Wales = with(wales_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary + 
                                                    highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
                                                  family = binomial, weights = weight))
 
-binary_model2Wales= with(wales_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL +
+binary_model2Wales= with(wales_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                                   imd + caregiver_vocabStandardised, 
                                                 family = binomial, weights = weight))
 
-binary_model3Wales = with(wales_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL +
+binary_model3Wales = with(wales_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                                    highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                                    imd + caregiver_vocabStandardised + age5_standardised, 
                                                  family = binomial, weights = weight))
@@ -419,16 +432,16 @@ continuous_unadjustedWales = with(wales_imputed, lm(standardised_core_subjects ~
 continuous_unadjusted_resultsWales = round(summary(pool(continuous_unadjustedWales), conf.int = TRUE),2)
 
 #adjusted relationship 
-continuous_model1Wales = with(wales_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+continuous_model1Wales = with(wales_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                                       highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
                                                     weights = weight))
 
-continuous_model2Wales = with(wales_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+continuous_model2Wales = with(wales_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                                       highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                                       imd + caregiver_vocabStandardised, 
                                                     weights = weight))
 
-continuous_model3Wales = with(wales_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+continuous_model3Wales = with(wales_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                                       highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                                       imd + caregiver_vocabStandardised + age5_standardised, 
                                                     weights = weight))
@@ -552,9 +565,9 @@ binary_outcomeResultsWales = cbind(binary_model1ResultsWales, binary_model2Resul
 binary_outcomeResultsWales = binary_outcomeResultsWales %>% select(!3 & !5)
 
 binary_outcomeResultsWales = binary_outcomeResultsWales %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
-  add_row(term = "Caregiver vocabulary", .before = 32) %>% 
-  add_row(term = "Cohort member vocabulary", .before  = 34) %>% 
-  add_row(term = "R2", .after = 35)
+  add_row(term = "Caregiver vocabulary", .before = 31) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 33) %>% 
+  add_row(term = "R2", .after = 34)
 
 #get coefficients and 95% CIs for table: linear regression
 continuous_model1ResultsWales = continuous_model1ResultsWales %>% select(term, new_coef, p)
@@ -584,7 +597,7 @@ continuous_outcomeResultsWales = continuous_outcomeResultsWales %>% select(!3 & 
 
 continuous_outcomeResultsWales = continuous_outcomeResultsWales %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
   add_row(term = "Caregiver vocabulary", .after = 31) %>% 
-  add_row(term = "Cohort member vocabulary", .before  = 34)
+  add_row(term = "Cohort member vocabulary", .before  = 33)
 
 
 regression_resultsTableWales = cbind(binary_outcomeResultsWales, continuous_outcomeResultsWales)
@@ -594,18 +607,18 @@ regression_resultsTableWales = regression_resultsTableWales %>% select(!5) %>%
   add_row(term = "sex1", .after = 1) %>% #add in reference categories for factor variables
   add_row(term = "ethnicity1", .after = 3) %>% 
   add_row(term = "EAL1", .after = 5) %>% 
-  add_row(term = "highest_nvq1", .before = 9) %>% 
-  add_row(term = "oecd_income1", .before = 15) %>% 
-  add_row(term = "occupational_status2", .before = 20) %>% 
-  add_row(term = "wealth_quintiles1", .before = 24) %>% 
-  add_row(term = "imd1", .after = 28)
+  add_row(term = "highest_nvq1", .after = 7) %>% 
+  add_row(term = "oecd_income1", .before = 14) %>% 
+  add_row(term = "occupational_status2", .before = 19) %>% 
+  add_row(term = "wealth_quintiles1", .before = 23) %>% 
+  add_row(term = "imd1", .after = 27)
 regression_resultsTableWales [is.na(regression_resultsTableWales )] <- "REFERENCE"
 
 #rename variables column 
 
 regression_resultsTableWales$term <- c("Sociodemographic confounders", "Sex (male)", "Sex (female)", 
                                          "Ethnicity \n (White)", "Ethnicity \n (Minority)",
-                                         "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)",
+                                         "EAL \n (English only)", "EAL \n (another language present)",
                                          "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2)", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", 
                                          "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
                                          "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",  
@@ -640,9 +653,9 @@ results_wales <- regression_resultsTableWales %>%
   font(fontname = "Times New Roman", part="header") %>% 
   align(align="center", part="header") %>% 
   hline_top(j = 2:7, part = "all", border = my_border) %>% 
-  bold(j = 1, i = c(1,39, 41), bold = TRUE) %>% 
-  italic(j = 1, i = c(1,39, 41), italic = TRUE) %>% 
-  add_header_lines(values = c("Table S5: Predicting Educational Attainment in Wales (≥grade 4 on core subjects and average grade) (N=2,144)"))
+  bold(j = 1, i = c(1,38, 40), bold = TRUE) %>% 
+  italic(j = 1, i = c(1,38, 40), italic = TRUE) %>% 
+  add_header_lines(values = c("Table S6: Predicting Educational Attainment in Wales (≥grade 4 on core subjects and average grade) (N=2,144)"))
 
 
 
@@ -661,16 +674,16 @@ binary_unadjustedScotland = with(scotland_imputed, glm(benchmark_binary ~ age5_s
 
 binary_unadjusted_resultsScotland = round(summary(pool(binary_unadjustedScotland), conf.int = TRUE, exponentiate = TRUE),2)
 
-binary_model1Scotland = with(scotland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL + 
+binary_model1Scotland = with(scotland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary + 
                                                highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
                                              family = binomial, weights = weight))
 
-binary_model2Scotland= with(scotland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL +
+binary_model2Scotland= with(scotland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                               highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                               imd + caregiver_vocabStandardised, 
                                             family = binomial, weights = weight))
 
-binary_model3Scotland = with(scotland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL +
+binary_model3Scotland = with(scotland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                                highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                                imd + caregiver_vocabStandardised + age5_standardised, 
                                              family = binomial, weights = weight))
@@ -707,16 +720,16 @@ continuous_unadjustedScotland = with(scotland_imputed, lm(standardised_core_subj
 continuous_unadjusted_resultsScotland = round(summary(pool(continuous_unadjustedScotland), conf.int = TRUE),2)
 
 #adjusted relationship 
-continuous_model1Scotland = with(scotland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+continuous_model1Scotland = with(scotland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
                                                 weights = weight))
 
-continuous_model2Scotland = with(scotland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+continuous_model2Scotland = with(scotland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                                   imd + caregiver_vocabStandardised, 
                                                 weights = weight))
 
-continuous_model3Scotland = with(scotland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+continuous_model3Scotland = with(scotland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                                   imd + caregiver_vocabStandardised + age5_standardised, 
                                                 weights = weight))
@@ -840,9 +853,9 @@ binary_outcomeResultsScotland = cbind(binary_model1ResultsScotland, binary_model
 binary_outcomeResultsScotland = binary_outcomeResultsScotland %>% select(!3 & !5)
 
 binary_outcomeResultsScotland = binary_outcomeResultsScotland %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
-  add_row(term = "Caregiver vocabulary", .before = 32) %>% 
-  add_row(term = "Cohort member vocabulary", .before  = 34) %>% 
-  add_row(term = "R2", .after = 35)
+  add_row(term = "Caregiver vocabulary", .before = 31) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 33) %>% 
+  add_row(term = "R2", .after = 34)
 
 #get coefficients and 95% CIs for table: linear regression
 continuous_model1ResultsScotland = continuous_model1ResultsScotland %>% select(term, new_coef, p)
@@ -871,8 +884,8 @@ continuous_outcomeResultsScotland = cbind(continuous_model1ResultsScotland, cont
 continuous_outcomeResultsScotland = continuous_outcomeResultsScotland %>% select(!3 & !5)
 
 continuous_outcomeResultsScotland = continuous_outcomeResultsScotland %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
-  add_row(term = "Caregiver vocabulary", .after = 31) %>% 
-  add_row(term = "Cohort member vocabulary", .before  = 34)
+  add_row(term = "Caregiver vocabulary", .after = 30) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 33)
 
 
 regression_resultsTableScotland = cbind(binary_outcomeResultsScotland, continuous_outcomeResultsScotland)
@@ -882,18 +895,18 @@ regression_resultsTableScotland = regression_resultsTableScotland %>% select(!5)
   add_row(term = "sex1", .after = 1) %>% #add in reference categories for factor variables
   add_row(term = "ethnicity1", .after = 3) %>% 
   add_row(term = "EAL1", .after = 5) %>% 
-  add_row(term = "highest_nvq1", .before = 9) %>% 
-  add_row(term = "oecd_income1", .before = 15) %>% 
-  add_row(term = "occupational_status2", .before = 20) %>% 
-  add_row(term = "wealth_quintiles1", .before = 24) %>% 
-  add_row(term = "imd1", .after = 28)
+  add_row(term = "highest_nvq1", .after = 7) %>% 
+  add_row(term = "oecd_income1", .before = 14) %>% 
+  add_row(term = "occupational_status2", .before = 19) %>% 
+  add_row(term = "wealth_quintiles1", .before = 23) %>% 
+  add_row(term = "imd1", .after = 27)
 regression_resultsTableScotland [is.na(regression_resultsTableScotland )] <- "REFERENCE"
 
 #rename variables column 
 
 regression_resultsTableScotland$term <- c("Sociodemographic confounders", "Sex (male)", "Sex (female)", 
                                        "Ethnicity \n (White)", "Ethnicity \n (Minority)",
-                                       "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)",
+                                       "EAL \n (English only)", "EAL \n (another language present)", 
                                        "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2)", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", 
                                        "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
                                        "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",  
@@ -928,9 +941,9 @@ results_scotland <- regression_resultsTableScotland %>%
   font(fontname = "Times New Roman", part="header") %>% 
   align(align="center", part="header") %>% 
   hline_top(j = 2:7, part = "all", border = my_border) %>% 
-  bold(j = 1, i = c(1,39, 41), bold = TRUE) %>% 
-  italic(j = 1, i = c(1,39, 41), italic = TRUE) %>% 
-  add_header_lines(values = c("Table S6: Predicting Educational Attainment in Scotland (≥grade 4 on core subjects and average grade) (N=1,821)"))
+  bold(j = 1, i = c(1,38, 40), bold = TRUE) %>% 
+  italic(j = 1, i = c(1,38, 40), italic = TRUE) %>% 
+  add_header_lines(values = c("Table S7: Predicting Educational Attainment in Scotland (≥grade 4 on core subjects and average grade) (N=1,821)"))
 
 
 
@@ -951,16 +964,16 @@ binary_unadjustedNi = with(northern_ireland_imputed, glm(benchmark_binary ~ age5
 
 binary_unadjusted_resultsNi = round(summary(pool(binary_unadjustedNi), conf.int = TRUE, exponentiate = TRUE),2)
 
-binary_model1Ni = with(northern_ireland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL + 
+binary_model1Ni = with(northern_ireland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary + 
                                                highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
                                              family = binomial, weights = weight))
 
-binary_model2Ni= with(northern_ireland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL +
+binary_model2Ni= with(northern_ireland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                               highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                               imd + caregiver_vocabStandardised, 
                                             family = binomial, weights = weight))
 
-binary_model3Ni = with(northern_ireland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL +
+binary_model3Ni = with(northern_ireland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                                highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                                imd + caregiver_vocabStandardised + age5_standardised, 
                                              family = binomial, weights = weight))
@@ -997,16 +1010,16 @@ continuous_unadjustedNi = with(northern_ireland_imputed, lm(standardised_core_su
 continuous_unadjusted_resultsNi = round(summary(pool(continuous_unadjustedNi), conf.int = TRUE),2)
 
 #adjusted relationship 
-continuous_model1Ni = with(northern_ireland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+continuous_model1Ni = with(northern_ireland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + imd, 
                                                 weights = weight))
 
-continuous_model2Ni = with(northern_ireland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+continuous_model2Ni = with(northern_ireland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary+ 
                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                                   imd + caregiver_vocabStandardised, 
                                                 weights = weight))
 
-continuous_model3Ni = with(northern_ireland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL + 
+continuous_model3Ni = with(northern_ireland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
                                                   imd + caregiver_vocabStandardised + age5_standardised, 
                                                 weights = weight))
@@ -1161,8 +1174,8 @@ continuous_outcomeResultsNi = cbind(continuous_model1ResultsNi, continuous_model
 continuous_outcomeResultsNi = continuous_outcomeResultsNi %>% select(!3 & !5)
 
 continuous_outcomeResultsNi = continuous_outcomeResultsNi %>% add_row(term = "Sociodemographic confounders", .after = 1) %>% 
-  add_row(term = "Caregiver vocabulary", .after = 31) %>% 
-  add_row(term = "Cohort member vocabulary", .before  = 34)
+  add_row(term = "Caregiver vocabulary", .after = 30) %>% 
+  add_row(term = "Cohort member vocabulary", .before  = 33)
 
 
 regression_resultsTableNi = cbind(binary_outcomeResultsNi, continuous_outcomeResultsNi)
@@ -1172,18 +1185,18 @@ regression_resultsTableNi = regression_resultsTableNi %>% select(!5) %>%
   add_row(term = "sex1", .after = 1) %>% #add in reference categories for factor variables
   add_row(term = "ethnicity1", .after = 3) %>% 
   add_row(term = "EAL1", .after = 5) %>% 
-  add_row(term = "highest_nvq1", .before = 9) %>% 
-  add_row(term = "oecd_income1", .before = 15) %>% 
-  add_row(term = "occupational_status2", .before = 20) %>% 
-  add_row(term = "wealth_quintiles1", .before = 24) %>% 
-  add_row(term = "imd1", .after = 28)
+  add_row(term = "highest_nvq1", .after = 7) %>% 
+  add_row(term = "oecd_income1", .before = 14) %>% 
+  add_row(term = "occupational_status2", .before = 19) %>% 
+  add_row(term = "wealth_quintiles1", .before = 23) %>% 
+  add_row(term = "imd1", .after = 27)
 regression_resultsTableNi [is.na(regression_resultsTableNi )] <- "REFERENCE"
 
 #rename variables column 
 
 regression_resultsTableNi$term <- c("Sociodemographic confounders", "Sex (male)", "Sex (female)", 
                                        "Ethnicity \n (White)", "Ethnicity \n (Minority)",
-                                       "EAL \n (English only)", "EAL \n (English and another language)", "EAL \n (only another language)",
+                                       "EAL \n (English only)", "EAL \n (another language present)",
                                        "Parent Education \n (NVQ1)", "Parent Education \n (None of these/overseas qualifications)", "Parent Education \n (NVQ2)", "Parent Education \n (NVQ3)", "Parent Education \n (NVQ4)", "Parent Education \n (NVQ5)", 
                                        "Income Quintile 1", "Income Quintile 2", "Income Quintile 3", "Income Quintile 4", "Income Quintile 5", 
                                        "Occupational Status \n (routine)", "Occupational Status \n (unemployed)", "Occupational Status \n (intermediate)", "Occupational Status \n (higher managerial)",  
@@ -1218,9 +1231,9 @@ results_northern_ireland <- regression_resultsTableNi %>%
   font(fontname = "Times New Roman", part="header") %>% 
   align(align="center", part="header") %>% 
   hline_top(j = 2:7, part = "all", border = my_border) %>% 
-  bold(j = 1, i = c(1,39, 41), bold = TRUE) %>% 
-  italic(j = 1, i = c(1,39, 41), italic = TRUE)  %>% 
-  add_header_lines(values = c("Table S7: Predicting Educational Attainment in Northern Ireland (≥grade 4 on core subjects and average grade) (N=1,535)"))
+  bold(j = 1, i = c(1,38, 40), bold = TRUE) %>% 
+  italic(j = 1, i = c(1,38, 40), italic = TRUE)  %>% 
+  add_header_lines(values = c("Table S8: Predicting Educational Attainment in Northern Ireland (≥grade 4 on core subjects and average grade) (N=1,535)"))
 
 
 
@@ -1549,7 +1562,7 @@ levels(imputed_dataEngland25$composite_quintiles)[5] = "5"
 #regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
 
 compositeModerator_england <- function(df) {
-  fit <- glm(success ~ sex + ethnicity + EAL + 
+  fit <- glm(success ~ sex + ethnicity_binary + EAL_binary + 
                + caregiver_vocabStandardised + ses_latent*age5_standardised, 
              family = binomial, weights = weight, data=df)
   return(fit)
@@ -1566,7 +1579,7 @@ moderator_compositeEngland <- summary(pool(as.mira(compositeModerator_england)),
 
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 nocompositeModerator_england<- function(df) {
-  fit1 <- glm(success ~ sex + ethnicity + EAL + 
+  fit1 <- glm(success ~ sex + ethnicity_binary + EAL_binary + 
                 + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
               family = binomial, weights = weight, data=df)
   return(fit1)
@@ -1906,7 +1919,7 @@ levels(imputed_dataWales25$composite_quintiles)[5] = "5"
 #regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
 
 compositeModerator_wales <- function(df) {
-  fit <- glm(success ~ sex + ethnicity_binary + EAL + 
+  fit <- glm(success ~ sex + ethnicity_binary + EAL_binary + 
                + caregiver_vocabStandardised + ses_latent*age5_standardised, 
              family = binomial, weights = weight, data=df)
   return(fit)
@@ -1923,7 +1936,7 @@ moderator_compositeWales <- summary(pool(as.mira(compositeModerator_wales)),conf
 
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 nocompositeModerator_wales<- function(df) {
-  fit1 <- glm(success ~ sex + ethnicity_binary + EAL + 
+  fit1 <- glm(success ~ sex + ethnicity_binary + EAL_binary + 
                 + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
               family = binomial, weights = weight, data=df)
   return(fit1)
@@ -2262,7 +2275,7 @@ levels(imputed_dataScotland25$composite_quintiles)[5] = "5"
 #regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
 
 compositeModerator_scotland <- function(df) {
-  fit <- glm(success ~ sex + ethnicity_binary + EAL +  
+  fit <- glm(success ~ sex + ethnicity_binary + EAL_binary +  
                + caregiver_vocabStandardised + ses_latent*age5_standardised, 
              family = binomial, weights = weight, data=df)
   return(fit)
@@ -2279,7 +2292,7 @@ moderator_compositeScotland <- summary(pool(as.mira(compositeModerator_scotland)
 
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 nocompositeModerator_scotland<- function(df) {
-  fit1 <- glm(success ~ sex + ethnicity_binary + EAL +
+  fit1 <- glm(success ~ sex + ethnicity_binary + EAL_binary +
                 + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
               family = binomial, weights = weight, data=df)
   return(fit1)
@@ -2619,7 +2632,7 @@ levels(imputed_dataNI25$composite_quintiles)[5] = "5"
 #regression models with composite as the mdoerator. run this across 25 imputed datasets that have the ses_latent variable in. 
 
 compositeModerator_northern_ireland <- function(df) {
-  fit <- glm(success ~ sex + ethnicity_binary + EAL +
+  fit <- glm(success ~ sex + ethnicity_binary + EAL_binary +
                + caregiver_vocabStandardised + ses_latent*age5_standardised, 
              family = binomial, weights = weight, data=df)
   return(fit)
@@ -2636,7 +2649,7 @@ moderator_compositeNI <- summary(pool(as.mira(compositeModerator_northern_irelan
 
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 nocompositeModerator_northern_ireland<- function(df) {
-  fit1 <- glm(success ~ sex + ethnicity_binary + EAL + 
+  fit1 <- glm(success ~ sex + ethnicity_binary + EAL_binary + 
                 + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
               family = binomial, weights = weight, data=df)
   return(fit1)
