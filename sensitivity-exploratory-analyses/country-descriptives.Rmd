@@ -133,15 +133,56 @@ long_format_scotland <- mice::complete(scotland_imputed, "long", include=FALSE)
 long_format_NI <- mice::complete(northern_ireland_imputed, "long", include=FALSE)
 
 
+#descriptives for GCSE and N5
+
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-24_vocabulary_education_imputedContinuousDescriptives/2021-12-24_vocabulary_education_imputedContinuousDescriptives.Rdata")
+continuous_descriptives_imputed = mi.res
+
+
+long_format_continuous <- mice::complete(continuous_descriptives_imputed, "long", include=TRUE)
+
+#remove combined country analysis weight and rename country specific weight so works in function. 
+
+long_format_continuous = long_format_continuous %>% select(!"weight") %>% 
+  rename("weight" = countryWeight)
+#split into 4 countries
+englandContinuous = filter(long_format_continuous, country == 1) %>% 
+  select(!country)
+walesContinuous  = filter(long_format_continuous, country == 2) %>% 
+  select(!country)
+scotlandContinuous  = filter(long_format_continuous, country == 3) %>% 
+  select(!country)
+northern_irelandContinuous = filter(long_format_continuous, country == 4) %>% 
+  select(!country)
+
+
+
+#convert back to mids 
+england_imputedContinuous = as.mids(englandContinuous)
+wales_imputedContinuous = as.mids(walesContinuous)
+scotland_imputedContinuous = as.mids(scotlandContinuous)
+northern_ireland_imputedContinuous = as.mids(northern_irelandContinuous)
+
+#convert to long excluding original data
+long_format_englandContinuous <- mice::complete(england_imputedContinuous, "long", include=FALSE)
+long_format_walesContinuous <- mice::complete(wales_imputedContinuous, "long", include=FALSE)
+long_format_scotlandContinuous <- mice::complete(scotland_imputedContinuous, "long", include=FALSE)
+long_format_NIContinuous <- mice::complete(northern_ireland_imputedContinuous, "long", include=FALSE)
+
 ```
-run descritpives
+run descriptives
+
+
+also need the continuous descriptives dataset here and to split this into each country too, so can get descriptives of GCSEs in each country and N5 in scotland. use the country specific weight for these descriptives.- remove "weight" from data and rename country weight as weight.
 ```{r include = FALSE}
 #ENGLAND
 #numeric variables - means & SDs
 #calculate descriptives across imputed datasets
+#will only be GCSE here (average grade) - N5 specific to scotland, already split into individual country
 vocabDescriptivesEngland = weighted_descriptives_imputed_datasets(long_format_england, age5_vocab)
 caregiverVocabDescriptivesEngland = weighted_descriptives_imputed_datasets(long_format_england, caregiver_vocab)
-continuous_outcomeDescriptivesEngland = weighted_descriptives_imputed_datasets(long_format_england, standardised_core_subjects)
+gcseDescriptivesEngland = weighted_descriptives_imputed_datasets(long_format_englandContinuous, average_grade)
+
 
 #combine across imputed datasets
 combined_vocabDescriptivesEngland = round(combine_imputed_descriptives(vocabDescriptivesEngland),2) %>% 
@@ -150,7 +191,7 @@ combined_vocabDescriptivesEngland = round(combine_imputed_descriptives(vocabDesc
 combined_caregiverVocabDescriptivesEngland = round(combine_imputed_descriptives(caregiverVocabDescriptivesEngland),2) %>% 
   select(!Imputed) %>% 
   slice_head(n=1)
-combined_continuousOutcomeDescriptivesEngland = round(combine_imputed_descriptives(continuous_outcomeDescriptivesEngland),2) %>% 
+combined_gcseOutcomeDescriptivesEngland = round(combine_imputed_descriptives(gcseDescriptivesEngland),2) %>% 
   select(!Imputed) %>% 
   slice_head(n=1)
 
@@ -282,7 +323,7 @@ benchmarkCombinedEngland = as.data.frame(t(benchmarkCombinedEngland))%>%
 #WALES
 vocabDescriptivesWales = weighted_descriptives_imputed_datasets(long_format_wales, age5_vocab)
 caregiverVocabDescriptivesWales = weighted_descriptives_imputed_datasets(long_format_wales, caregiver_vocab)
-continuous_outcomeDescriptivesWales = weighted_descriptives_imputed_datasets(long_format_wales, standardised_core_subjects)
+gcseDescriptivesWales= weighted_descriptives_imputed_datasets(long_format_walesContinuous, average_grade)
 
 #combine across imputed datasets
 combined_vocabDescriptivesWales = round(combine_imputed_descriptives(vocabDescriptivesWales),2) %>% 
@@ -291,7 +332,7 @@ combined_vocabDescriptivesWales = round(combine_imputed_descriptives(vocabDescri
 combined_caregiverVocabDescriptivesWales = round(combine_imputed_descriptives(caregiverVocabDescriptivesWales),2) %>% 
   select(!Imputed) %>% 
   slice_head(n=1)
-combined_continuousOutcomeDescriptivesWales = round(combine_imputed_descriptives(continuous_outcomeDescriptivesWales),2) %>% 
+combined_gcseOutcomeDescriptivesWales = round(combine_imputed_descriptives(gcseDescriptivesWales),2) %>% 
   select(!Imputed) %>% 
   slice_head(n=1)
 
@@ -413,7 +454,7 @@ benchmarkCombinedWales = as.data.frame(t(benchmarkCombinedWales))%>%
 #SCOTLAND
 vocabDescriptivesScotland = weighted_descriptives_imputed_datasets(long_format_scotland, age5_vocab)
 caregiverVocabDescriptivesScotland = weighted_descriptives_imputed_datasets(long_format_scotland, caregiver_vocab)
-continuous_outcomeDescriptivesScotland = weighted_descriptives_imputed_datasets(long_format_scotland, standardised_core_subjects)
+n5DescriptivesScotland = weighted_descriptives_imputed_datasets(long_format_scotlandContinuous, average_grade_n5)
 
 #combine across imputed datasets
 combined_vocabDescriptivesScotland = round(combine_imputed_descriptives(vocabDescriptivesScotland),2) %>% 
@@ -422,7 +463,7 @@ combined_vocabDescriptivesScotland = round(combine_imputed_descriptives(vocabDes
 combined_caregiverVocabDescriptivesScotland = round(combine_imputed_descriptives(caregiverVocabDescriptivesScotland),2) %>% 
   select(!Imputed) %>% 
   slice_head(n=1)
-combined_continuousOutcomeDescriptivesScotland = round(combine_imputed_descriptives(continuous_outcomeDescriptivesScotland),2) %>% 
+combined_n5OutcomeDescriptivesScotland= round(combine_imputed_descriptives(n5DescriptivesScotland),2) %>% 
   select(!Imputed) %>% 
   slice_head(n=1)
 
@@ -547,7 +588,7 @@ benchmarkCombinedScotland = as.data.frame(t(benchmarkCombinedScotland))%>%
 #NI
 vocabDescriptivesNI = weighted_descriptives_imputed_datasets(long_format_NI, age5_vocab)
 caregiverVocabDescriptivesNI = weighted_descriptives_imputed_datasets(long_format_NI, caregiver_vocab)
-continuous_outcomeDescriptivesNI = weighted_descriptives_imputed_datasets(long_format_NI, standardised_core_subjects)
+gcseDescriptivesNI = weighted_descriptives_imputed_datasets(long_format_NIContinuous, average_grade)
 
 #combine across imputed datasets
 combined_vocabDescriptivesNI = round(combine_imputed_descriptives(vocabDescriptivesNI),2) %>% 
@@ -556,7 +597,7 @@ combined_vocabDescriptivesNI = round(combine_imputed_descriptives(vocabDescripti
 combined_caregiverVocabDescriptivesNI = round(combine_imputed_descriptives(caregiverVocabDescriptivesNI),2) %>% 
   select(!Imputed) %>% 
   slice_head(n=1)
-combined_continuousOutcomeDescriptivesNI = round(combine_imputed_descriptives(continuous_outcomeDescriptivesNI),2) %>% 
+combined_gcseOutcomeDescriptivesNI = round(combine_imputed_descriptives(gcseDescriptivesNI),2) %>% 
   select(!Imputed) %>% 
   slice_head(n=1)
 
@@ -691,16 +732,17 @@ caregiverVocabDescriptivesEngland = combined_caregiverVocabDescriptivesEngland %
   select(Variable, caregiverVocab)  %>% 
   rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = caregiverVocab) 
 
-continuous_outcomeDescriptivesEngland = combined_continuousOutcomeDescriptivesEngland  %>% add_column(paste0(combined_continuousOutcomeDescriptivesEngland$Mean,"(±",combined_continuousOutcomeDescriptivesEngland$SD,")", "\n", "[", combined_continuousOutcomeDescriptivesEngland$lower, ";", combined_continuousOutcomeDescriptivesEngland$upper,"]")) %>% 
-  rename("contOutcome" = `paste0(...)`) %>% 
-  add_column("Variable" = "Continuous Outcome") %>% 
-  select(Variable, contOutcome)  %>% 
-  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = contOutcome) 
+gcse_outcomeDescriptivesEngland = combined_gcseOutcomeDescriptivesEngland  %>% add_column(paste0(combined_gcseOutcomeDescriptivesEngland$Mean,"(±",combined_gcseOutcomeDescriptivesEngland$SD,")", "\n", "[", combined_gcseOutcomeDescriptivesEngland$lower, ";", combined_gcseOutcomeDescriptivesEngland$upper,"]")) %>% 
+  rename("gcseOutcome" = `paste0(...)`) %>% 
+  add_column("Variable" = "Average GCSE grade \n (England, Wales & Northern Ireland)") %>% 
+  select(Variable, gcseOutcomeEngland)  %>% 
+  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = gcseOutcome) 
+
 
 
 #put into one overall dataframe that can then  put into flex table
 
-descriptivesTableEngland = rbind(vocabDescriptivesEngland, caregiverVocabDescriptivesEngland, benchmarkCombinedEngland, continuous_outcomeDescriptivesEngland, 
+descriptivesTableEngland = rbind(vocabDescriptivesEngland, caregiverVocabDescriptivesEngland, benchmarkCombinedEngland, gcse_outcomeDescriptivesEngland, 
                           sexCombinedEngland, ethnicityCombinedEngland, ealCombinedEngland, 
                           nvqCombinedEngland, incomeCombinedEngland, wealthCombinedEngland, occupationCombinedEngland, imdCombinedEngland) %>% 
   add_row(Variable = "Vocabulary", .before = 1) %>%  #add in rows to divide table up 
@@ -722,16 +764,15 @@ caregiverVocabDescriptivesWales = combined_caregiverVocabDescriptivesWales %>% a
   select(Variable, caregiverVocab)  %>% 
   rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = caregiverVocab) 
 
-continuous_outcomeDescriptivesWales = combined_continuousOutcomeDescriptivesWales  %>% add_column(paste0(combined_continuousOutcomeDescriptivesWales$Mean,"(±",combined_continuousOutcomeDescriptivesWales$SD,")", "\n", "[", combined_continuousOutcomeDescriptivesWales$lower, ";", combined_continuousOutcomeDescriptivesWales$upper,"]")) %>% 
-  rename("contOutcome" = `paste0(...)`) %>% 
-  add_column("Variable" = "Continuous Outcome") %>% 
-  select(Variable, contOutcome)  %>% 
-  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = contOutcome) 
-
+gcse_outcomeDescriptivesWales = combined_gcseOutcomeDescriptivesWales %>% add_column(paste0(combined_gcseOutcomeDescriptivesWales$Mean,"(±",combined_gcseOutcomeDescriptivesWales$SD,")", "\n", "[", combined_gcseOutcomeDescriptivesWales$lower, ";", combined_gcseOutcomeDescriptivesWales$upper,"]")) %>% 
+  rename("gcseOutcome" = `paste0(...)`) %>% 
+  add_column("Variable" = "Average GCSE grade \n (England, Wales & Northern Ireland)") %>% 
+  select(Variable, gcseOutcome)  %>% 
+  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = gcseOutcome) 
 
 #put into one overall dataframe that can then  put into flex table
 
-descriptivesTableWales = rbind(vocabDescriptivesWales, caregiverVocabDescriptivesWales, benchmarkCombinedWales, continuous_outcomeDescriptivesWales, 
+descriptivesTableWales = rbind(vocabDescriptivesWales, caregiverVocabDescriptivesWales, benchmarkCombinedWales, gcse_outcomeDescriptivesWales, 
                           sexCombinedWales, ethnicityCombinedWales, ealCombinedWales, 
                           nvqCombinedWales, incomeCombinedWales, wealthCombinedWales, occupationCombinedWales, imdCombinedWales) %>% 
   add_row(Variable = "Vocabulary", .before = 1) %>%  #add in rows to divide table up 
@@ -753,16 +794,16 @@ caregiverVocabDescriptivesScotland = combined_caregiverVocabDescriptivesScotland
   select(Variable, caregiverVocab)  %>% 
   rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = caregiverVocab) 
 
-continuous_outcomeDescriptivesScotland = combined_continuousOutcomeDescriptivesScotland  %>% add_column(paste0(combined_continuousOutcomeDescriptivesScotland$Mean,"(±",combined_continuousOutcomeDescriptivesScotland$SD,")", "\n", "[", combined_continuousOutcomeDescriptivesScotland$lower, ";", combined_continuousOutcomeDescriptivesScotland$upper,"]")) %>% 
-  rename("contOutcome" = `paste0(...)`) %>% 
-  add_column("Variable" = "Continuous Outcome") %>% 
-  select(Variable, contOutcome)  %>% 
-  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = contOutcome) 
+n5_outcomeDescriptivesScotland = combined_n5OutcomeDescriptivesScotland  %>% add_column(paste0(combined_n5OutcomeDescriptivesScotland$Mean,"(±",combined_n5OutcomeDescriptivesScotland$SD,")", "\n", "[", combined_n5OutcomeDescriptivesScotland$lower, ";", combined_n5OutcomeDescriptivesScotland$upper,"]")) %>% 
+  rename("n5Outcome" = `paste0(...)`) %>% 
+  add_column("Variable" = "Average N5 grade \n (Scotland)") %>% 
+  select(Variable, n5Outcome)  %>% 
+  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = n5Outcome) 
 
 
 #put into one overall dataframe that can then  put into flex table
 
-descriptivesTableScotland = rbind(vocabDescriptivesScotland, caregiverVocabDescriptivesScotland, benchmarkCombinedScotland, continuous_outcomeDescriptivesScotland, 
+descriptivesTableScotland = rbind(vocabDescriptivesScotland, caregiverVocabDescriptivesScotland, benchmarkCombinedScotland, n5_outcomeDescriptivesScotland, 
                           sexCombinedScotland, ethnicityCombinedScotland, ealCombinedScotland, 
                           nvqCombinedScotland, incomeCombinedScotland, wealthCombinedScotland, occupationCombinedScotland, imdCombinedScotland) %>% 
   add_row(Variable = "Vocabulary", .before = 1) %>%  #add in rows to divide table up 
@@ -784,16 +825,17 @@ caregiverVocabDescriptivesNI = combined_caregiverVocabDescriptivesNI %>% add_col
   select(Variable, caregiverVocab)  %>% 
   rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = caregiverVocab) 
 
-continuous_outcomeDescriptivesNI = combined_continuousOutcomeDescriptivesNI  %>% add_column(paste0(combined_continuousOutcomeDescriptivesNI$Mean,"(±",combined_continuousOutcomeDescriptivesNI$SD,")", "\n", "[", combined_continuousOutcomeDescriptivesNI$lower, ";", combined_continuousOutcomeDescriptivesNI$upper,"]")) %>% 
-  rename("contOutcome" = `paste0(...)`) %>% 
-  add_column("Variable" = "Continuous Outcome") %>% 
-  select(Variable, contOutcome)  %>% 
-  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = contOutcome) 
+gcse_outcomeDescriptivesNI = combined_gcseOutcomeDescriptivesNI %>% add_column(paste0(combined_gcseOutcomeDescriptivesNI$Mean,"(±",combined_gcseOutcomeDescriptivesNI$SD,")", "\n", "[", combined_gcseOutcomeDescriptivesNI$lower, ";", combined_gcseOutcomeDescriptivesNI$upper,"]")) %>% 
+  rename("gcseOutcome" = `paste0(...)`) %>% 
+  add_column("Variable" = "Average GCSE grade \n (England, Wales & Northern Ireland)") %>% 
+  select(Variable, gcseOutcome)  %>% 
+  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = gcseOutcome) 
 
+#put i
 
 #put into one overall dataframe that can then  put into flex table
 
-descriptivesTableNI = rbind(vocabDescriptivesNI, caregiverVocabDescriptivesNI, benchmarkCombinedNI, continuous_outcomeDescriptivesNI, 
+descriptivesTableNI = rbind(vocabDescriptivesNI, caregiverVocabDescriptivesNI, benchmarkCombinedNI, gcse_outcomeDescriptivesNI, 
                           sexCombinedNI, ethnicityCombinedNI, ealCombinedNI, 
                           nvqCombinedNI, incomeCombinedNI, wealthCombinedNI, occupationCombinedNI, imdCombinedNI) %>% 
   add_row(Variable = "Vocabulary", .before = 1) %>%  #add in rows to divide table up 
