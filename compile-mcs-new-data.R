@@ -1737,6 +1737,119 @@ wide_n5_grades = wide_n5_grades %>%
 core_n5_grades <- wide_n5_grades %>% select(mcsid, c("Language: English",  contains("math"), "Computing Science", "Biology", "Chemistry", "Physics"))
 names(core_n5_grades) <- c("mcsid", "english", "maths","computer_science", "biology", "chemistry", "physics")
 
+#highers 
+highers = qualifications1 %>% filter(gc_s_qual_high == 1)
+highers = qualifications1[qualifications1$mcsid %in% highers$mcsid,] 
+
+
+highers = highers %>% select(mcsid, gcnum00, gc_rowid,gc_s_qual_hign_r30, gc_l_hgsb_name_r30, gc_l_hggb) 
+names(highers) <- c("mcsid", "cm_number", "row_id", "total_quals", "subject_name", "subject_grade")
+
+
+highers_subject_key = c(`3`	 = "Art and Design",
+                        `4`	 = "Beauty (Skills for Work)",
+                        `5`	 = "Biology",
+                        `6`	 = "Business Management",
+                        `7`	 = "Language: Cantonese",
+                        `9`	 = "Chemistry",
+                        `10`	 = "Childcare and Development",
+                        `12`	 = "Computing Science",
+                        `15`	 = "Drama",
+                        `18`	 = "Language: English",
+                        `22`	 = "Language: French",
+                        `23`	 = "Language: Gaelic (learners)",
+                        `25`	 = "Geography",
+                        `27`	 = "Graphic Communication",
+                        `29`	 = "Health and Social Care (Skills for Work)",
+                        `31`	 = "History",
+                        `32`	 = "Human Biology",
+                        `36`	 = "Mathematics",
+                        `39`	 = "Modern Studies",
+                        `40`	 = "Music",
+                        `44`	 = "Physical Education",
+                        `45`	 = "Physics",
+                        `51`	 = "Language: Spanish",
+                        `52`	 = "Statistics",
+                        `53`	 = "Language: Urdu?",
+                        `54`	 = "Architectural Technology",
+                        `55`	 = "Automotive Engineering",
+                        `56`	 = "Biotechnology",
+                        `57`	 = "Building and Architectural Technology",
+                        `58`	 = "Building Services",
+                        `59`	 = "Civil Engineering",
+                        `60`	 = "Language: Classical Greek",
+                        `61`	 = "Language: Chinese Language and Culture",
+                        `63`	 = "Construction",
+                        `65`	 = "Early Education and Childcare",
+                        `66`	 = "Early Years Care and Education",
+                        `67`	 = "Electrical Engineering",
+                        `68`	 = "Electronics",
+                        `69`	 = "Fabrication and Welding Engineering",
+                        `73`	 = "Home Economics: Lifestyle and Consumer Technology",
+                        `74`	 = "Hospitality: Food and Drink Service",
+                        `75`	 = "Hospitality: Professional Cookery",
+                        `76`	 = "Hospitality: Reception and Accommodation Operations",
+                        `77`	 = "Information Systems",
+                        `78`	 = "Land Use",
+                        `79`	 = "Managing Environmental Resources",
+                        `80`	 = "Manufacturing",
+                        `81`	 = "Mechanical Engineering",
+                        `82`	 = "Mechatronics",
+                        `86`	 = "Language: Russian",
+                        `87`	 = "Technological Studies",
+                        `88`	 = "Travel and Tourism",
+                        `90`	 = "Recoded due to low counts - check SA",
+                        `-9`	 = "Refusal",
+                        `-8`	 = "Do not know",
+                        `-1`	 = "Not applicable")
+highers$subject_name = as.factor(highers$subject_name)
+highers$subject_name =  recode(highers$subject_name, !!!highers_subject_key)
+highers = highers %>%  filter(!is.na(subject_name))
+
+
+#grades
+#`1.0	Label = A
+#`2.0	Label = B
+#`3.0	Label = C
+#`4.0	Label = D
+#`5.0	Label = No award (fail)
+#6 = recoded due to low counts
+#`-9.0	Label = Refusal
+#`-8.0	Label = Do not know
+#`-1.0	Label = Not applicable
+#recode so that A is a higher number. 
+#check what want scale of this to be  when meet!!
+
+highers$subject_grade =  as.numeric(highers$subject_grade)
+highers$subject_grade  = recode(highers$subject_grade, `1` = 5, `2` = 4, `3` = 3, `4` =2, `5` = 0)
+
+#convert to wide format
+highers_grades <- highers %>% select(mcsid, row_id,  subject_name, subject_grade)
+highers_grades$subject_name = as.character(highers_grades$subject_name)
+highers_grades$subject_grade = as.numeric(highers_grades$subject_grade)
+#wide_highers_grades = pivot_wider(highers_grades, id_cols=c("mcsid"), names_from = subject_name,
+#  values_from = subject_grade, values_fill = 0)
+
+
+#identify those who have duplicate subjects based on wide data
+#duplicated_wide = wide_grades$mcsid[duplicated(wide_grades$mcsid)]
+#remove duplicate subjects and keep the subject with the higher grade
+highers_grades1 <- highers_grades %>% group_by(mcsid) %>% 
+  arrange(desc(subject_grade), .by_group = TRUE) %>%  #arrange subject_grade by descending order, so distinct can select the higher entry 
+  distinct(subject_name, .keep_all = TRUE) #this will give only one of the duplicated values - because have sorted subject grade in descending order, this will keep the higher grade for the duplicated subject
+
+
+#convert to wide dataset where each column name is a subject with the grade as the entry per CM
+wide_highers_grades = highers_grades1 %>% select(!row_id)
+wide_highers_grades = wide_highers_grades %>%
+  group_by(mcsid, subject_name) %>%
+  mutate(row = row_number()) %>%
+  tidyr::pivot_wider(names_from = subject_name, values_from = subject_grade) %>% 
+  select(-row)
+
+core_highers_grades <- wide_highers_grades %>% select(mcsid, c("Language: English",  contains("Math"), "Computing Science", contains("Biology"), "Chemistry", "Physics"))
+names(core_highers_grades) <- c("mcsid", "english_highers", "maths_highers","computer_science_highers","human_biology_highers", "biology_highers", "chemistry_highers", "physics_highers")
+
 #those who have only n4 quals = will be 0 in binary variable (dont have core subjects grade 4 and above)
 n4_only = qualifications1 %>% filter(gc_s_qual_four == 1 & gc_s_qual_five == 2) #n4 = yes, n5 = no
 #n4_only = n4_only %>% select(mcsid, gc_s_qual_four, gc_s_qual_five)
@@ -1772,13 +1885,14 @@ btec_only_scotland  = btec_only_scotland  %>% select(mcsid,btec_only1_scotland)
 core_grades_scotland = merge(all = TRUE, core_n5_grades, n4_only, by = "mcsid")
 core_grades_scotland = merge(all = TRUE, core_grades_scotland, no_quals_scotland, by = "mcsid")
 core_grades_scotland = merge(all = TRUE, core_grades_scotland, btec_only_scotland, by = "mcsid")
+core_grades_scotland = merge(all = TRUE, core_grades_scotland, core_highers_grades, by = "mcsid")
 
-#grade c or above (coded as 3 in N5 data)
-core_grades_n5 <-  core_grades_scotland %>%  mutate(benchmarkN5 = case_when((english >= 3 )  & 
-                                                                              (maths >= 3 )  &
-                                                                              (computer_science >=3 |
-                                                                                 biology >= 3 | chemistry >= 3 | physics >= 3 ) ~ 1,
-                                                                            TRUE ~ 0))
+#grade c or above (coded as 3 in N5 data) - or above grade C on core subjects in higher grade as can take combination of subjects 
+core_grades_n5 <-  core_grades_scotland %>%  mutate(benchmarkN5highers = case_when((english >= 3 | english_highers >= 3)  & 
+                                                                                     (maths >= 3 | maths_highers >=3)  &
+                                                                                     (computer_science >=3 | biology >= 3 | chemistry >= 3 | physics >= 3 | 
+                                                                                        computer_science_highers >= 3 | biology_highers>=3 | chemistry_highers >=3 |physics_highers >=3 ) ~ 1,
+                                                                                   TRUE ~ 0))
 
 #combine N5 and GCSE core grades into one variable
 #first combine the dataframes
@@ -1789,12 +1903,12 @@ core_grades_binary = core_grades_binary %>% select(mcsid, benchmark, benchmarkN5
 
 
 core_grades_binary= core_grades_binary %>% mutate(benchmark_binary = 
-                                                    case_when(benchmark == 0 & benchmarkN5 == 1 ~  1, 
-                                                              benchmark == 1 & benchmarkN5 == 1 ~ 1,
-                                                              benchmark == 0 & benchmarkN5 == 0 ~ 0,
-                                                              benchmark == 1 & benchmarkN5 == 0 ~ 1,
-                                                              is.na(benchmarkN5) ~ benchmark, 
-                                                              is.na(benchmark) ~ benchmarkN5, 
+                                                    case_when(benchmark == 0 & benchmarkN5highers == 1 ~  1, 
+                                                              benchmark == 1 & benchmarkN5highers == 1 ~ 1,
+                                                              benchmark == 0 & benchmarkN5highers == 0 ~ 0,
+                                                              benchmark == 1 & benchmarkN5highers == 0 ~ 1,
+                                                              is.na(benchmarkN5highers) ~ benchmark, 
+                                                              is.na(benchmark) ~ benchmarkN5highers, 
                                                               TRUE ~ 0)) %>% 
   select(mcsid, benchmark_binary)
 
@@ -1844,17 +1958,37 @@ core_subjects_score = core_subjects_score %>% mutate(average_grade = rowMeans(.[
 core_subjects_score$average_grade = round(core_subjects_score$average_grade, 2)
 
 #N5 CONTINOUS VARIABLE
-n5_english_score = as.data.frame(core_n5_grades %>% select(mcsid, english))
-n5_maths_score = as.data.frame(core_n5_grades %>% select(mcsid, maths))
-n5_science_subjects = as.data.frame(core_n5_grades %>% select(mcsid, computer_science, biology, chemistry, physics)) %>% 
-  mutate (science_score = rowMeans(.[-1], na.rm = TRUE), .after = 1)
+core_subjects_n5 = merge(all=TRUE, core_n5_grades, core_highers_grades, by = "mcsid")
+n5_english_score = as.data.frame(core_subjects_n5 %>% select(mcsid, english, english_highers)) %>% 
+  mutate (english_score = case_when(!is.na(english) ~ english, 
+                                    is.na(english) ~ english_highers))
+n5_maths_score = as.data.frame(core_subjects_n5 %>% select(mcsid, maths, maths_highers)) %>% 
+  mutate (maths_score = case_when(!is.na(maths) ~ maths, 
+                                  is.na(maths) ~maths_highers))
+n5_science_subjects = as.data.frame(core_subjects_n5 %>% select(mcsid, computer_science, biology, chemistry, physics)) %>% 
+  mutate (science_score_n5 = rowMeans(.[-1], na.rm = TRUE), .after = 1)
+highers_science_subjects = as.data.frame(core_subjects_n5 %>% select(mcsid, computer_science_highers, biology_highers, chemistry_highers, physics_highers)) %>% 
+  mutate (science_score_highers = rowMeans(.[-1], na.rm = TRUE), .after = 1)
+scotland_science = merge(all = TRUE, n5_science_subjects, highers_science_subjects, by = "mcsid") %>% 
+  mutate (science_score = case_when(!is.na(science_score_n5) ~ science_score_n5, 
+                                  is.na(science_score_n5) ~science_score_highers))
+  
 #convert NaN to NA
-n5_science_subjects$science_score[is.nan(n5_science_subjects$science_score)]<-NA
-n5_science_subjects$science_score = round(n5_science_subjects$science_score, 2)
-n5_science_score = n5_science_subjects %>% select(mcsid, science_score)
+#english 
+n5_english_score$english_score[is.nan(n5_english_score$english_score)]<-NA
+n5_english_score$science_score = round(n5_english_score$english_score, 2)
+n5_english_score = n5_english_score %>% select(mcsid, english_score)
+#maths
+n5_maths_score$maths_score[is.nan(n5_maths_score$maths_score)]<-NA
+n5_maths_score$science_score = round(n5_maths_score$maths_score, 2)
+n5_maths_score = n5_maths_score %>% select(mcsid, maths_score)
+#science
+scotland_science$science_score[is.nan(scotland_science$science_score)]<-NA
+scotland_science$science_score = round(scotland_science$science_score, 2)
+scotland_science = scotland_science %>% select(mcsid, science_score)
 
 n5_core_subjects_score = merge(all=TRUE, n5_english_score, n5_maths_score, by="mcsid")
-n5_core_subjects_score = merge(all= TRUE, n5_core_subjects_score, n5_science_score, by="mcsid")
+n5_core_subjects_score = merge(all= TRUE, n5_core_subjects_score, scotland_science, by="mcsid")
 
 #get mean of these scores. need to have a response for english, maths and science score
 n5_core_subjects_score = n5_core_subjects_score %>% mutate(average_grade_n5 = rowMeans(.[-1]), 
@@ -1941,10 +2075,21 @@ cor(continuous_outcomes$standardised_core_subjects, continuous_outcomes$standard
 #for p value too
 cor.test(continuous_outcomes$standardised_core_subjects, continuous_outcomes$standardised_highest_grade, method = "pearson")
 
+#sensitivity analysis 1: by country. need country specific weights for this analysis. ####
+#country specific weights 
+age5_countryWeight = mcs_family %>% select(mcsid, covwt1)
+sample_countryWeight = mcs_family %>% select(mcsid, weight1)
+countryWeight = merge(all=TRUE, age5_countryWeight, sample_countryWeight, by="mcsid") %>% 
+  mutate(countryWeight = case_when(!is.na(covwt1) ~ covwt1, 
+                                   is.na(covwt1) ~ weight1)) %>% 
+  select(mcsid, countryWeight)
+
+
 #VARIABLES FOR IMPUTATION/ANALYSIS - COMBINE INTO ONE DATAFRAME.####
 #change order of these so auxiliary and SES variables first - for order of imputation
 #also add wealth and EAL when resolved these issues.
-analysis_data = merge(all=TRUE, weight, sex, by = "mcsid")
+analysis_data = merge(all=TRUE, weight, countryWeight, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, sex, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, ethnicity, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, EAL, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, age_atBirth, by = "mcsid")
@@ -1992,40 +2137,9 @@ write.csv(continuous_educationComplete, file = "continuous_educationComplete_dat
 
 #mcs_analysis = analysis_data[!is.na(analysis_data$age5_vocab),]
 
-#sensitivity analysis 1: by country. need country specific weights for this analysis. ####
-#country specific weights 
-age5_countryWeight = mcs_family %>% select(mcsid, covwt1)
-sample_countryWeight = mcs_family %>% select(mcsid, weight1)
-countryWeight = merge(all=TRUE, age5_countryWeight, sample_countryWeight, by="mcsid") %>% 
-  mutate(countryWeight = case_when(!is.na(covwt1) ~ covwt1, 
-                            is.na(covwt1) ~ weight1)) %>% 
-  select(mcsid, countryWeight)
 
-#create analysis data. split into country post imputation. 
 
-countryAnalysis_data = merge(all=TRUE, countryWeight, sex, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, ethnicity, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, EAL, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, age_atBirth, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, tenure, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, accommodation, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, parent_nvq, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, breastfed, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, carers_in_hh, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, income, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, imd, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, occupational_status, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, wealth_variables, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, country_17, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, caregiver_vocabTotal, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, age5_vocab, by = "mcsid")
-countryAnalysis_data = merge(all=TRUE, countryAnalysis_data, education_main_outcomes, by = "mcsid")
 
-#select sample - those with a response on age 5 vocabulary test OR an educaion outcome
-countrySpecific_analysis = countryAnalysis_data %>% filter((!is.na(age5_vocab)) | (!is.na(benchmark_binary)))
-
-#save dataset
-write.csv(countrySpecific_analysis, file = "countrySpecific_data.csv")
 
 # outcome variable sensitivity check - welsh included as a core variable for those in Wales. ####
 
@@ -2077,14 +2191,14 @@ core_grades_WELSH <- combined_core_grades_WELSH %>%
 #first combine the dataframes
 #replace is/na with the other one 
 core_grades_binary_WELSH= merge (all=TRUE, core_grades_WELSH, core_grades_n5, by="mcsid")
-core_grades_binary_WELSH = core_grades_binary_WELSH %>% select(mcsid, benchmark_WELSH, benchmarkN5) %>%  
+core_grades_binary_WELSH = core_grades_binary_WELSH %>% select(mcsid, benchmark_WELSH, benchmarkN5highers) %>%  
   mutate(benchmark_binary_welsh = 
-           case_when(benchmark_WELSH == 0 & benchmarkN5 == 1 ~  1, 
-                     benchmark_WELSH == 1 & benchmarkN5 == 1 ~ 1,
-                     benchmark_WELSH == 0 & benchmarkN5 == 0 ~ 0,
-                     benchmark_WELSH == 1 & benchmarkN5 == 0 ~ 1,
-                     is.na(benchmarkN5) ~ benchmark_WELSH, 
-                     is.na(benchmark_WELSH) ~ benchmarkN5, 
+           case_when(benchmark_WELSH == 0 & benchmarkN5highers == 1 ~  1, 
+                     benchmark_WELSH == 1 & benchmarkN5highers == 1 ~ 1,
+                     benchmark_WELSH == 0 & benchmarkN5highers == 0 ~ 0,
+                     benchmark_WELSH == 1 & benchmarkN5highers == 0 ~ 1,
+                     is.na(benchmarkN5highers) ~ benchmark_WELSH, 
+                     is.na(benchmark_WELSH) ~ benchmarkN5highers, 
                      TRUE ~ 0)) %>% 
   select(mcsid, benchmark_binary_welsh)
 
