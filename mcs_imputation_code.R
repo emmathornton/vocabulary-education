@@ -12,7 +12,7 @@ library(lubridate)
 library(tidyverse)
 
 #open mcs data####
-vocabulary_education<-read.csv("education_data.csv")
+vocabulary_education<-read.csv("education_data1.csv")
 vocabulary_education[,1]<- NULL
 
 #make dummy variables for imputation - n - 1 levels as one will be the reference category. by default in regressions this is the lowest number so  take out first level 
@@ -92,6 +92,7 @@ vocabulary_education$cm_breastfed=as.factor(vocabulary_education$cm_breastfed)
 vocabulary_education$accommodation_type=as.factor(vocabulary_education$accommodation_type)
 vocabulary_education$housing_tenure=as.factor(vocabulary_education$housing_tenure)
 vocabulary_education$benchmark_binary=as.factor(vocabulary_education$benchmark_binary)
+vocabulary_education$benchmark_binary_welsh=as.factor(vocabulary_education$benchmark_binary_welsh)
 vocabulary_education$country=as.factor(vocabulary_education$country)
 
 #multiple imputation####
@@ -110,7 +111,7 @@ predM = init$predictorMatrix
 
 meth[c("mcsid")]=""
 meth[c("weight")]=""
-
+meth[c("countryWeight")]=""
 #Now let specify the methods for imputing the missing values. 
 #There are specific methods for continuous, binary and ordinal variables. 
 #I set different methods for each variable. You can add more than one variable in each methods.
@@ -141,8 +142,9 @@ meth[c("debt")]="cart"
 meth[c("country")]="polyreg"
 meth[c("caregiver_vocab")]="cart"
 meth[c("age5_vocab")]="cart" 
-meth[c("benchmark_binary")]="logreg"
-meth[c("standardised_core_subjects")]="cart" 
+meth[c("benchmark_binary", "benchmark_binary_welsh")]="logreg"
+meth[c("standardised_core_subjects", "standardised_core_subjectsWelsh", 
+       "standardised_english", "standardised_maths", "standardised_science")]="cart" 
 meth[c("vocab.nvq1", "vocab.nvq2", "vocab.nvq3", "vocab.nvq4", "vocab.nvq5")] = "cart"
 meth[c("vocab.income2", "vocab.income3", "vocab.income4", "vocab.income4", "vocab.income5")] = "cart"
 meth[c("vocab.occupation2","vocab.occupation3", "vocab.occupation4" )] = "cart"
@@ -154,7 +156,8 @@ blocksvec=names(meth)
 #set predictor matrix so that interaction terms and main effects arent predicting themselves
 #if dont want a variable as a predictor, set it to 0 in the predictor matrix 
 predM = predM[blocksvec,]
-predM[,c("mcsid")]=0
+predM[,c("mcsid", "countryWeight", "benchmark_binary_welsh", "standardised_core_subjectsWelsh",
+         "standardised_english", "standardised_maths", "standardised_science")]=0
 predM[c("vocab.nvq1", "vocab.nvq2", "vocab.nvq3", "vocab.nvq4", "vocab.nvq5"), 
       c("highest_nvq", "age5_vocab")] = 0
 predM[c("vocab.nvq1", "vocab.nvq2", "vocab.nvq3", "vocab.nvq4", "vocab.nvq5"), 
@@ -177,6 +180,9 @@ predM[c("vocab.imd2", "vocab.imd3", "vocab.imd4", "vocab.imd5",
         "vocab.imd6", "vocab.imd7", "vocab.imd8", "vocab.imd9", "vocab.imd10"), 
       c("vocab.imd2", "vocab.imd3", "vocab.imd4", "vocab.imd5", 
         "vocab.imd6", "vocab.imd7", "vocab.imd8", "vocab.imd9", "vocab.imd10")] = 0
+predM[c("benchmark_binary_welsh", "standardised_core_subjectsWelsh",
+        "standardised_english", "standardised_maths", "standardised_science"), 
+      c("standardised_core_subjects", "benchmark_binary")] = 0
 
 vis = c("mcsid", "weight","sex","ethnicity","EAL","age_atBirth","housing_tenure","accommodation_type" , 
         "highest_nvq", "vocab.nvq1", "vocab.nvq2","vocab.nvq3","vocab.nvq4", "vocab.nvq5", "cm_breastfed","carers_in_hh",
@@ -184,7 +190,8 @@ vis = c("mcsid", "weight","sex","ethnicity","EAL","age_atBirth","housing_tenure"
         "imd", "vocab.imd2","vocab.imd3","vocab.imd4","vocab.imd5","vocab.imd6" ,"vocab.imd7","vocab.imd8" ,"vocab.imd9",   
         "vocab.imd10","occupational_status", "vocab.occupation2","vocab.occupation3","vocab.occupation4",
         "mortgage","houseValue", "savings", "debt","country","caregiver_vocab",
-        "age5_vocab","benchmark_binary", "standardised_core_subjects")
+        "age5_vocab","benchmark_binary", "standardised_core_subjects","benchmark_binary_welsh", "standardised_core_subjectsWelsh",
+        "standardised_english", "standardised_maths", "standardised_science")
 #now lets run the imputation (m=25) imputations
 
 imputed_mcs2 = mice(vocabulary_education, blocks=blocksvec, method=meth, visitSequence = vis, seed = 1895, predictorMatrix=predM, m=25) #can change this to a smaller numebr so runs quicker when figuring out. 
