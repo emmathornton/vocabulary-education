@@ -45,8 +45,16 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-20_vocabulary_education_continuousOutcomeComplete/2021-12-20_vocabulary_education_continuousOutcomeComplete.Rdata")
-imputed_mcs2 = mi.res
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2022-01-04_vocabulary_education_imputedMAIN/2022-01-04_vocabulary_education_imputedMAIN.Rdata")
+
+imputed_data= mi.res
+
+long_format_mcs <- mice::complete(imputed_data, "long", include=TRUE)
+
+continuous_cc = long_format_mcs %>% filter(.imp ==0 & !is.na(standardised_core_subjects))
+continuous_complete_cases = long_format_mcs[long_format_mcs$mcsid %in% continuous_cc$mcsid,] 
+imputed_mcs2 = as.mids(continuous_complete_cases)
+
 
 ```
 
