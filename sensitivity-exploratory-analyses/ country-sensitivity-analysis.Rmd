@@ -1,3 +1,8 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 title: "R Notebook"
 output:
   word_document: default
@@ -43,7 +48,8 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-20_vocabulary_education_countrySpecificData/2021-12-20_vocabulary_education_countrySpecificData.Rdata")
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2022-01-04_vocabulary_education_imputedMAIN/2022-01-04_vocabulary_education_imputedMAIN.Rdata")
+
 imputed_mcs2 = mi.res
 ```
 
@@ -51,6 +57,9 @@ split into 4 countries - do this on long data then convert back to mids format
 
 ```{r}
 long_format_mcs <- mice::complete(imputed_mcs2, "long", include=TRUE)
+
+long_format_mcs = long_format_mcs %>% select(!"weight") %>% 
+  rename("weight" = countryWeight)
 
 england = filter(long_format_mcs, country == 1) %>% 
   select(!country)
