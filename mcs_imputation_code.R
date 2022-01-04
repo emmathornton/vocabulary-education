@@ -184,7 +184,7 @@ predM[c("benchmark_binary_welsh", "standardised_core_subjectsWelsh",
         "standardised_english", "standardised_maths", "standardised_science"), 
       c("standardised_core_subjects", "benchmark_binary")] = 0
 
-vis = c("mcsid", "weight","sex","ethnicity","EAL","age_atBirth","housing_tenure","accommodation_type" , 
+vis = c("mcsid", "weight", "countryWeight", "sex","ethnicity","EAL","age_atBirth","housing_tenure","accommodation_type" , 
         "highest_nvq", "vocab.nvq1", "vocab.nvq2","vocab.nvq3","vocab.nvq4", "vocab.nvq5", "cm_breastfed","carers_in_hh",
         "oecd_income" , "vocab.income2","vocab.income3","vocab.income4","vocab.income5" ,
         "imd", "vocab.imd2","vocab.imd3","vocab.imd4","vocab.imd5","vocab.imd6" ,"vocab.imd7","vocab.imd8" ,"vocab.imd9",   
