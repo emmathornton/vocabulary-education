@@ -43,8 +43,16 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-20_vocabulary_education_binaryOutcomeCompleteCases/2021-12-20_vocabulary_education_binaryOutcomeCompleteCases.Rdata")
-imputed_mcs2 = mi.res
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2022-01-04_vocabulary_education_imputedMAIN/2022-01-04_vocabulary_education_imputedMAIN.Rdata")
+
+imputed_data= mi.res
+
+long_format_mcs <- mice::complete(imputed_data, "long", include=TRUE)
+
+binary_cc = long_format_mcs %>% filter(.imp ==0 & !is.na(benchmark_binary))
+binary_complete_cases = long_format_mcs[long_format_mcs$mcsid %in% binary_cc$mcsid,] 
+imputed_mcs2 = as.mids(binary_complete_cases)
+
 ```
 
 RQ1 & 2 - DOES VOCAB PREDICT EDUCATIONAL ATTAINMENT?
@@ -217,7 +225,7 @@ results_binaryCC <- regression_resultsTable %>%
   hline_top(j = 2:4, part = "all", border = my_border) %>% 
   bold(j = 1, i = c(1,47, 49), bold = TRUE) %>% 
   italic(j = 1, i = c(1,47, 49), italic = TRUE) %>% 
-  add_header_lines(values = c("Table S1: Predicting Educational Attainment (≥grade 4 on core subjects, complete cases) (N=9,866)"))
+  add_header_lines(values = c("Table S1: Predicting Educational Attainment (≥grade 4 on core subjects, complete cases) (N=9,868)"))
   
   
 
