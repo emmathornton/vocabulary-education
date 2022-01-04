@@ -45,8 +45,16 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-20_vocabulary_education_welshSensitivity/2021-12-20_vocabulary_education_welshSensitivity.Rdata")
-imputed_mcs2 = mi.res
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2022-01-04_vocabulary_education_imputedMAIN/2022-01-04_vocabulary_education_imputedMAIN.Rdata")
+
+imputed_data= mi.res
+
+long_format_mcs <- mice::complete(imputed_data, "long", include=TRUE)
+
+welsh_sensitivity = long_format_mcs %>% filter(.imp ==0 & (!is.na(age5_vocab)) | (!is.na(benchmark_binary_welsh)))
+welshSensitivity = long_format_mcs[long_format_mcs$mcsid %in% welsh_sensitivity$mcsid,] 
+imputed_mcs2 = as.mids(welshSensitivity)
+
 
 ```
 
