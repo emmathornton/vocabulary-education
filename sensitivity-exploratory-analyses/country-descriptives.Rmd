@@ -733,10 +733,10 @@ caregiverVocabDescriptivesEngland = combined_caregiverVocabDescriptivesEngland %
   rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = caregiverVocab) 
 
 gcse_outcomeDescriptivesEngland = combined_gcseOutcomeDescriptivesEngland  %>% add_column(paste0(combined_gcseOutcomeDescriptivesEngland$Mean,"(±",combined_gcseOutcomeDescriptivesEngland$SD,")", "\n", "[", combined_gcseOutcomeDescriptivesEngland$lower, ";", combined_gcseOutcomeDescriptivesEngland$upper,"]")) %>% 
-  rename("gcseOutcome" = `paste0(...)`) %>% 
+  rename("gcseOutcomeEngland" = `paste0(...)`) %>% 
   add_column("Variable" = "Average GCSE grade \n (England, Wales & Northern Ireland)") %>% 
   select(Variable, gcseOutcomeEngland)  %>% 
-  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = gcseOutcome) 
+  rename("Proportion (%) or \n Mean(±SD) [95% CIs]" = gcseOutcomeEngland) 
 
 
 
