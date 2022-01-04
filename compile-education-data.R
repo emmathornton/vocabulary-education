@@ -1130,10 +1130,10 @@ Igcse = Igcse %>%  filter(!is.na(subject_name)) #remove the NA subject name as d
 #these are different to GCSE grades!! so the gcse grade recoding will be different here - updated. 
 # recode so that 1= 1, 2=2, 3=3, 4=4, 5=5, 6=6, 7=7, 8=8, 9=9. at the moment in the data, 1= grade 9 etc. 
 #so when recode, 1=9, 2=8 etc 
-#in data 13 = c*. when googled, this doesnt seem to be a possible grade for iGCSE so have made 13 = 4, same as a normal grade c. 
+#in data 13 = c*.c* = grade introduced for NI GCSEs in 2019, equates to grade 5.
 Igcse$subject_grade =  as.numeric(Igcse$subject_grade)
 Igcse$subject_grade  = recode(Igcse$subject_grade, `1` = 9, `2` = 8, `3` = 7, `4` = 6, `6`= 4, `7` = 3, `8` = 2, `9` = 1,
-                              `10` = 8.5, `11` = 7, `12` = 5.5, `13` =4, 
+                              `10` = 8.5, `11` = 7, `12` = 5.5, `13` =5, 
                               `14` = 4, `15` = 3, `16` = 2, `17` = 1.5, `19` = 0)
 
 #cm have grade 4 or above on core subjects ####
