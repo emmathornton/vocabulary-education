@@ -86,11 +86,14 @@ weighted_proportions_imputed_datasets<- function (dataAll,variable) {
   return (results)
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-20_vocabulary_education_countrySpecificData/2021-12-20_vocabulary_education_countrySpecificData.Rdata")
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2022-01-04_vocabulary_education_imputedMAIN/2022-01-04_vocabulary_education_imputedMAIN.Rdata")
 imputed_mcs2 = mi.res
 
 #split into 4 countries
 long_format_mcs <- mice::complete(imputed_mcs2, "long", include=TRUE)
+
+long_format_mcs = long_format_mcs %>% select(!"weight") %>% 
+  rename("weight" = countryWeight)
 
 england = filter(long_format_mcs, country == 1) %>% 
   select(!country)
@@ -135,7 +138,7 @@ long_format_NI <- mice::complete(northern_ireland_imputed, "long", include=FALSE
 
 #descriptives for GCSE and N5
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2021-12-24_vocabulary_education_imputedContinuousDescriptives/2021-12-24_vocabulary_education_imputedContinuousDescriptives.Rdata")
+load("~/Documents/PhD/updated MCS datasets/education-datasets/2022-01-05_vocabulary_education_imputedContinuousDescriptives/2022-01-05_vocabulary_education_imputedContinuousDescriptives.Rdata")
 continuous_descriptives_imputed = mi.res
 
 
