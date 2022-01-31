@@ -465,7 +465,7 @@ results_exploratory <- regression_resultsTable %>%
   hline_top(j = 2:10, part = "all", border = my_border) %>% 
   bold(j = 1, i = c(1,47, 49), bold = TRUE) %>% 
   italic(j = 1, i = c(1,47, 49), italic = TRUE) %>% 
-  add_header_lines(values = c("Table S9: Predicting Educational Attainment in English, Maths and Science (N=15,474)"))
+  add_header_lines(values = c("Table S9: Predicting Educational Attainment in English, Maths and Science (N=15,576)"))
  
  print(results_exploratory, preview = "docx")  
   
