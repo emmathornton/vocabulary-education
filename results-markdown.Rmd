@@ -1453,7 +1453,7 @@ predicted_imd= lapply(imd_model, ggpredict, terms = c("age5_standardised[all]", 
 
 
 #COMPOSITE QUINTILES - OWN PLOT FIGURE 1
-compositeQuintiles_plot = plot(pool_predictions(composite_quintiles), ci = FALSE,
+compositeQuintiles_plot = plot(pool_predictions(composite_quintiles), ci = TRUE,
                                limits = c(0, 1), 
                                breaks = seq(0, 1, by = 0.1)) +
   scale_colour_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
@@ -1519,11 +1519,11 @@ compositeQuintiles_plot1 = plot(pool_predictions(composite_quintiles), ci = FALS
 nvq_plot = plot(pool_predictions(predicted_nvq), ci = FALSE,
                 limits = c(0, 1), 
                 breaks = seq(0, 1, by = 0.1)) +
-  scale_colour_manual(values=c( "#054a91", "#6596c1", "#9dbcd7", "#f8b77d", "#f48f33", "#f17300"), 
+  scale_colour_manual(values=c( "#054a91", "#6596c1", "#9dbcd7", "#f8b77d", "#f48f33", "#BDBDBD"), 
                       name="Parent Education",
                       breaks=c("1",  "2", "3", "4", "5","0"),
                       labels=c("NVQ1 (Lowest Qualifications)", "NVQ2", "NVQ3", "NVQ4", "NVQ5",  "No/ overseas qualifications"))+
-  scale_fill_manual(values=c( "#054a91", "#6596c1", "#9dbcd7", "#f8b77d", "#f48f33", "#f17300"), 
+  scale_fill_manual(values=c( "#054a91", "#6596c1", "#9dbcd7", "#f8b77d", "#f48f33", "#BDBDBD"), 
                     name="Parent Education",
                     breaks=c("1",  "2", "3", "4", "5","0"),
                     labels=c("NVQ1 (Lowest Qualifications)", "NVQ2", "NVQ3", "NVQ4", "NVQ5",  "No/ overseas qualifications")) +
@@ -1608,12 +1608,12 @@ occupation_plot = plot(pool_predictions(predicted_occupation), ci = FALSE,
                        breaks = seq(0, 1, by = 0.1)) +
   scale_colour_manual(values=c( "#054a91", "#6596c1", "#f6a55c", "#f17300"), 
                       name="Occupational Status",
-                      breaks=c("2",  "3", "4","1"),
-                      labels=c("Routine (Disadvantaged)", "Intermediate", "Higher Managerial (Advantaged)","Unemployed"))+
+                      breaks=c("1", "2",  "3", "4"),
+                      labels=c("Unemployed", "Routine (Disadvantaged)", "Intermediate", "Higher Managerial (Advantaged)"))+
   scale_fill_manual(values=c( "#054a91", "#6596c1", "#f6a55c", "#f17300"), 
                     name="Occupational Status",
-                    breaks=c("2",  "3", "4","1"),
-                    labels=c("Routine (Disadvantaged)", "Intermediate", "Higher Managerial (Advantaged)","Unemployed")) +
+                    breaks=c("1", "2",  "3", "4"),
+                    labels=c("Unemployed", "Routine (Disadvantaged)", "Intermediate", "Higher Managerial (Advantaged)")) +
   labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
        y = "Achieving ≥ Grade 4 on Core Subjects ", 
        title = "Parent Occupational Status") +
