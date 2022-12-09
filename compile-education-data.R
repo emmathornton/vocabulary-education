@@ -173,17 +173,170 @@ occupational_status = merge(all=TRUE, age3_occupation, months9_occupation, by = 
   select(mcsid, highest_household_occupation_r) %>% 
   rename("occupational_status" = highest_household_occupation_r)
 
-#income####
+#3. Income ####
+
 #INCOME AT AGE 3. OECD weighted quintiles
-#oecd income at age 3
-oecd_income = mcs2_derived_family %>% select(mcsid, boecduk0)
-#oecd income at 9 months to replace NA
-oecd_income_9months = mcs1_derived_family %>% select(mcsid, aoecduk0)
-#combine together
-income = merge(all=TRUE, oecd_income, oecd_income_9months, by="mcsid") %>% 
-  mutate(oecd_income = case_when(!is.na(boecduk0) ~ boecduk0, 
-                                 is.na(boecduk0) ~ aoecduk0)) %>% 
-  select(mcsid, oecd_income)
+#Create OECD equivilisation for Age 3
+
+household_grid_age3 = mcs2_hh %>% select(
+  mcsid, bpnum00, bcnum00,bhcrel00,
+  bhpage00, bhcrel00, bhpres00) %>% 
+  group_by(mcsid)
+#add "person" to person number column 
+household_grid_age3$bpnum00 = paste0("Person_", household_grid_age3$bpnum00)
+#note: person number == 100 -> this person is the first (cnum==1) cohort member, make sure dont count them twice! 
+#also case for person number ==200 -> This also refers to cohort member (cnum==2)
+
+#add in binary variables (1 = yes; 2 = no) to indicate whether each person is a child (age <=13) and present in household, or adult and present in household - will total these later to give total number of adults and children in household. 
+household_grid_age3 = household_grid_age3 %>% 
+  mutate(isChild_andPresent = case_when(bhpage00 <=13 & (bhpres00 == 1 ) ~ 1,
+                                        bhpage00 >13 ~ 0, 
+                                        is.na(bhpage00) ~ NA_real_, 
+                                        TRUE ~ 0), .after = "bhpage00") %>% #think this includes CM too?
+  mutate(isAdult_andPresent = case_when(bhpage00 >13 & (bhpres00 == 1 ) ~ 1,
+                                        bhpage00 <=13 ~ 0, 
+                                        is.na(bhpage00) ~ NA_real_, 
+                                        TRUE ~ 0), .after = "bhpage00") 
+#select mcsid, person number, and created binary variavles 
+household_grid_age3 = household_grid_age3 %>% select(mcsid, bpnum00,  isChild_andPresent, isAdult_andPresent)
+
+#convert household grid variables to wide format- 1 row per mcsid, so that we can use rowSums to create total number of adults and children variables 
+household_gridWide_age3 = household_grid_age3 %>% 
+  group_by(mcsid, bpnum00) %>% 
+  mutate(row=row_number()) %>% 
+  pivot_wider(names_from = bpnum00, values_from = c("isChild_andPresent", "isAdult_andPresent")) %>% 
+  select(-row) 
+
+#create total number of children and total number of adults in household
+household_gridWide_age3 = household_gridWide_age3 %>% 
+  ungroup() %>% 
+  mutate(number_ofChildren =  rowSums(.[c("isChild_andPresent_Person_1","isChild_andPresent_Person_2" , "isChild_andPresent_Person_3" , "isChild_andPresent_Person_4" , "isChild_andPresent_Person_5", "isChild_andPresent_Person_6" , "isChild_andPresent_Person_7" , "isChild_andPresent_Person_8" , "isChild_andPresent_Person_9" ,"isChild_andPresent_Person_10", "isChild_andPresent_Person_11" ,"isChild_andPresent_Person_12", "isChild_andPresent_Person_13", "isChild_andPresent_Person_14" ,"isChild_andPresent_Person_15", "isChild_andPresent_Person_16", "isChild_andPresent_Person_17","isChild_andPresent_Person_100", "isChild_andPresent_Person_200" )], #person 100 and person 200 refer to cohort members.
+                                      na.rm = TRUE), .after ="mcsid") %>% 
+  mutate(number_ofAdults =  rowSums(.[c("isAdult_andPresent_Person_1","isAdult_andPresent_Person_2" , "isAdult_andPresent_Person_3" , "isAdult_andPresent_Person_4" , "isAdult_andPresent_Person_5", "isAdult_andPresent_Person_6" , "isAdult_andPresent_Person_7" , "isAdult_andPresent_Person_8" , "isAdult_andPresent_Person_9" ,"isAdult_andPresent_Person_10", "isAdult_andPresent_Person_11" ,"isAdult_andPresent_Person_12", "isAdult_andPresent_Person_13", "isAdult_andPresent_Person_14" ,"isAdult_andPresent_Person_15", "isAdult_andPresent_Person_16", "isAdult_andPresent_Person_17")],
+                                    na.rm = TRUE), .after ="mcsid")  %>% 
+  mutate(childrenEquivalence = number_ofChildren*0.3, .after = "number_ofAdults") %>% #add equivalence values - each child is 0.3
+  mutate(adultEquivalence = case_when(number_ofAdults == 1 ~ 1, #equivalence values for total number of adults
+                                      number_ofAdults == 2 ~ 1.5, 
+                                      number_ofAdults == 3 ~ 2, 
+                                      number_ofAdults == 4 ~ 2.5,
+                                      number_ofAdults == 5 ~ 3, 
+                                      number_ofAdults == 6 ~ 3.5, 
+                                      number_ofAdults == 7 ~ 4, 
+                                      number_ofAdults == 8 ~ 4.5, 
+                                      number_ofAdults == 9 ~ 5, 
+                                      number_ofAdults == 10 ~ 5.5, 
+                                      is.na(number_ofAdults) ~ NA_real_), .after = "childrenEquivalence") %>% 
+  mutate(total_equivalenceAge3 =  rowSums(.[c("childrenEquivalence", "adultEquivalence")], #create total equivalence value by summing child and adult equivalence values 
+                                          na.rm = TRUE), .before = "childrenEquivalence") 
+age3_equivalence = household_gridWide_age3 %>% select(mcsid, total_equivalenceAge3)
+
+#Income - Age 3
+#Take mid-point of each band and multiply this by the equivilisation score. 
+age3_income = mcs2_derived_family %>% select(mcsid, bdhinc00) %>% 
+  mutate(annual_incomeMedian = case_when(bdhinc00 == 1 ~ 1650,
+                                         bdhinc00 == 2 ~ 7150,
+                                         bdhinc00 == 3 ~ 16500, 
+                                         bdhinc00 == 4 ~ 27500,
+                                         bdhinc00 == 5 ~ 44000,
+                                         bdhinc00 == 6 ~ 70000, 
+                                         is.na(bdhinc00) ~ NA_real_)) %>% 
+  inner_join(age3_equivalence) %>% 
+  mutate(oecd_adjusted = annual_incomeMedian/total_equivalenceAge3) %>%  #divide income by the total_equivalence to give equivalised income 
+  mutate(oecd_quintilesAge3 = quantcut(oecd_adjusted,5)) %>% 
+  select(mcsid, oecd_quintilesAge3)
+
+levels(age3_income$oecd_quintilesAge3)[1] = "1"
+levels(age3_income$oecd_quintilesAge3)[2] = "2"
+levels(age3_income$oecd_quintilesAge3)[3] = "3"
+levels(age3_income$oecd_quintilesAge3)[4] = "4"
+levels(age3_income$oecd_quintilesAge3)[5] = "5"
+
+#Income 9 months - replace  with 9 Months if Age 3 NA. 
+
+#Create OECD equivilisation for 9 Months
+household_grid_9mo = mcs1_hh %>% select(
+  mcsid, apnum00, acnum00,
+  ahpage00, ahcrel00, ahpres00) %>% 
+  group_by(mcsid)
+#add "person" to person number column 
+household_grid_9mo$apnum00 = paste0("Person_", household_grid_9mo$apnum00)
+#note: person number == 100 -> this person is the first (cnum==1) cohort member, make sure dont count them twice! 
+#also case for person number ==200 -> This also refers to cohort member (cnum==2)
+
+#add in binary variables (1 = yes; 2 = no) to indicate whether each person is a child (age <=13) and present in household, or adult and present in household - will total these later to give total number of adults and children in household. 
+household_grid_9mo = household_grid_9mo %>% 
+  mutate(isChild_andPresent = case_when(ahpage00 <=13 & (ahpres00 == 1 ) ~ 1,
+                                        ahpage00 >13 ~ 0, 
+                                        is.na(ahpage00) ~ NA_real_, 
+                                        TRUE ~ 0), .after = "ahpage00") %>% #think this includes CM too?
+  mutate(isAdult_andPresent = case_when(ahpage00 >13 & (ahpres00 == 1 ) ~ 1,
+                                        ahpage00 <=13 ~ 0, 
+                                        is.na(ahpage00) ~ NA_real_, 
+                                        TRUE ~ 0), .after = "ahpage00") 
+#select mcsid, person number, and created binary variavles 
+household_grid_9mo = household_grid_9mo %>% select(mcsid, apnum00,  isChild_andPresent, isAdult_andPresent)
+
+#convert household grid variables to wide format- 1 row per mcsid, so that we can use rowSums to create total number of adults and children variables 
+household_gridWide_9mo = household_grid_9mo %>% 
+  group_by(mcsid, apnum00) %>% 
+  mutate(row=row_number()) %>% 
+  pivot_wider(names_from = apnum00, values_from = c("isChild_andPresent", "isAdult_andPresent")) %>% 
+  select(-row) 
+
+#create total number of children and total number of adults in household
+household_gridWide_9mo = household_gridWide_9mo %>% 
+  ungroup() %>% 
+  mutate(number_ofChildren =  rowSums(.[c("isChild_andPresent_Person_1","isChild_andPresent_Person_2" , "isChild_andPresent_Person_3" , "isChild_andPresent_Person_4" , "isChild_andPresent_Person_5", "isChild_andPresent_Person_6" , "isChild_andPresent_Person_7" , "isChild_andPresent_Person_8" , "isChild_andPresent_Person_9" ,"isChild_andPresent_Person_10", "isChild_andPresent_Person_11", "isChild_andPresent_Person_100", "isChild_andPresent_Person_200" )], #person 100 and person 200 refer to cohort members.
+                                      na.rm = TRUE), .after ="mcsid") %>% 
+  mutate(number_ofAdults =  rowSums(.[c("isAdult_andPresent_Person_1","isAdult_andPresent_Person_2" , "isAdult_andPresent_Person_3" , "isAdult_andPresent_Person_4" , "isAdult_andPresent_Person_5", "isAdult_andPresent_Person_6" , "isAdult_andPresent_Person_7" , "isAdult_andPresent_Person_8" , "isAdult_andPresent_Person_9" ,"isAdult_andPresent_Person_10", "isAdult_andPresent_Person_11")],
+                                    na.rm = TRUE), .after ="mcsid")  %>% 
+  mutate(childrenEquivalence = number_ofChildren*0.3, .after = "number_ofAdults") %>% #add equivalence values - each child is 0.3
+  mutate(adultEquivalence = case_when(number_ofAdults == 1 ~ 1, #equivalence values for total number of adults
+                                      number_ofAdults == 2 ~ 1.5, 
+                                      number_ofAdults == 3 ~ 2, 
+                                      number_ofAdults == 4 ~ 2.5,
+                                      number_ofAdults == 5 ~ 3, 
+                                      number_ofAdults == 6 ~ 3.5, 
+                                      number_ofAdults == 7 ~ 4, 
+                                      number_ofAdults == 8 ~ 4.5, 
+                                      number_ofAdults == 9 ~ 5, 
+                                      number_ofAdults == 10 ~ 5.5, 
+                                      is.na(number_ofAdults) ~ NA_real_), .after = "childrenEquivalence") %>% 
+  mutate(total_equivalence9mo =  rowSums(.[c("childrenEquivalence", "adultEquivalence")], #create total equivalence value by summing child and adult equivalence values 
+                                         na.rm = TRUE), .before = "childrenEquivalence") 
+equivalence_9mo = household_gridWide_9mo %>% select(mcsid, total_equivalence9mo)
+
+#Income - 9 Months
+#Take mid-point of each band and multiply this by the equivilisation score. 
+income_9mo = mcs1_derived_family %>% select(mcsid, adhinc00) %>% 
+  mutate(annual_incomeMedian = case_when(adhinc00 == 1 ~ 1549.5,
+                                         adhinc00 == 2 ~ 6749.5,
+                                         adhinc00 == 3 ~ 15599.5, 
+                                         adhinc00 == 4 ~ 25999.5,
+                                         adhinc00 == 5 ~ 415999,
+                                         adhinc00 == 6 ~ 66000, 
+                                         adhinc00 == 96 ~ NA_real_,
+                                         adhinc00 == 97 ~ NA_real_,
+                                         adhinc00 == -6 ~ NA_real_,
+                                         adhinc00 == -1 ~ NA_real_,
+                                         is.na(adhinc00) ~ NA_real_)) %>% 
+  inner_join(equivalence_9mo) %>% 
+  mutate(oecd_adjusted9mo = annual_incomeMedian/total_equivalence9mo) %>%  #divide income by the total_equivalence to give equivalised income 
+  mutate(oecd_quintiles9mo = quantcut(oecd_adjusted9mo,5)) %>% 
+  select(mcsid, oecd_quintiles9mo)
+
+levels(income_9mo$oecd_quintiles9mo)[1] = "1"
+levels(income_9mo$oecd_quintiles9mo)[2] = "2"
+levels(income_9mo$oecd_quintiles9mo)[3] = "3"
+levels(income_9mo$oecd_quintiles9mo)[4] = "4"
+levels(income_9mo$oecd_quintiles9mo)[5] = "5"
+
+#create final variable = Age 3 and 9 Months if NA.
+income = age3_income %>% left_join(income_9mo) %>% 
+  mutate(income_quintiles = case_when(!is.na(oecd_quintilesAge3) ~ oecd_quintilesAge3, 
+                                      is.na(oecd_quintilesAge3) ~ oecd_quintiles9mo)) %>% 
+  select(mcsid, income_quintiles)
+
 
 #NVQ education variable####
 #NVQ qualifications
