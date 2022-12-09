@@ -405,17 +405,70 @@ parent_nvq = merge(all=TRUE, maternal_nvq, paternal_nvq, by="mcsid") %>%
 
 
 
-#WEALTH #### 
-#debt seems to be missing from mcs5 new datasets? from 2017 release of the data.
-#University of London. Institute of Education. Centre for Longitudinal Studies. (2017). Millennium Cohort Study: Fifth Survey, 2012. [data collection]. 4th Edition. UK Data Service. SN: 7464, http://doi.org/10.5255/UKDA-SN-7464-4
-
-wealth_variables <- mcs5_parent%>%  select(mcsid, eresp00, epmopa00, ephval00, epinvt00, epdeba00, eelig00) %>% 
+#4. Wealth ####
+wealth_variables <- mcs5_parent %>%  select(mcsid, eresp00, epmopa00, ephval00, epinvt00, epdeba00, eelig00) %>% 
   filter(eelig00 == 1) %>% 
   select(mcsid, epmopa00, ephval00, epinvt00, epdeba00) %>% 
   rename("mortgage" = epmopa00,
          "houseValue" = ephval00, 
          "savings" = epinvt00, 
          "debt" = epdeba00)
+
+tenure = mcs5_family %>% select(mcsid, eroow00)
+
+
+new_wealth = merge(all=TRUE, wealth_variables, tenure, by = "mcsid")
+#if mortgage missing and tenure = not a home owner --> mortgage = 0 
+
+housing_wealthVars = new_wealth %>% 
+  mutate(new_mortgage = case_when(
+    !is.na(mortgage) ~ as.numeric(mortgage),
+    is.na(mortgage) & eroow00 == 2 | eroow00 == 3 ~ NA_real_,
+    (eroow00 != 2 | eroow00 != 3) & (is.na(mortgage))   ~ 0 
+  )) %>% 
+  mutate(new_value = case_when(
+    !is.na(houseValue) ~ as.numeric(houseValue), 
+    is.na(mortgage) & eroow00 == 1 | eroow00 == 2 | eroow00 == 3 ~ NA_real_,
+    (eroow00 != 1 | eroow00 != 2 | eroow00 != 3) & (is.na(mortgage))   ~ 0
+  )) %>% 
+  select(mcsid, mortgage, new_mortgage, houseValue, new_value)
+
+
+#savings variables
+savings = mcs5_parent %>% select(mcsid, epinvt00, contains("epsavi0"), eelig00) %>% 
+  filter(eelig00 == 1) %>% 
+  mutate(new_savings = case_when(
+    !is.na(epinvt00) ~ as.numeric(epinvt00), 
+    is.na(epinvt00) & epsavi0a == 1 |epsavi0b == 1 |
+      epsavi0c == 1 | epsavi0d == 1 | epsavi0e == 1 |
+      epsavi0f == 1 | epsavi0g == 1 | epsavi0h == 1 ~ NA_real_, 
+    (epsavi0a == 0 |epsavi0b == 0 |
+       epsavi0c == 0 | epsavi0d == 0 | epsavi0e == 0 |
+       epsavi0f == 0 | epsavi0g == 0 | epsavi0h == 0) & is.na(epinvt00)  ~ 0
+  )) %>% 
+  select(mcsid, epinvt00, new_savings)
+
+#debt variables 
+debt = mcs5_parent %>% select(mcsid, epdeba00, contains("epdebt0"), eelig00) %>% 
+  filter(eelig00 == 1) %>% 
+  select(-eelig00) %>% 
+  mutate(new_debt = case_when(
+    !is.na(epdeba00) ~ as.numeric(epdeba00), 
+    is.na(epdeba00) & epdebt0a == 1 |epdebt0b == 1 |
+      epdebt0c == 1 | epdebt0d == 1 | epdebt0e == 1 |
+      epdebt0f == 1 | epdebt0g == 1 | epdebt0h == 1 |
+      epdebt0i == 1 ~ NA_real_, 
+    (epdebt0a == 0 |epdebt0b == 0 |
+       epdebt0c == 0 | epdebt0d == 0 | 
+       epdebt0e == 0 | epdebt0f == 0 | 
+       epdebt0g == 0 | epdebt0h == 0 | epdebt0i == 0) & is.na(epdeba00)  ~ 0
+  )) %>% 
+  select(mcsid, epdeba00, new_debt)
+
+wealth_vars = merge(all = TRUE, housing_wealthVars, savings, by = "mcsid")
+wealth_vars = merge(all= TRUE, wealth_vars, debt, by = "mcsid")
+
+wealth = wealth_vars %>% select(mcsid, new_mortgage, new_value, new_savings, new_debt)
 
 
 #IMD at age 3, 9 months if missing
