@@ -631,7 +631,7 @@ imd_sweep2 = mcs2_geography %>% select(mcsid, bimdscoe, biwimdsc, bisimdsc,bimds
 imd_sweep1 = mcs1_geography %>% select(mcsid, aimdscoe, aiwimdsc, aisimdsc, aimdscon) %>% 
   mutate(imd_sweep1 =  pmax(aimdscoe, aiwimdsc, aisimdsc, aimdscon,  na.rm = TRUE))
 
-#IMD at age 3 and if NA, replace with 9 months.
+#IMD at age 3 and if NA, replace with 9 months. ####
 imd = merge(all=TRUE, imd_sweep2, imd_sweep1, by="mcsid") %>% 
   select(mcsid, imd_sweep2, imd_sweep1) %>% 
   mutate(imd = case_when(!is.na(imd_sweep2) ~ imd_sweep2, 
