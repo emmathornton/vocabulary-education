@@ -7,6 +7,7 @@ require(psych)
 library(dplyr) 
 library(tidyr) 
 library(tidyverse)
+library(gtools)
 #load in data####
 mcs3_child_assessment <- read_sav("mcs3_cm_cognitive_assessment.sav")
 #mcs2_child_assessment <- read_sav("mcs2_cm_cognitive_assessment.sav")
@@ -21,7 +22,7 @@ mcs2_derived <- read_sav("mcs2_parent_derived.sav")
 mcs2_derived_family <- read_sav("mcs2_family_derived.sav")
 mcs1_derived_family <- read_sav("mcs1_family_derived.sav")
 mcs1_derived <- read_sav("mcs1_parent_derived.sav")
-mcs5_parent<- read_sav("mcs5_parent_interview_4thEd.sav")
+mcs5_parent<- read_sav("mcs5_parent_interview.sav")
 mcs5_family<- read_sav("mcs5_family_derived.sav") #2018 version
 mcs4_family<- read_sav("mcs4_family_derived.sav")
 mcs2_geography <- read_sav("mcs2_geographically_linked_data.sav")
@@ -173,7 +174,7 @@ occupational_status = merge(all=TRUE, age3_occupation, months9_occupation, by = 
   select(mcsid, highest_household_occupation_r) %>% 
   rename("occupational_status" = highest_household_occupation_r)
 
-#3. Income ####
+#Income ####
 
 #INCOME AT AGE 3. OECD weighted quintiles
 #Create OECD equivilisation for Age 3
@@ -558,7 +559,7 @@ parent_nvq = merge(all=TRUE, maternal_nvq, paternal_nvq, by="mcsid") %>%
 
 
 
-#4. Wealth ####
+# Wealth ####
 wealth_variables <- mcs5_parent %>%  select(mcsid, eresp00, epmopa00, ephval00, epinvt00, epdeba00, eelig00) %>% 
   filter(eelig00 == 1) %>% 
   select(mcsid, epmopa00, ephval00, epinvt00, epdeba00) %>% 
@@ -2104,7 +2105,7 @@ core_grades_n5 <-  core_grades_scotland %>%  mutate(benchmarkN5highers = case_wh
 #first combine the dataframes
 #replace is/na with the other one 
 core_grades_binary= merge (all=TRUE, core_grades, core_grades_n5, by="mcsid")
-core_grades_binary = core_grades_binary %>% select(mcsid, benchmark, benchmarkN5)
+core_grades_binary = core_grades_binary %>% select(mcsid, benchmark, benchmarkN5highers)
 
 
 
@@ -2250,7 +2251,8 @@ highest_average_grade = merge(all=TRUE, highest_average_grade, science_subjects_
 english_colsN5 = n5_english_score
 maths_colsn5 = n5_maths_score
 science_colsn5 = n5_science_subjects %>% select(computer_science, biology, chemistry, physics) %>% names()
-science_n5Highest = n5_science_subjects %>% select(!science_score)%>% mutate(highest_science = pmax(!!!rlang::syms(science_colsn5), na.rm= TRUE), .after = 1) %>% 
+science_n5Highest = n5_science_subjects %>% select(!science_score_n5) %>% 
+  mutate(highest_science = pmax(!!!rlang::syms(science_colsn5), na.rm= TRUE), .after = 1) %>% 
   select(mcsid, highest_science)
 
 highest_n5_average = merge(all=TRUE, english_colsN5, maths_colsn5, by = "mcsid")
@@ -2501,7 +2503,7 @@ analysis_data = merge(all=TRUE, analysis_data, carers_in_hh, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, income, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, imd, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, occupational_status, by = "mcsid")
-analysis_data = merge(all=TRUE, analysis_data, wealth_variables, by = "mcsid")
+analysis_data = merge(all=TRUE, analysis_data, wealth, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, country_17, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, caregiver_vocabTotal, by = "mcsid")
 analysis_data = merge(all=TRUE, analysis_data, age5_vocab, by = "mcsid")
