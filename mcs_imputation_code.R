@@ -14,6 +14,13 @@ library(tidyverse)
 #open mcs data####
 vocabulary_education<-read.csv("education_data1.csv")
 vocabulary_education[,1]<- NULL
+#Rename wealth variables and income
+vocabulary_education = vocabulary_education %>%
+  rename(mortgage = "new_mortgage", 
+         houseValue = "new_value", 
+         savings = "new_savings", 
+         debt = "new_debt", 
+         oecd_income = "income_quintiles")
 
 #make dummy variables for imputation - n - 1 levels as one will be the reference category. by default in regressions this is the lowest number so  take out first level 
 #nvq - without nvq = 0 
@@ -194,7 +201,10 @@ vis = c("mcsid", "weight", "countryWeight", "sex","ethnicity","EAL","age_atBirth
         "standardised_english", "standardised_maths", "standardised_science")
 #now lets run the imputation (m=25) imputations
 
-imputed_mcs2 = mice(vocabulary_education, blocks=blocksvec, method=meth, visitSequence = vis, seed = 1895, predictorMatrix=predM, m=25) #can change this to a smaller numebr so runs quicker when figuring out. 
+imputed_mcs2 = mice(vocabulary_education, 
+                    blocks=blocksvec, method=meth, 
+                    visitSequence = vis, seed = 1895, 
+                    predictorMatrix=predM, m=25)  
 
 #deriving post imputation variables####
 long_format_mcs <- mice::complete(imputed_mcs2, "long", include=TRUE)
@@ -233,7 +243,8 @@ imputed_mcs2<-as.mids(long_format_mcs)
 
 #save mids object to working directory####
 
-write.mice.imputation(mi.res=imputed_mcs2, name = glue("{today()}_vocabulary_education_imputedMAIN"),include.varnames = TRUE, long=TRUE,dattype = "csv", mids2spss = FALSE)
+write.mice.imputation(mi.res=imputed_mcs2, name = glue("{today()}_vocabulary_education_imputedMAIN"),
+                      include.varnames = TRUE, long=TRUE,dattype = "csv", mids2spss = FALSE)
 
 #get each individual imputed dataset#####
 imputed_mcs2_0 <- complete(imputed_mcs2)
