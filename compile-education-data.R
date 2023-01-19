@@ -2164,30 +2164,28 @@ core_subjects_score = core_subjects_score %>% mutate(average_grade = rowMeans(.[
   select(mcsid, average_grade)
 core_subjects_score$average_grade = round(core_subjects_score$average_grade, 2)
 
-#N5 CONTINOUS VARIABLE
+#N5 CONTINOUS VARIABLE - if have both N5 and highers for a subject, select the highest of the two. 
 core_subjects_n5 = merge(all=TRUE, core_n5_grades, core_highers_grades, by = "mcsid")
 n5_english_score = as.data.frame(core_subjects_n5 %>% select(mcsid, english, english_highers)) %>% 
-  mutate (english_score = case_when(!is.na(english) ~ english, 
-                                    is.na(english) ~ english_highers))
+  mutate (english_score = pmax(english, english_highers, na.rm = TRUE))
 n5_maths_score = as.data.frame(core_subjects_n5 %>% select(mcsid, maths, maths_highers)) %>% 
-  mutate (maths_score = case_when(!is.na(maths) ~ maths, 
-                                  is.na(maths) ~maths_highers))
+  mutate (maths_score = pmax(maths, maths_highers, na.rm = TRUE))
+#get the mean score across science subjects for N5 and for highers, then take the highest of the 2 for the science score
 n5_science_subjects = as.data.frame(core_subjects_n5 %>% select(mcsid, computer_science, biology, chemistry, physics)) %>% 
   mutate (science_score_n5 = rowMeans(.[-1], na.rm = TRUE), .after = 1)
 highers_science_subjects = as.data.frame(core_subjects_n5 %>% select(mcsid, computer_science_highers, biology_highers, chemistry_highers, physics_highers)) %>% 
   mutate (science_score_highers = rowMeans(.[-1], na.rm = TRUE), .after = 1)
 scotland_science = merge(all = TRUE, n5_science_subjects, highers_science_subjects, by = "mcsid") %>% 
-  mutate (science_score = case_when(!is.na(science_score_n5) ~ science_score_n5, 
-                                    is.na(science_score_n5) ~science_score_highers))
+  mutate (science_score = pmax(science_score_n5, science_score_highers, na.rm = TRUE))
 
 #convert NaN to NA
 #english 
 n5_english_score$english_score[is.nan(n5_english_score$english_score)]<-NA
-n5_english_score$science_score = round(n5_english_score$english_score, 2)
+n5_english_score$english_score = round(n5_english_score$english_score, 2)
 n5_english_score = n5_english_score %>% select(mcsid, english_score)
 #maths
 n5_maths_score$maths_score[is.nan(n5_maths_score$maths_score)]<-NA
-n5_maths_score$science_score = round(n5_maths_score$maths_score, 2)
+n5_maths_score$maths_score = round(n5_maths_score$maths_score, 2)
 n5_maths_score = n5_maths_score %>% select(mcsid, maths_score)
 #science
 scotland_science$science_score[is.nan(scotland_science$science_score)]<-NA
@@ -2206,19 +2204,19 @@ n5_core_subjects_score$average_grade_n5 = round(n5_core_subjects_score$average_g
 education_main_outcomes = merge(all=TRUE, core_grades_binary, core_subjects_score, by = "mcsid")
 education_main_outcomes = merge(all=TRUE, education_main_outcomes, n5_core_subjects_score, by="mcsid")
 
-#convert gcse and n5 score into z scores and then combine into one variable
-education_main_outcomes = education_main_outcomes %>% 
-  mutate(standardised_gcse = scale(average_grade, 
-                                   center = TRUE, scale = TRUE)) %>% #standardised within the relevant population
-  mutate(standardised_n5 =  scale(average_grade_n5, 
-                                  center = TRUE, scale = TRUE)) %>% 
-  mutate(standardised_core_subjects = case_when(!is.na(standardised_gcse)~standardised_gcse, 
-                                                is.na(standardised_gcse) ~ standardised_n5, 
-                                                !is.na(standardised_n5) ~standardised_n5,
-                                                is.na(standardised_n5) ~ standardised_gcse)) %>% 
-  select(mcsid, benchmark_binary, standardised_core_subjects)
+#convert gcse and n5 score into z scores and then combine into one variable - do this after imputation instead. 
+#education_main_outcomes = education_main_outcomes %>% 
+ # mutate(standardised_gcse = scale(average_grade, 
+ #                                  center = TRUE, scale = TRUE)) %>% #standardised within the relevant population
+ # mutate(standardised_n5 =  scale(average_grade_n5, 
+ #                                 center = TRUE, scale = TRUE)) %>% 
+ # mutate(standardised_core_subjects = case_when(!is.na(standardised_gcse)~standardised_gcse, 
+  #                                              is.na(standardised_gcse) ~ standardised_n5, 
+   #                                             !is.na(standardised_n5) ~standardised_n5,
+   #                                             is.na(standardised_n5) ~ standardised_gcse)) %>% 
+ # select(mcsid, benchmark_binary, standardised_core_subjects)
 
-#continous score version 2 - average of highest grade for each subject ####
+#### continous score version 2 - average of highest grade for each subject ####
 #need to do this for N5 too 
 
 #english_subjects_highest = english_subjects_gcse %>% select(!english_score) %>% 
@@ -2266,23 +2264,23 @@ highest_grade = merge(all= TRUE, highest_average_grade, highest_n5_average, by =
 
 #check correlation between 2 continuous variables 
 continuous_outcomes = merge(all = TRUE, education_main_outcomes, highest_grade, by ="mcsid") %>% 
-  select(mcsid, standardised_core_subjects, highest_grade, highest_gradeN5) %>% 
-  mutate(standardised_gcse = scale(highest_grade, 
-                                   center = TRUE, scale = TRUE)) %>% #standardised within the relevant population
-  mutate(standardised_n5 =  scale(highest_gradeN5, 
-                                  center = TRUE, scale = TRUE)) %>% 
-  mutate(standardised_highest_grade = case_when(!is.na(standardised_gcse)~standardised_gcse, 
-                                                is.na(standardised_gcse) ~ standardised_n5, 
-                                                !is.na(standardised_n5) ~standardised_n5,
-                                                is.na(standardised_n5) ~ standardised_gcse)) %>% 
-  select(mcsid, standardised_core_subjects, standardised_highest_grade)
+  select(mcsid, average_grade, average_grade_n5, highest_grade, highest_gradeN5)
+  #mutate(standardised_gcse = scale(highest_grade, 
+                                   #center = TRUE, scale = TRUE)) %>% #standardised within the relevant population
+  #mutate(standardised_n5 =  scale(highest_gradeN5, 
+                                  #center = TRUE, scale = TRUE)) %>% 
+ # mutate(standardised_highest_grade = case_when(!is.na(standardised_gcse)~standardised_gcse, 
+                                               # is.na(standardised_gcse) ~ standardised_n5, 
+                                               # !is.na(standardised_n5) ~standardised_n5,
+                                               # is.na(standardised_n5) ~ standardised_gcse)) %>% 
+  #select(mcsid, standardised_core_subjects, standardised_highest_grade)
 
 #correlation between 2 versions of the variable: 
-cor(continuous_outcomes$standardised_core_subjects, continuous_outcomes$standardised_highest_grade, method = "pearson", use = "complete.obs")
-
+cor(continuous_outcomes$average_grade, continuous_outcomes$highest_grade, method = "pearson", use = "complete.obs")
+cor(continuous_outcomes$average_grade_n5, continuous_outcomes$highest_gradeN5, method = "pearson", use = "complete.obs")
 #for p value too
-cor.test(continuous_outcomes$standardised_core_subjects, continuous_outcomes$standardised_highest_grade, method = "pearson")
-
+cor.test(continuous_outcomes$average_grade, continuous_outcomes$highest_grade, method = "pearson")
+cor.test(continuous_outcomes$average_grade_n5, continuous_outcomes$highest_gradeN5, method = "pearson")
 
 #if want 2 analytical samples (one for each outcome)
 #binary outcome (will be same as if use overall sample anyway)
@@ -2423,19 +2421,19 @@ welsh_core_subjectsContinuous = welsh_core_subjectsContinuous %>%
                                         is.na(average_grade) ~ average_grade_welsh)) %>% 
   select(mcsid, welsh_averageScore)
 
-welsh_core_subjectsContinuous = merge(all=TRUE, welsh_core_subjectsContinuous, n5_core_subjects_score, by = "mcsid")
+#welsh_core_subjectsContinuous = merge(all=TRUE, welsh_core_subjectsContinuous, n5_core_subjects_score, by = "mcsid")
 
 
-welsh_core_subjectsContinuous = welsh_core_subjectsContinuous  %>% 
-  mutate(standardised_gcseWelsh = scale(welsh_averageScore, 
-                                        center = TRUE, scale = TRUE)) %>% #standardised within the relevant population
-  mutate(standardised_n5 =  scale(average_grade_n5, 
-                                  center = TRUE, scale = TRUE)) %>% 
-  mutate(standardised_core_subjectsWelsh = case_when(!is.na(standardised_gcseWelsh)~standardised_gcseWelsh, 
-                                                     is.na(standardised_gcseWelsh) ~ standardised_n5, 
-                                                     !is.na(standardised_n5) ~standardised_n5,
-                                                     is.na(standardised_n5) ~ standardised_gcseWelsh)) %>% 
-  select(mcsid, standardised_core_subjectsWelsh)
+#welsh_core_subjectsContinuous = welsh_core_subjectsContinuous  %>% - do this post imputation 
+  #mutate(standardised_gcseWelsh = scale(welsh_averageScore, 
+                                       # center = TRUE, scale = TRUE)) %>% #standardised within the relevant population
+  #mutate(standardised_n5 =  scale(average_grade_n5, 
+                                 # center = TRUE, scale = TRUE)) %>% 
+ # mutate(standardised_core_subjectsWelsh = case_when(!is.na(standardised_gcseWelsh)~standardised_gcseWelsh, 
+                                                  #   is.na(standardised_gcseWelsh) ~ standardised_n5, 
+                                                    # !is.na(standardised_n5) ~standardised_n5,
+                                                    # is.na(standardised_n5) ~ standardised_gcseWelsh)) %>% 
+  #select(mcsid, standardised_core_subjectsWelsh)
 
 education_outcomesWelsh = merge(all=TRUE, core_grades_binary_WELSH, welsh_core_subjectsContinuous, by = "mcsid")
 
@@ -2444,44 +2442,44 @@ education_outcomesWelsh = merge(all=TRUE, core_grades_binary_WELSH, welsh_core_s
 #english 
 names(english_score) = c("mcsid", "english_gcse")
 names(n5_english_score) = c("mcsid", "english_n5")
-exploratory_english = merge(all=TRUE, english_score, n5_english_score, by ="mcsid") %>% 
-  mutate(standardised_gcseEnglish = scale(english_gcse, 
-                                          center = TRUE, scale = TRUE)) %>% 
-  mutate(standardised_n5English = scale(english_n5, 
-                                        center = TRUE, scale = TRUE)) %>% 
-  mutate(standardised_english = case_when(!is.na(standardised_gcseEnglish)~standardised_gcseEnglish, 
-                                          is.na(standardised_gcseEnglish) ~ standardised_n5English, 
-                                          !is.na(standardised_n5English) ~standardised_n5English,
-                                          is.na(standardised_n5English) ~ standardised_gcseEnglish)) %>% 
-  select(mcsid,standardised_english)
+exploratory_english = merge(all=TRUE, english_score, n5_english_score, by ="mcsid") 
+ # mutate(standardised_gcseEnglish = scale(english_gcse, 
+    #                                      center = TRUE, scale = TRUE)) %>% 
+#  mutate(standardised_n5English = scale(english_n5, 
+      #                                  center = TRUE, scale = TRUE)) %>% 
+ # mutate(standardised_english = case_when(!is.na(standardised_gcseEnglish)~standardised_gcseEnglish, 
+        #                                  is.na(standardised_gcseEnglish) ~ standardised_n5English, 
+          #                                !is.na(standardised_n5English) ~standardised_n5English,
+           #                               is.na(standardised_n5English) ~ standardised_gcseEnglish)) %>% 
+#  select(mcsid,standardised_english)
 
 #maths
 names(maths_score) = c("mcsid", "maths_gcse")
 names(n5_maths_score) = c("mcsid", "maths_n5")
-exploratory_maths = merge(all=TRUE, maths_score, n5_maths_score, by ="mcsid") %>% 
-  mutate(standardised_gcsemaths = scale(maths_gcse, 
-                                        center = TRUE, scale = TRUE)) %>% 
-  mutate(standardised_n5maths = scale(maths_n5, 
-                                      center = TRUE, scale = TRUE)) %>% 
-  mutate(standardised_maths = case_when(!is.na(standardised_gcsemaths)~standardised_gcsemaths, 
-                                        is.na(standardised_gcsemaths) ~ standardised_n5maths, 
-                                        !is.na(standardised_n5maths) ~standardised_n5maths,
-                                        is.na(standardised_n5maths) ~ standardised_gcsemaths)) %>% 
-  select(mcsid,standardised_maths)
+exploratory_maths = merge(all=TRUE, maths_score, n5_maths_score, by ="mcsid") 
+ # mutate(standardised_gcsemaths = scale(maths_gcse, 
+         #                               center = TRUE, scale = TRUE)) %>% 
+  #mutate(standardised_n5maths = scale(maths_n5, 
+             #                         center = TRUE, scale = TRUE)) %>% 
+  #mutate(standardised_maths = case_when(!is.na(standardised_gcsemaths)~standardised_gcsemaths, 
+                                       # is.na(standardised_gcsemaths) ~ standardised_n5maths, 
+                                       # !is.na(standardised_n5maths) ~standardised_n5maths,
+                                       # is.na(standardised_n5maths) ~ standardised_gcsemaths)) %>% 
+ # select(mcsid,standardised_maths)
 
 #science
 names(science_score) = c("mcsid", "science_gcse")
 names(scotland_science) = c("mcsid", "science_n5")
-exploratory_science = merge(all=TRUE, science_score, scotland_science, by ="mcsid") %>% 
-  mutate(standardised_gcsescience = scale(science_gcse, 
-                                          center = TRUE, scale = TRUE)) %>% 
-  mutate(standardised_n5science = scale(science_n5, 
-                                        center = TRUE, scale = TRUE)) %>% 
-  mutate(standardised_science = case_when(!is.na(standardised_gcsescience)~standardised_gcsescience, 
-                                          is.na(standardised_gcsescience) ~ standardised_n5science, 
-                                          !is.na(standardised_n5science) ~standardised_n5science,
-                                          is.na(standardised_n5science) ~ standardised_gcsescience)) %>% 
-  select(mcsid,standardised_science)
+exploratory_science = merge(all=TRUE, science_score, scotland_science, by ="mcsid") 
+#  mutate(standardised_gcsescience = scale(science_gcse, 
+     #                                     center = TRUE, scale = TRUE)) %>% 
+ # mutate(standardised_n5science = scale(science_n5, 
+        #                                center = TRUE, scale = TRUE)) %>% 
+  #mutate(standardised_science = case_when(!is.na(standardised_gcsescience)~standardised_gcsescience, 
+   #                                       is.na(standardised_gcsescience) ~ standardised_n5science, 
+         #                                 !is.na(standardised_n5science) ~standardised_n5science,
+          #                                is.na(standardised_n5science) ~ standardised_gcsescience)) %>% 
+  #select(mcsid,standardised_science)
 
 exploratory_education = merge(all=TRUE, exploratory_english, exploratory_maths, by = "mcsid")
 exploratory_education = merge(all=TRUE, exploratory_education, exploratory_science, by="mcsid")
