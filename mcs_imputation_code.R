@@ -131,18 +131,18 @@ methods(mice)
 #polynomial regression for categorical variables 
 #cart regression trees for continuous variables
 
-meth[c("sex")]="logreg"
+meth[c("sex")]="logreg.boot"
 meth[c("ethnicity")]="polyreg"
 meth[c("EAL")]="polyreg"
 meth[c("age_atBirth")]="cart" 
-meth[c("highest_nvq")]="polyreg"
-meth[c("oecd_income")]="polyreg"
-meth[c("imd")]="polyreg"
-meth[c("occupational_status")]="polyreg"
+meth[c("highest_nvq")]="polr"
+meth[c("oecd_income")]="polr"
+meth[c("imd")]="polr"
+meth[c("occupational_status")]="polr"
 meth[c("housing_tenure")]="polyreg"
 meth[c("accommodation_type")]="polyreg"
-meth[c("cm_breastfed")]="logreg"
-meth[c("carers_in_hh")]="logreg"
+meth[c("cm_breastfed")]="logreg.boot"
+meth[c("carers_in_hh")]="logreg.boot"
 meth[c("mortgage")]="cart"
 meth[c("houseValue")]="cart"
 meth[c("savings")]="cart"
@@ -150,7 +150,7 @@ meth[c("debt")]="cart"
 meth[c("country")]="polyreg"
 meth[c("caregiver_vocab")]="cart"
 meth[c("age5_vocab")]="cart" 
-meth[c("benchmark_binary", "benchmark_binary_welsh")]="logreg"
+meth[c("benchmark_binary", "benchmark_binary_welsh")]="logreg.boot"
 #meth[c("standardised_core_subjects", "standardised_core_subjectsWelsh", 
       # "standardised_english", "standardised_maths", "standardised_science")]="cart" 
 
@@ -394,6 +394,26 @@ long_format_mcs$standardised_science =
                  country != 3 ~ standardised_science_gcse, #if both GCSE and N5 still missing, and country not scotland, set to be imputed GCSE
                  country == 3 ~ standardised_science_n5)) #if both GCSE and N5 still missing, and country is scotland, set to be N5
 
+#create outcome variable for Welsh sensitivity analysis - average core GCSE subjects including Welsh for those in Wales or N5.
+long_format_mcs$standardised_core_subjectsWelsh = 
+  with(long_format_mcs,
+       case_when(.imp == 0 & !is.na(standardised_welsh_averageScore) ~ standardised_welsh_averageScore, #in original dataset if GCSE not missing, set this to be GCSE 
+                 .imp == 0 & is.na(standardised_welsh_averageScore) ~ standardised_average_grade_n5, #in original data if GCSE missing, replace with N5
+                 .imp == 0 & !is.na(standardised_average_grade_n5) ~standardised_average_grade_n5, #in original data if N5 not missing, set this to be N5
+                 .imp == 0 & is.na(standardised_average_grade_n5) ~ standardised_welsh_averageScore, #in original data if N5 missing, set as GCSE
+                 country != 3 ~ standardised_welsh_averageScore, #if both GCSE and N5 still missing, and country not scotland, set to be imputed GCSE
+                 country == 3 ~ standardised_average_grade_n5)) #if both GCSE and N5 still missing, and country is scotland, set to be N5
+
+#create binary variable to indicate whether a cohort member has a grade on the core subjects 
+long_format_mcs$has_core_subjects = 
+  with(long_format_mcs,
+       case_when(.imp == 0 & !is.na(average_grade) ~ "1", 
+                 .imp == 0 & !is.na(average_grade_n5) ~ "1",
+                 .imp == 0 & is.na(average_grade) & benchmark_binary == 0 ~ "0", 
+                 .imp == 0 & is.na(average_grade_n5) & benchmark_binary == 0 ~ "0",
+                 benchmark_binary == 1 ~ "1", 
+                 benchmark_binary == 0 ~ "0"))
+long_format_mcs$has_core_subjects = as.factor(long_format_mcs$has_core_subjects)
 
 #convert back to mids object.
 imputed_mcs2<-as.mids(long_format_mcs)
