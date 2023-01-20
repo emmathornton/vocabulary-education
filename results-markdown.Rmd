@@ -44,7 +44,8 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/updated MCS datasets/education-datasetsDec22/2022-12-13_vocabulary_education_imputedMAIN/2022-12-13_vocabulary_education_imputedMAIN.Rdata")
+#load("~/Documents/updated MCS datasets/education-datasetsDec22/2022-12-13_vocabulary_education_imputedMAIN/2022-12-13_vocabulary_education_imputedMAIN.Rdata")
+load("~/Documents/updated MCS datasets/education-datasetsDec22/2023-01-20_vocabulary_education_imputedMAIN/2023-01-20_vocabulary_education_imputedMAIN.Rdata")
 imputed_mcs2 = mi.res
 
 
@@ -60,7 +61,7 @@ remember, having grade 4/c above in core subjects is the reference category.
 #binary outcome ####
 #unadjusted relationship 
 
-binary_unadjusted = with(imputed_mcs2, glm(success ~ age5_standardised,
+binary_unadjusted = with(imputed_mcs2, glm(success ~ standardised_age5_vocab,
                                         family = binomial,  weights = weight))
 
 binary_unadjusted_results = round(summary(pool(binary_unadjusted), conf.int = TRUE, exponentiate = TRUE),2)
@@ -72,12 +73,12 @@ binary_model1 = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country
 
 binary_model2 = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised, 
+                                         imd + standardised_caregiver_vocab, 
                                        family = binomial, weights = weight))
 
 binary_model3 = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised + age5_standardised, 
+                                         imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                        family = binomial, weights = weight))
 
 binary_model1Results = summary(pool(binary_model1), conf.int = TRUE, exponentiate = TRUE)
@@ -107,7 +108,7 @@ D1(binary_model3, binary_model2)
 #continuous outcome####
 #unadjusted relationship
 
-continuous_unadjusted = with(imputed_mcs2, lm(standardised_core_subjects ~ age5_standardised, weights = weight))
+continuous_unadjusted = with(imputed_mcs2, lm(standardised_core_subjects ~ standardised_age5_vocab, weights = weight))
 
 continuous_unadjusted_results = round(summary(pool(continuous_unadjusted), conf.int = TRUE),2)
 
@@ -118,12 +119,12 @@ continuous_model1 = with(imputed_mcs2, lm(standardised_core_subjects ~ sex + eth
 
 continuous_model2 = with(imputed_mcs2, lm(standardised_core_subjects ~ sex + ethnicity + EAL + country +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised, 
+                                         imd + standardised_caregiver_vocab, 
                                         weights = weight))
 
 continuous_model3 = with(imputed_mcs2, lm(standardised_core_subjects ~ sex + ethnicity + EAL + country +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised + age5_standardised, 
+                                         imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                         weights = weight))
 
 continuous_model1Results = summary(pool(continuous_model1), conf.int = TRUE)
@@ -237,9 +238,9 @@ binary_model2Results = binary_model2Results %>% select(term, model2_OR)
 binary_model3Results = binary_model3Results %>% select(term, model3_OR)
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-binary_model1Results = binary_model1Results %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised")
-binary_model2Results = binary_model2Results %>% add_row(term = "age5_standardised")
+binary_model1Results = binary_model1Results %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab")
+binary_model2Results = binary_model2Results %>% add_row(term = "standardised_age5_vocab")
 
 binary_outcomeResults = cbind(binary_model1Results, binary_model2Results, binary_model3Results)
 binary_outcomeResults = binary_outcomeResults %>% select(!3 & !5)
@@ -264,10 +265,10 @@ continuous_model3Results = continuous_model3Results %>% select(term, model3_b)
 
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-continuous_model1Results = continuous_model1Results %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised") %>% 
+continuous_model1Results = continuous_model1Results %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model1_b =paste0(cont_model1R2$est,"[", cont_model1R2$`lo 95`, ";", cont_model1R2$`hi 95`,"]"), .after = 39)
-continuous_model2Results = continuous_model2Results %>% add_row(term = "age5_standardised") %>% 
+continuous_model2Results = continuous_model2Results %>% add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model2_b =paste0(cont_model2R2$est,"[", cont_model2R2$`lo 95`, ";", cont_model2R2$`hi 95`,"]"), .after = 39)
 continuous_model3Results = continuous_model3Results %>% 
   add_row(term = "R2", model3_b =paste0(cont_model3R2$est,"[", cont_model3R2$`lo 95`, ";", cont_model3R2$`hi 95`,"]"), .after = 39)
@@ -668,7 +669,7 @@ levels(imputed_data25$composite_quintiles)[5] = "5"
 
 compositeModerator_model <- function(df) {
   fit <- glm(success ~ sex + ethnicity + EAL + country +
-               + caregiver_vocabStandardised + ses_latent*age5_standardised, 
+               + standardised_caregiver_vocab + ses_latent*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -685,7 +686,7 @@ moderator_composite <- summary(pool(as.mira(compositeModerator)),conf.int = TRUE
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 noCompositeModerator_model <- function(df) {
   fit1 <- glm(success ~ sex + ethnicity + EAL + country +
-                + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
+                + standardised_caregiver_vocab +  ses_latent + standardised_age5_vocab , 
               family = binomial, weights = weight, data=df)
   return(fit1)
 }
@@ -714,12 +715,12 @@ MODERATOR ANALYSIS ON EACH INDIVIDUAL SEC PREDICTOR
 #vocabulary*NVQ interaction term
 NVQ_moderator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                                           oecd_income + occupational_status + wealth_quintiles + imd + 
-                                         caregiver_vocabStandardised + highest_nvq*age5_standardised, 
+                                         standardised_caregiver_vocab + highest_nvq*standardised_age5_vocab, 
                                          family = binomial, weights = weight))
 #no interaction term
 NVQ_noModerator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                            oecd_income + occupational_status + wealth_quintiles + imd + 
-                                           caregiver_vocabStandardised + highest_nvq + age5_standardised, 
+                                           standardised_caregiver_vocab + highest_nvq + standardised_age5_vocab, 
                                          family = binomial, weights = weight))
 #pooled results of models 
 NVQ_moderatorResults = summary(pool(NVQ_moderator), conf.int = TRUE, exponentiate = TRUE)
@@ -731,12 +732,12 @@ D1(NVQ_moderator, NVQ_noModerator)
 #vocabulary*occupation interaction term
 occupation_moderator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                                 highest_nvq+ oecd_income  + wealth_quintiles + imd + 
-                                         caregiver_vocabStandardised + occupational_status*age5_standardised, 
+                                         standardised_caregiver_vocab + occupational_status*standardised_age5_vocab, 
                                        family = binomial, weights = weight))
 #no interaction term
 occupation_noModerator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                            highest_nvq + oecd_income  + wealth_quintiles + imd + 
-                                           caregiver_vocabStandardised + occupational_status + age5_standardised, 
+                                           standardised_caregiver_vocab + occupational_status + standardised_age5_vocab, 
                                          family = binomial, weights = weight))
 #pooled results of models 
 occupation_moderatorResults = summary(pool(occupation_moderator), conf.int = TRUE, exponentiate = TRUE)
@@ -748,12 +749,12 @@ D1(occupation_moderator, occupation_noModerator)
 #vocabulary*income interaction term
 income_moderator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                                 highest_nvq+ occupational_status  + wealth_quintiles + imd + 
-                                                caregiver_vocabStandardised + oecd_income*age5_standardised, 
+                                                standardised_caregiver_vocab + oecd_income*standardised_age5_vocab, 
                                               family = binomial, weights = weight))
 #no interaction term
 income_noModerator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                                   highest_nvq + occupational_status  + wealth_quintiles + imd + 
-                                                  caregiver_vocabStandardised + oecd_income + age5_standardised, 
+                                                  standardised_caregiver_vocab + oecd_income + standardised_age5_vocab, 
                                                 family = binomial, weights = weight))
 #pooled results of models 
 income_moderatorResults = summary(pool(income_moderator), conf.int = TRUE, exponentiate = TRUE)
@@ -765,12 +766,12 @@ D1(income_moderator, income_noModerator)
 #vocabulary*wealth interaction term
 wealth_moderator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                             highest_nvq+ oecd_income + occupational_status   + imd + 
-                                            caregiver_vocabStandardised + wealth_quintiles*age5_standardised, 
+                                            standardised_caregiver_vocab + wealth_quintiles*standardised_age5_vocab, 
                                           family = binomial, weights = weight))
 #no interaction term
 wealth_noModerator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                               highest_nvq + oecd_income + occupational_status  + wealth_quintiles + imd + 
-                                              caregiver_vocabStandardised + wealth_quintiles + age5_standardised, 
+                                              standardised_caregiver_vocab + wealth_quintiles + standardised_age5_vocab, 
                                             family = binomial, weights = weight))
 #pooled results of models 
 wealth_moderatorResults = summary(pool(wealth_moderator), conf.int = TRUE, exponentiate = TRUE)
@@ -782,12 +783,12 @@ D1(wealth_moderator, wealth_noModerator)
 #vocabulary*wealth interaction term
 imd_moderator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                             highest_nvq+ oecd_income + occupational_status + wealth_quintiles + 
-                                            caregiver_vocabStandardised + imd*age5_standardised, 
+                                            standardised_caregiver_vocab + imd*standardised_age5_vocab, 
                                           family = binomial, weights = weight))
 #no interaction term
 imd_noModerator = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
                                               highest_nvq + oecd_income + occupational_status  + wealth_quintiles + 
-                                              caregiver_vocabStandardised + imd + age5_standardised, 
+                                              standardised_caregiver_vocab + imd + standardised_age5_vocab, 
                                             family = binomial, weights = weight))
 #pooled results of models 
 imd_moderatorResults = summary(pool(imd_moderator), conf.int = TRUE, exponentiate = TRUE)
@@ -862,7 +863,7 @@ NVQ_moderatorResults1 = NVQ_moderatorResults1 %>% select(term, nvq_secMod) %>%
   add_row(term = "wealth_quintiles1", .before = 25) %>% 
   add_row(term = "imd1", .before = 30 ) %>% 
   add_row(term = "highest_nvq1", .before = 41) %>% 
-  add_row(term = "highest_nvq1:age5_standardised", .before =48)
+  add_row(term = "highest_nvq1:standardised_age5_vocab", .before =48)
 NVQ_moderatorResults1 [is.na(NVQ_moderatorResults1)] <- "REFERENCE"
 
 #rename variables column 
@@ -904,7 +905,7 @@ occupation_moderatorResults1 = occupation_moderatorResults1 %>% select(term, occ
   add_row(term = "wealth_quintiles1", .before = 27) %>% 
   add_row(term = "imd1", .before = 32) %>% 
   add_row(term = "occupational_status2", .before = 43) %>% 
-  add_row(term = "occupational_status2:age5_standardised*", .before =48)
+  add_row(term = "occupational_status2:standardised_age5_vocab*", .before =48)
 occupation_moderatorResults1 [is.na(occupation_moderatorResults1)] <- "REFERENCE"
 
 #rename variables column 
@@ -947,7 +948,7 @@ income_moderatorResults1 = income_moderatorResults1 %>% select(term, income_secM
   add_row(term = "wealth_quintiles1", .before = 26) %>% 
   add_row(term = "imd1", .before = 31) %>% 
   add_row(term = "oecd_income1", .before = 42) %>% 
-  add_row(term = "oecd_income1:age5_standardised", .before =48)
+  add_row(term = "oecd_income1:standardised_age5_vocab", .before =48)
 income_moderatorResults1 [is.na(income_moderatorResults1)] <- "REFERENCE"
 
 #rename variables column 
@@ -990,7 +991,7 @@ wealth_moderatorResults1 = wealth_moderatorResults1 %>% select(term, wealth_secM
   add_row(term = "occupational_status2", .after= 26) %>% 
   add_row(term = "imd1", .before = 31) %>% 
   add_row(term = "wealth_quintiles1", .before = 42) %>% 
-  add_row(term = "wealth_quintiles1:age5_standardised", .before =48)
+  add_row(term = "wealth_quintiles1:standardised_age5_vocab", .before =48)
 wealth_moderatorResults1 [is.na(wealth_moderatorResults1)] <- "REFERENCE"
 
 #rename variables column 
@@ -1035,7 +1036,7 @@ imd_moderatorResults1 = imd_moderatorResults1 %>% select(term, imd_secMod) %>%
   add_row(term = "occupational_status2", .after= 26) %>% 
   add_row(term = "wealth_quintiles1", .before = 31) %>% 
   add_row(term = "imd1", .before = 37) %>% 
-  add_row(term = "imd_quintiles1:age5_standardised", .before =48)
+  add_row(term = "imd_quintiles1:standardised_age5_vocab", .before =48)
 imd_moderatorResults1 [is.na(imd_moderatorResults1)] <- "REFERENCE"
 
 #rename variables column 
@@ -1343,7 +1344,7 @@ plots of predicted probabilities
 #regression model
 compositeQuintiles_model <- function(df) {
   fit <- glm(success ~ sex + ethnicity + EAL + country +
-               + caregiver_vocabStandardised + composite_quintiles*age5_standardised, 
+               + standardised_caregiver_vocab + composite_quintiles*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -1357,13 +1358,13 @@ compositeQuintiles<- lapply(list(imputed_data1, imputed_data2, imputed_data3, im
                             compositeQuintiles_model)
 
 #get probabilities
-composite_quintiles = lapply(compositeQuintiles, ggpredict, terms = c("age5_standardised[all]", "composite_quintiles"))
+composite_quintiles = lapply(compositeQuintiles, ggpredict, terms = c("standardised_age5_vocab[all]", "composite_quintiles"))
 
 #nvq
 nvq1 <- function(df) {
   fit <- glm(success ~ sex + ethnicity + EAL + country +
                oecd_income + occupational_status + wealth_quintiles + imd + 
-               caregiver_vocabStandardised + highest_nvq*age5_standardised, 
+               standardised_caregiver_vocab + highest_nvq*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -1373,14 +1374,14 @@ nvq_model <- lapply(list(imputed_data1, imputed_data2, imputed_data3, imputed_da
                    imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20,
                    imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25),
               nvq1)
-predicted_nvq = lapply(nvq_model, ggpredict, terms = c("age5_standardised[all]", "highest_nvq"))
+predicted_nvq = lapply(nvq_model, ggpredict, terms = c("standardised_age5_vocab[all]", "highest_nvq"))
 
 #income 
 
 income1 <- function(df) {
   fit <- glm(success ~ sex + ethnicity + EAL + country +
                highest_nvq+ occupational_status  + wealth_quintiles + imd + 
-               caregiver_vocabStandardised + oecd_income*age5_standardised, 
+               standardised_caregiver_vocab + oecd_income*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -1390,14 +1391,14 @@ income_model <- lapply(list(imputed_data1, imputed_data2, imputed_data3, imputed
                          imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20,
                          imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25),
                     income1)
-predicted_income = lapply(income_model, ggpredict, terms = c("age5_standardised[all]", "oecd_income"))
+predicted_income = lapply(income_model, ggpredict, terms = c("standardised_age5_vocab[all]", "oecd_income"))
 
 
 #wealth
 wealth1 <- function(df) {
   fit <- glm(success ~ sex + ethnicity + EAL + country +
                highest_nvq+ oecd_income + occupational_status   + imd + 
-               caregiver_vocabStandardised + wealth_quintiles*age5_standardised, 
+               standardised_caregiver_vocab + wealth_quintiles*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -1407,7 +1408,7 @@ wealth_model <- lapply(list(imputed_data1, imputed_data2, imputed_data3, imputed
                             imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20,
                             imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25),
                        wealth1)
-predicted_wealth = lapply(wealth_model, ggpredict, terms = c("age5_standardised[all]", "wealth_quintiles"))
+predicted_wealth = lapply(wealth_model, ggpredict, terms = c("standardised_age5_vocab[all]", "wealth_quintiles"))
 
 
 #occupational status
@@ -1415,7 +1416,7 @@ predicted_wealth = lapply(wealth_model, ggpredict, terms = c("age5_standardised[
 occupation1 <- function(df) {
   fit <- glm(success ~ sex + ethnicity + EAL + country +
                highest_nvq + oecd_income  + wealth_quintiles + imd + 
-               caregiver_vocabStandardised + occupational_status + age5_standardised, 
+               standardised_caregiver_vocab + occupational_status + standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -1425,7 +1426,7 @@ occupation_model <- lapply(list(imputed_data1, imputed_data2, imputed_data3, imp
                             imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20,
                             imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25),
                        occupation1)
-predicted_occupation = lapply(occupation_model, ggpredict, terms = c("age5_standardised[all]", "occupational_status"))
+predicted_occupation = lapply(occupation_model, ggpredict, terms = c("standardised_age5_vocab[all]", "occupational_status"))
 
 
 
@@ -1437,7 +1438,7 @@ predicted_occupation = lapply(occupation_model, ggpredict, terms = c("age5_stand
 imd1 <- function(df) {
   fit <- glm(success ~ sex + ethnicity + EAL + country +
                highest_nvq + oecd_income + occupational_status  + wealth_quintiles + 
-               caregiver_vocabStandardised + imd + age5_standardised, 
+               standardised_caregiver_vocab + imd + standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -1447,7 +1448,7 @@ imd_model <- lapply(list(imputed_data1, imputed_data2, imputed_data3, imputed_da
                                 imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20,
                                 imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25),
                            imd1)
-predicted_imd= lapply(imd_model, ggpredict, terms = c("age5_standardised[all]", "imd"))
+predicted_imd= lapply(imd_model, ggpredict, terms = c("standardised_age5_vocab[all]", "imd"))
 
 #PLOTS####
 
@@ -1821,19 +1822,19 @@ We therefore ran sensitivity analyses for our SEC* vocabulary moderations, where
 
 #vocabulary*NVQ interaction term
 NVQ_moderatorSensitivity = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
-                                                          oecd_income*age5_standardised + oecd_income*highest_nvq + 
-                                                    occupational_status*age5_standardised +occupational_status*highest_nvq +
-                                                    wealth_quintiles*age5_standardised + wealth_quintiles*highest_nvq + 
-                                                    imd*age5_standardised + imd*highest_nvq + 
-                                         caregiver_vocabStandardised + highest_nvq*age5_standardised, 
+                                                          oecd_income*standardised_age5_vocab + oecd_income*highest_nvq + 
+                                                    occupational_status*standardised_age5_vocab +occupational_status*highest_nvq +
+                                                    wealth_quintiles*standardised_age5_vocab + wealth_quintiles*highest_nvq + 
+                                                    imd*standardised_age5_vocab + imd*highest_nvq + 
+                                         standardised_caregiver_vocab + highest_nvq*standardised_age5_vocab, 
                                          family = binomial, weights = weight))
 
 NVQ_moderatorSensitivity_noInt = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
-                                                          oecd_income*age5_standardised + oecd_income*highest_nvq + 
-                                                    occupational_status*age5_standardised +occupational_status*highest_nvq +
-                                                    wealth_quintiles*age5_standardised + wealth_quintiles*highest_nvq + 
-                                                    imd*age5_standardised + imd*highest_nvq + 
-                                         caregiver_vocabStandardised + highest_nvq + age5_standardised, 
+                                                          oecd_income*standardised_age5_vocab + oecd_income*highest_nvq + 
+                                                    occupational_status*standardised_age5_vocab +occupational_status*highest_nvq +
+                                                    wealth_quintiles*standardised_age5_vocab + wealth_quintiles*highest_nvq + 
+                                                    imd*standardised_age5_vocab + imd*highest_nvq + 
+                                         standardised_caregiver_vocab + highest_nvq + standardised_age5_vocab, 
                                          family = binomial, weights = weight))
 
 
@@ -1843,19 +1844,19 @@ D1(NVQ_moderatorSensitivity, NVQ_moderatorSensitivity_noInt)
 #2. occupational status as the moderator 
 #vocabulary*occupation interaction term
 occupation_moderatorSensitivity = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
-                                                           highest_nvq*age5_standardised + highest_nvq*occupational_status+
-                                                           oecd_income*age5_standardised + oecd_income*occupational_status + 
-                                                    wealth_quintiles*age5_standardised + wealth_quintiles*occupational_status + 
-                                                    imd*age5_standardised + imd*occupational_status + 
-                                         caregiver_vocabStandardised + occupational_status*age5_standardised, 
+                                                           highest_nvq*standardised_age5_vocab + highest_nvq*occupational_status+
+                                                           oecd_income*standardised_age5_vocab + oecd_income*occupational_status + 
+                                                    wealth_quintiles*standardised_age5_vocab + wealth_quintiles*occupational_status + 
+                                                    imd*standardised_age5_vocab + imd*occupational_status + 
+                                         standardised_caregiver_vocab + occupational_status*standardised_age5_vocab, 
                                        family = binomial, weights = weight))
 
 occupation_moderatorSensitivity_noInt = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
-                                                           highest_nvq*age5_standardised + highest_nvq*occupational_status+
-                                                           oecd_income*age5_standardised + oecd_income*occupational_status + 
-                                                    wealth_quintiles*age5_standardised + wealth_quintiles*occupational_status + 
-                                                    imd*age5_standardised + imd*occupational_status + 
-                                         caregiver_vocabStandardised + occupational_status + age5_standardised, 
+                                                           highest_nvq*standardised_age5_vocab + highest_nvq*occupational_status+
+                                                           oecd_income*standardised_age5_vocab + oecd_income*occupational_status + 
+                                                    wealth_quintiles*standardised_age5_vocab + wealth_quintiles*occupational_status + 
+                                                    imd*standardised_age5_vocab + imd*occupational_status + 
+                                         standardised_caregiver_vocab + occupational_status + standardised_age5_vocab, 
                                        family = binomial, weights = weight))
 
 D1(occupation_moderatorSensitivity, occupation_moderatorSensitivity_noInt)
@@ -1864,19 +1865,19 @@ D1(occupation_moderatorSensitivity, occupation_moderatorSensitivity_noInt)
 #3. income as the moderator 
 #vocabulary*income interaction term
 income_moderatorSensitivity = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
-                                                       highest_nvq*age5_standardised + highest_nvq*oecd_income+
-                                                    occupational_status*age5_standardised +occupational_status*oecd_income +
-                                                    wealth_quintiles*age5_standardised + wealth_quintiles*oecd_income + 
-                                                    imd*age5_standardised + imd*oecd_income + 
-                                                      caregiver_vocabStandardised + oecd_income*age5_standardised, 
+                                                       highest_nvq*standardised_age5_vocab + highest_nvq*oecd_income+
+                                                    occupational_status*standardised_age5_vocab +occupational_status*oecd_income +
+                                                    wealth_quintiles*standardised_age5_vocab + wealth_quintiles*oecd_income + 
+                                                    imd*standardised_age5_vocab + imd*oecd_income + 
+                                                      standardised_caregiver_vocab + oecd_income*standardised_age5_vocab, 
                                                     family = binomial, weights = weight))
 
 income_moderatorSensitivity_noInt = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
-                                                       highest_nvq*age5_standardised + highest_nvq*oecd_income+
-                                                    occupational_status*age5_standardised +occupational_status*oecd_income +
-                                                    wealth_quintiles*age5_standardised + wealth_quintiles*oecd_income + 
-                                                    imd*age5_standardised + imd*oecd_income + 
-                                                      caregiver_vocabStandardised + oecd_income + age5_standardised, 
+                                                       highest_nvq*standardised_age5_vocab + highest_nvq*oecd_income+
+                                                    occupational_status*standardised_age5_vocab +occupational_status*oecd_income +
+                                                    wealth_quintiles*standardised_age5_vocab + wealth_quintiles*oecd_income + 
+                                                    imd*standardised_age5_vocab + imd*oecd_income + 
+                                                      standardised_caregiver_vocab + oecd_income + standardised_age5_vocab, 
                                                     family = binomial, weights = weight))
 
 D1(income_moderatorSensitivity, income_moderatorSensitivity_noInt)
@@ -1884,19 +1885,19 @@ D1(income_moderatorSensitivity, income_moderatorSensitivity_noInt)
 #4. wealth as the moderator 
 #vocabulary*wealth interaction term
 wealth_moderatorSensitivity = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
-                                            highest_nvq*age5_standardised + highest_nvq*wealth_quintiles +
-                                              oecd_income*age5_standardised + oecd_income*wealth_quintiles + 
-                                              occupational_status*age5_standardised + occupational_status*wealth_quintiles +
-                                              imd*age5_standardised + imd*wealth_quintiles + 
-                                            caregiver_vocabStandardised + wealth_quintiles*age5_standardised, 
+                                            highest_nvq*standardised_age5_vocab + highest_nvq*wealth_quintiles +
+                                              oecd_income*standardised_age5_vocab + oecd_income*wealth_quintiles + 
+                                              occupational_status*standardised_age5_vocab + occupational_status*wealth_quintiles +
+                                              imd*standardised_age5_vocab + imd*wealth_quintiles + 
+                                            standardised_caregiver_vocab + wealth_quintiles*standardised_age5_vocab, 
                                           family = binomial, weights = weight))
 
 wealth_moderatorSensitivity_noInt = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
-                                            highest_nvq*age5_standardised + highest_nvq*wealth_quintiles +
-                                              oecd_income*age5_standardised + oecd_income*wealth_quintiles + 
-                                              occupational_status*age5_standardised + occupational_status*wealth_quintiles +
-                                              imd*age5_standardised + imd*wealth_quintiles + 
-                                            caregiver_vocabStandardised + wealth_quintiles + age5_standardised, 
+                                            highest_nvq*standardised_age5_vocab + highest_nvq*wealth_quintiles +
+                                              oecd_income*standardised_age5_vocab + oecd_income*wealth_quintiles + 
+                                              occupational_status*standardised_age5_vocab + occupational_status*wealth_quintiles +
+                                              imd*standardised_age5_vocab + imd*wealth_quintiles + 
+                                            standardised_caregiver_vocab + wealth_quintiles + standardised_age5_vocab, 
                                           family = binomial, weights = weight))
 
 D1(wealth_moderatorSensitivity, wealth_moderatorSensitivity_noInt)
@@ -1904,19 +1905,19 @@ D1(wealth_moderatorSensitivity, wealth_moderatorSensitivity_noInt)
 #5. imd as the moderator 
 #vocabulary*wealth interaction term
 imd_moderatorSensitivity  = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
-                                            highest_nvq*age5_standardised + highest_nvq*imd +
-                                              oecd_income*age5_standardised + oecd_income*imd + 
-                                              occupational_status*age5_standardised +occupational_status*imd +
-                                              wealth_quintiles*age5_standardised + wealth_quintiles*imd + 
-                                            caregiver_vocabStandardised + imd*age5_standardised, 
+                                            highest_nvq*standardised_age5_vocab + highest_nvq*imd +
+                                              oecd_income*standardised_age5_vocab + oecd_income*imd + 
+                                              occupational_status*standardised_age5_vocab +occupational_status*imd +
+                                              wealth_quintiles*standardised_age5_vocab + wealth_quintiles*imd + 
+                                            standardised_caregiver_vocab + imd*standardised_age5_vocab, 
                                           family = binomial, weights = weight))
 
 imd_moderatorSensitivity_noInt  = with(imputed_mcs2, glm(success ~ sex + ethnicity + EAL + country +
-                                            highest_nvq*age5_standardised + highest_nvq*imd +
-                                              oecd_income*age5_standardised + oecd_income*imd + 
-                                              occupational_status*age5_standardised +occupational_status*imd +
-                                              wealth_quintiles*age5_standardised + wealth_quintiles*imd + 
-                                            caregiver_vocabStandardised + imd + age5_standardised, 
+                                            highest_nvq*standardised_age5_vocab + highest_nvq*imd +
+                                              oecd_income*standardised_age5_vocab + oecd_income*imd + 
+                                              occupational_status*standardised_age5_vocab +occupational_status*imd +
+                                              wealth_quintiles*standardised_age5_vocab + wealth_quintiles*imd + 
+                                            standardised_caregiver_vocab + imd + standardised_age5_vocab, 
                                           family = binomial, weights = weight))
 
 D1(imd_moderatorSensitivity, imd_moderatorSensitivity_noInt)
