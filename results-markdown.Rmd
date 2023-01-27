@@ -94,11 +94,19 @@ binary_model3Results = summary(pool(binary_model3), conf.int = TRUE, exponentiat
 #create null model 
 null_binaryModel = with(imputed_mcs2, glm(success ~ 1,
                                         family = binomial,  weights = weight))
-D1(binary_model1, null_binaryModel)
+binary_educationModel1 = D1(binary_model1, null_binaryModel)
 #model 2 compared to model 1
-D1(binary_model2, binary_model1) 
+binary_educationModel2= D1(binary_model2, binary_model1) 
 #compare model with all confounders to model with vocab
-D1(binary_model3, binary_model2) 
+binary_educationModel3 = D1(binary_model3, binary_model2) 
+
+#write results sentence
+binary_educationModel1 = binary_educationModel1$result
+binary_educationModel2 = binary_educationModel2$result
+binary_educationModel3 = binary_educationModel3$result
+
+paste0("Compared to a model with no predictors, a model with sociodemographic confounding variables improved the model fit (Dm(",binary_educationModel1[,2],",",round(binary_educationModel1[,3],2),")=", round(binary_educationModel1[,1],2), ", p=", round(binary_educationModel1[,4],3), "). Further, compared to a model containing only sociodemographic predictors, a model that also included caregiver vocabulary improved the model fit (Dm(",binary_educationModel2[,2],",",round(binary_educationModel2[,3],2),")=", round(binary_educationModel2[,1],2), ", p=", round(binary_educationModel2[,4],3), "), indicating that caregiver vocabulary predicted variance in achieving the benchmark above sociodemographic variables. Finally, adding age 5 vocabulary scores to a model containing sociodemographic and caregiver vocabulary factors improved the model fit (Dm(", binary_educationModel3[,2],",",round(binary_educationModel3[,3],2),")=", round(binary_educationModel3[,1],2), ", p=", round(binary_educationModel3[,4],3),") such that higher vocabulary scores were associated with increased odds of passing the benchmark grade threshold:")
+#Write into sentence
 ```
 
 2. Continuous outcome variable####
@@ -144,11 +152,18 @@ cont_model3R2 = as.data.frame(round(pool.r.squared(continuous_model3),4)*100)
 #compare sociodemographics model to no predictors
 #create null model 
 null_continuousModel =  with(imputed_mcs2, lm(standardised_core_subjects ~ 1, weights = weight))
-D1(continuous_model1, null_continuousModel)
+continuous_educationModel1 = D1(continuous_model1, null_continuousModel)
 #compare model with only sociodemographic factors to a model with caregiver vocab
-D1(continuous_model2, continuous_model1) #check if need to use a specific method ?
+continuous_educationModel2 = D1(continuous_model2, continuous_model1) #check if need to use a specific method ?
 #compare model with all confounders to model with vocab
-D1(continuous_model3, continuous_model2) 
+continuous_educationModel3 = D1(continuous_model3, continuous_model2) 
+
+continuous_educationModel1 = continuous_educationModel1$result
+continuous_educationModel2 = continuous_educationModel2$result
+continuous_educationModel3 = continuous_educationModel3$result
+#Write results sentence 
+paste0("Compared to a model with no predictors, a model with sociodemographic confounding variables improved the model fit (Dm(",continuous_educationModel1[,2],",",round(continuous_educationModel1[,3],2),")=", round(continuous_educationModel1[,1],2), ", p=", round(continuous_educationModel1[,4],3), "). Further, compared to a model containing only sociodemographic predictors, a model that also included caregiver vocabulary improved the model fit (Dm(",continuous_educationModel2[,2],",",round(continuous_educationModel2[,3],2),")=", round(continuous_educationModel2[,1],2), ", p=", round(continuous_educationModel2[,4],3), "), indicating that caregiver vocabulary predicted variance in achieving average performance across core subjects, above sociodemographic variables. Finally, adding age 5 vocabulary scores to a model containing sociodemographic and caregiver vocabulary factors improved the model fit (Dm(", continuous_educationModel3[,2],",",round(continuous_educationModel3[,3],2),")=", round(continuous_educationModel3[,1],2), ", p=", round(continuous_educationModel3[,4],3),") with higher vocabulary scores predicting higher levels of overall achievement, above and beyond sociodemographic and caregiver vocabulary factors:")
+
 ```
 
 gather relevant information for table for RQ 1 & 2
