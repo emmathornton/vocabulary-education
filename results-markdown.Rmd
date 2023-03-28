@@ -1481,9 +1481,9 @@ compositeQuintiles_plot = plot(pool_predictions(composite_quintiles), ci = TRUE,
                     breaks=c("1", "2", "3", "4", "5"),
                     labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
   labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
-       y = "Achieving ≥ Grade 4 on Core Subjects ", 
-       title = "Figure 1: Predicted Probabilities of Achieving the Benchmark Threshold for Vocabulary in each SEC Quintile",
-       caption = "*Predicted probabilities when sex, ethnicity, EAL status and country set to reference levels and caregiver vocabulary score set to the mean.\n See table S9 for predicted values.") +
+       y = "Achieving Benchmark Educational Qualifications", 
+       title = "Figure 1: Predicted probabilities of achieving benchmark educational qualifications for different levels of \n age 5 vocabulary in each SEC quintile")+
+       #caption = "*Predicted probabilities when sex, ethnicity, EAL status and country set to reference levels and caregiver vocabulary score set to the mean.\n See table S9 for predicted values.") +
   labs(colour = "SEC Composite") +
   theme_classic() +
   scale_x_continuous(breaks=seq(-3, 4, .5)) +
@@ -1513,7 +1513,7 @@ compositeQuintiles_plot1 = plot(pool_predictions(composite_quintiles), ci = FALS
                     breaks=c("1", "2", "3", "4", "5"),
                     labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
   labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
-       y = "Achieving ≥ Grade 4 on Core Subjects ", 
+       y = "Achieving Benchmark Educational Qualifications", 
        title = "SEC Composite") +
   labs(colour = "SEC Composite") +
   theme_classic() +
@@ -1544,7 +1544,7 @@ nvq_plot = plot(pool_predictions(predicted_nvq), ci = FALSE,
                     breaks=c("1",  "2", "3", "4", "5","0"),
                     labels=c("NVQ1 (Lowest Qualifications)", "NVQ2", "NVQ3", "NVQ4", "NVQ5",  "No/ overseas qualifications")) +
   labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
-       y = "Achieving ≥ Grade 4 on Core Subjects ", 
+       y = "Achieving Benchmark Educational Qualifications", 
        title = "Parent Education") +
   theme_classic() +
   scale_x_continuous(breaks=seq(-3, 4, .5)) +
@@ -1574,7 +1574,7 @@ income_plot = plot(pool_predictions(predicted_income), ci = FALSE,
                     breaks=c("1", "2", "3", "4", "5"),
                     labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
   labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
-       y = "Achieving ≥ Grade 4 on Core Subjects ", 
+       y = "Achieving Benchmark Educational Qualifications", 
        title = "Household Income  ") +
   theme_classic() +
   scale_x_continuous(breaks=seq(-3, 4, .5)) +
@@ -1602,7 +1602,7 @@ wealth_plot = plot(pool_predictions(predicted_wealth), ci = FALSE,
                     breaks=c("1", "2", "3", "4", "5"),
                     labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
   labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
-       y = "Achieving ≥ Grade 4 on Core Subjects ", 
+       y = "Achieving Benchmark Educational Qualifications", 
        title = "Household Wealth ") +
   theme_classic() +
   scale_x_continuous(breaks=seq(-3, 4, .5)) +
@@ -1631,7 +1631,7 @@ occupation_plot = plot(pool_predictions(predicted_occupation), ci = FALSE,
                     breaks=c("1", "2",  "3", "4"),
                     labels=c("Unemployed", "Routine (Disadvantaged)", "Intermediate", "Higher Managerial (Advantaged)")) +
   labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
-       y = "Achieving ≥ Grade 4 on Core Subjects ", 
+       y = "Achieving Benchmark Educational Qualifications", 
        title = "Parent Occupational Status") +
   theme_classic() +
   scale_x_continuous(breaks=seq(-3, 4, .5)) +
@@ -1662,8 +1662,8 @@ imd_plot = plot(pool_predictions(predicted_imd), ci = FALSE,
                     labels=c("Most Deprived", "10 - <20%", "20 - <30%", "30 - <40%", "40 - <50%", 
                              "50 - <60%", "60 - <70%", "70 - <80%", "80 - <90%", "Least Deprived")) +
   labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
-       y = "Achieving ≥ Grade 4 on Core Subjects ", 
-       title = "Relative Neighbourhood\n Deprivation") +
+       y = "Achieving Benchmark Educational Qualifications", 
+       title = "Relative Neighbourhood Deprivation") +
   theme_classic() +
   scale_x_continuous(breaks=seq(-3, 4, .5)) +
   theme(panel.grid.major.y = element_line(colour = "gainsboro", size = 0.2),
@@ -1681,13 +1681,13 @@ imd_plot = plot(pool_predictions(predicted_imd), ci = FALSE,
 plots = ggarrange(compositeQuintiles_plot1, nvq_plot, income_plot, occupation_plot, wealth_plot, imd_plot, 
                   ncol =2, nrow=3,  align = c( "hv"))
 
-plots = annotate_figure(plots, top = text_grob("Figure 2: Predicted Probabilities of Achieving the Benchmark Threshold for Vocabulary Moderated by each SEC Indicator", 
+plots = annotate_figure(plots, top = text_grob("Figure 3: Predicted probabilities of achieving benchmark educational qualifications for different levels of age 5 vocabulary in each SEC group", 
                                                color = "black", face = "italic", size = 20, family = "Times"))
 
-plots = plots + labs(caption ="*Predicted probabilities when categorical potential confounders (sex, ethnicity, EAL status, country and remaining SEC indicators for individual indicator moderations)\n set to reference levels and caregiver vocabulary score set to the mean.\n See table S9 for predicted probabilities values.") +
-  theme(plot.caption = element_text(size = 16, face = "italic", family = "Times", hjust = 0))
+#plots = plots + labs(caption ="*Predicted probabilities when categorical potential confounders (sex, ethnicity, EAL status, country and remaining SEC indicators for individual indicator moderations)\n set to reference levels and caregiver vocabulary score set to the mean.\n See table S9 for predicted probabilities values.") +
+ # theme(plot.caption = element_text(size = 16, face = "italic", family = "Times", hjust = 0))
 
-ggsave("interaction-plots.png", plots, width=15, height=10, units= "in" ,dpi=300)
+ggsave("interaction-plots.png", plots, width=18, height=12, units= "in" ,dpi=300)
 
 ```
 
@@ -1936,6 +1936,129 @@ imd_moderatorSensitivity_noInt  = with(imputed_mcs2, glm(success ~ sex + ethnici
                                           family = binomial, weights = weight))
 
 D1(imd_moderatorSensitivity, imd_moderatorSensitivity_noInt)
+
+```
+
+
+#### continuous outcome plot ####
+interaction between vocab and sec composite to predict continuous education outcome, plotted alongside binary variable indicating whether cohort members have the core subjects as the outcome variable.
+
+```{r}
+#Set up moderation for continuous outcome 
+compositeQuintiles_model_continuous <- function(df) {
+  fit <- lm(standardised_core_subjects ~ sex + ethnicity + EAL + country +
+               + standardised_caregiver_vocab + 
+              composite_quintiles*standardised_age5_vocab,
+            weights = weight, data=df)
+  return(fit)
+}
+
+compositeQuintiles_cont<- lapply(list(imputed_data1, imputed_data2, imputed_data3, imputed_data4,
+                                      imputed_data5, imputed_data6, imputed_data7, imputed_data8, 
+                                      imputed_data9, imputed_data10, imputed_data11, imputed_data12,
+                                      imputed_data13, imputed_data14, imputed_data15, imputed_data16,
+                                      imputed_data17, imputed_data18, imputed_data19, imputed_data20,
+                                      imputed_data21, imputed_data22, imputed_data23, imputed_data24, 
+                                      imputed_data25),
+                            compositeQuintiles_model_continuous)
+
+#get predicted values
+composite_quintiles_continuous = lapply(compositeQuintiles_cont, ggpredict, 
+                                        terms = c("standardised_age5_vocab[all]", "composite_quintiles"))
+
+#plot 
+compositeQuintiles_plot_continuous = plot(pool_predictions(composite_quintiles_continuous), ci = TRUE)+
+                               #limits = c(0, 1), 
+                              # breaks = seq(0, 1, by = 0.1)) +
+  scale_colour_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                      name="SEC Composite", 
+                      breaks=c("1", "2", "3", "4", "5"),
+                      labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile"))+
+  scale_fill_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                    name="SEC Composite",
+                    breaks=c("1", "2", "3", "4", "5"),
+                    labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
+  labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
+       y = "Average Grade (Standardised)", 
+       title = "Figure 2a: Predicted Values GCSE attainment \n at different levels of Vocabulary in each SEC Quintile")+
+    #   caption = "*Predicted probabilities when sex, ethnicity, EAL status and country set to reference levels and caregiver vocabulary score set to the mean.\n See table S9 for predicted values.") +
+  labs(colour = "SEC Composite") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(-3, 4, .5)) +
+    scale_y_continuous(breaks=seq(-2, 2, .5)) +
+  expand_limits(y=c(-2,2))+
+  theme(panel.grid.major.y = element_line(colour = "gainsboro", size = 0.2),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(), 
+        plot.title = element_text(size = 14, face = "italic", family = "Times"), 
+        plot.caption = element_text(size = 14, face = "italic", family = "Times"),
+        axis.text = element_text(size = 14, family = "Times"),
+        axis.title = element_text(size = 14, family = "Times"),
+        legend.text = element_text(size = 14, family= "Times"), 
+        legend.title = element_text(size = 15, family = "Times"))
+
+
+#set up moderation with the binary variable indicating whether cohort members have core subjects as the outcome 
+compositeQuintiles_hasCoreSubs <- function(df) {
+  fit <- glm(as.factor(has_core_subjects) ~ sex + ethnicity + EAL + country +
+              + standardised_caregiver_vocab + 
+               composite_quintiles*standardised_age5_vocab, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+compositeModerator_hasCoreSubs <- lapply(list(imputed_data1, imputed_data2, imputed_data3, imputed_data4,
+                                              imputed_data5, imputed_data6, imputed_data7, imputed_data8, 
+                                              imputed_data9, imputed_data10, imputed_data11, imputed_data12,
+                                              imputed_data13, imputed_data14, imputed_data15,imputed_data16,
+                                              imputed_data17, imputed_data18, imputed_data19, imputed_data20,
+                                              imputed_data21, imputed_data22, imputed_data23, imputed_data24,
+                                              imputed_data25),
+                                  compositeQuintiles_hasCoreSubs)
+
+
+composite_quintiles_hasCoreSubs = lapply(compositeModerator_hasCoreSubs, ggpredict, 
+                                         terms = c("standardised_age5_vocab[all]", "composite_quintiles"))
+
+#plot
+compositeQuintiles_plot_hasCoreSubs= plot(pool_predictions(composite_quintiles_hasCoreSubs ), ci = TRUE,
+  limits = c(0, 1), 
+  breaks = seq(0, 1, by = 0.1)) +
+  scale_colour_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                      name="SEC Composite", 
+                      breaks=c("1", "2", "3", "4", "5"),
+                      labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile"))+
+  scale_fill_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
+                    name="SEC Composite",
+                    breaks=c("1", "2", "3", "4", "5"),
+                    labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
+  labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
+       y = "Has Core Subjects", 
+       title = "Figure 2b: Predicted Probabilities of having core subjects \n at different levels of Vocabulary in each SEC Quintile")+
+  #   caption = "*Predicted probabilities when sex, ethnicity, EAL status and country set to reference levels and caregiver vocabulary score set to the mean.\n See table S9 for predicted values.") +
+  labs(colour = "SEC Composite") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(-3, 4, .5)) +
+  #scale_y_continuous(breaks=seq(-2, 2, .5)) +
+  #expand_limits(y=c(-2,2))
+theme(panel.grid.major.y = element_line(colour = "gainsboro", size = 0.2),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.minor.y = element_blank(), 
+      plot.title = element_text(size = 14, face = "italic", family = "Times"), 
+      plot.caption = element_text(size = 14, face = "italic", family = "Times"),
+      axis.text = element_text(size = 14, family = "Times"),
+      axis.title = element_text(size = 14, family = "Times"),
+      legend.text = element_text(size = 14, family= "Times"), 
+      legend.title = element_text(size = 15, family = "Times")) 
+
+
+figure_2 = ggarrange(compositeQuintiles_plot_continuous, 
+                     compositeQuintiles_plot_hasCoreSubs, 
+                     nrow = 2, common.legend = TRUE, legend="right")
+
 
 ```
 
