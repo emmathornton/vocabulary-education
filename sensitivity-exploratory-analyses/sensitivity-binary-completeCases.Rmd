@@ -43,14 +43,20 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2022-01-04_vocabulary_education_imputedMAIN/2022-01-04_vocabulary_education_imputedMAIN.Rdata")
+
+load("~/Documents/updated MCS datasets/education-datasetsDec22/2023-01-20_vocabulary_education_imputedMAIN/2023-01-20_vocabulary_education_imputedMAIN.Rdata")
 
 imputed_data= mi.res
 
-long_format_mcs <- mice::complete(imputed_data, "long", include=TRUE)
+long_format_mcs <- mice::complete(imputed_data, "long", include = TRUE)
 
-binary_cc = long_format_mcs %>% filter(.imp ==0 & !is.na(benchmark_binary))
+#load original data to get analytical sample
+vocabulary_education<-read.csv("education_data1.csv")
+vocabulary_education[,1]<- NULL
+
+binary_cc = vocabulary_education %>% filter(!is.na(benchmark_binary))
 binary_complete_cases = long_format_mcs[long_format_mcs$mcsid %in% binary_cc$mcsid,] 
+#binary_complete_cases = binary_complete_cases %>% filter(.imp !=0)
 imputed_mcs2 = as.mids(binary_complete_cases)
 
 ```
