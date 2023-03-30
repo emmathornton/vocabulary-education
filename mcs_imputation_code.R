@@ -269,7 +269,7 @@ imputed_mcs2 = mice(vocabulary_education,
                     predictorMatrix=predM, m=25)  
 
 #deriving post imputation variables####
-long_format_mcs <- mice::complete(imputed_mcs2, "long", include=TRUE)
+long_format_mcs_1 <- mice::complete(imputed_mcs2, "long", include=TRUE)
 
 #long_format_mcs$age5_standardised <- with(long_format_mcs, scale(age5_vocab, center=TRUE, scale=TRUE))
 #long_format_mcs$age5_standardised <- as.numeric(long_format_mcs$age5_standardised)
@@ -280,25 +280,27 @@ long_format_mcs <- mice::complete(imputed_mcs2, "long", include=TRUE)
 #add in standardised caregiver vocab
 
 #deriving  wealth variable
-long_format_mcs$housing_wealth <- with(long_format_mcs, houseValue - mortgage)
-long_format_mcs$financial_wealth <- with(long_format_mcs, savings - debt)
-long_format_mcs$net_wealth <- with(long_format_mcs, housing_wealth + financial_wealth)
+long_format_mcs_1$housing_wealth <- with(long_format_mcs_1, houseValue - mortgage)
+long_format_mcs_1$financial_wealth <- with(long_format_mcs_1, savings - debt)
+long_format_mcs_1$net_wealth <- with(long_format_mcs_1, housing_wealth + financial_wealth)
 #long_format_mcs$standardised_wealth <- with(long_format_mcs, scale(net_wealth, center=TRUE, scale=TRUE))
 #long_format_mcs$standardised_wealth<- as.numeric(long_format_mcs$standardised_wealth)
 
 #convert back to mids object so can add in standardised variables now have derived post-imputation continuous variables
-imputed_mcs2<-as.mids(long_format_mcs)
+imputed_mcs<-as.mids(long_format_mcs_1)
 #standardise continuous variables
 continuous_vars = c("caregiver_vocab","age5_vocab", "net_wealth", 
                     "average_grade", "average_grade_n5", "welsh_averageScore", 
                     "english_gcse", "maths_gcse", "science_gcse", 
                     "english_n5", "maths_n5", "science_n5")  
 
-datlist <- miceadds::mids2datlist(imputed_mcs2)
-sdatlist = miceadds::scale_datlist(datlist, orig_var=continuous_vars, trafo_var=paste0("standardised_",continuous_vars), M = 0, SD = 1)
-imputed_mcs2 <- miceadds::datlist2mids(sdatlist)
-#recreate long_format_mcs so can add in final derived variables
-long_format_mcs <- mice::complete(imputed_mcs2, "long", include=TRUE)
+datlist <- miceadds::mids2datlist(imputed_mcs)
+sdatlist = miceadds::scale_datlist(datlist, orig_var=continuous_vars, 
+                                   trafo_var=paste0("standardised_",continuous_vars),
+                                   M = 0, SD = 1)
+imputed_mcs_standardised <- miceadds::datlist2mids(sdatlist)
+#recreate long_format_mcs so can add in final derived variables #think this is where issue is being introduced. 
+long_format_mcs <- mice::complete(imputed_mcs_standardised, "long", include = TRUE)
 
 long_format_mcs$highest_nvq <- with(long_format_mcs, relevel(highest_nvq, ref = "1"))
 long_format_mcs$highest_nvq <- as.factor(long_format_mcs$highest_nvq)
@@ -325,10 +327,10 @@ long_format_mcs$wealth_quintiles <- as.factor(long_format_mcs$wealth_quintiles)
 #combine these into one outcome variable 
 long_format_mcs$standardised_core_subjects = 
   with(long_format_mcs,
-       case_when(.imp == 0 & !is.na(standardised_average_grade) ~ standardised_average_grade, #in original dataset if GCSE not missing, set this to be GCSE 
-                 .imp == 0 & is.na(standardised_average_grade) ~ standardised_average_grade_n5, #in original data if GCSE missing, replace with N5
-                 .imp == 0 & !is.na(standardised_average_grade_n5) ~standardised_average_grade_n5, #in original data if N5 not missing, set this to be N5
-                 .imp == 0 & is.na(standardised_average_grade_n5) ~ standardised_average_grade, #in original data if N5 missing, set as GCSE
+       case_when(long_format_mcs_1$.imp == 0 & !is.na(standardised_average_grade) ~ standardised_average_grade, #in original dataset if GCSE not missing, set this to be GCSE 
+                 long_format_mcs_1$.imp == 0 & is.na(standardised_average_grade) ~ standardised_average_grade_n5, #in original data if GCSE missing, replace with N5
+                 long_format_mcs_1$.imp == 0 & !is.na(standardised_average_grade_n5) ~standardised_average_grade_n5, #in original data if N5 not missing, set this to be N5
+                 long_format_mcs_1$.imp == 0 & is.na(standardised_average_grade_n5) ~ standardised_average_grade, #in original data if N5 missing, set as GCSE
                  country != 3 ~ standardised_average_grade, #if both GCSE and N5 still missing, and country not scotland, set to be imputed GCSE
                  country == 3 ~ standardised_average_grade_n5)) #if both GCSE and N5 still missing, and country is scotland, set to be N5
 
@@ -345,10 +347,10 @@ long_format_mcs$standardised_core_subjects =
 #combine together to one outcome
 long_format_mcs$standardised_english = 
   with(long_format_mcs,
-       case_when(.imp == 0 & !is.na(standardised_english_gcse) ~ standardised_english_gcse, #in original dataset if GCSE not missing, set this to be GCSE 
-                 .imp == 0 & is.na(standardised_english_gcse) ~ standardised_english_n5, #in original data if GCSE missing, replace with N5
-                 .imp == 0 & !is.na(standardised_english_n5) ~standardised_english_n5, #in original data if N5 not missing, set this to be N5
-                 .imp == 0 & is.na(standardised_english_n5) ~ standardised_english_gcse, #in original data if N5 missing, set as GCSE
+       case_when(long_format_mcs_1$.imp == 0 & !is.na(standardised_english_gcse) ~ standardised_english_gcse, #in original dataset if GCSE not missing, set this to be GCSE 
+                 long_format_mcs_1$.imp == 0 & is.na(standardised_english_gcse) ~ standardised_english_n5, #in original data if GCSE missing, replace with N5
+                 long_format_mcs_1$.imp == 0 & !is.na(standardised_english_n5) ~standardised_english_n5, #in original data if N5 not missing, set this to be N5
+                 long_format_mcs_1$.imp == 0 & is.na(standardised_english_n5) ~ standardised_english_gcse, #in original data if N5 missing, set as GCSE
                  country != 3 ~ standardised_english_gcse, #if both GCSE and N5 still missing, and country not scotland, set to be imputed GCSE
                  country == 3 ~ standardised_english_n5)) #if both GCSE and N5 still missing, and country is scotland, set to be N5
 
@@ -367,10 +369,10 @@ long_format_mcs$standardised_english =
 #combine together to one outcome
 long_format_mcs$standardised_maths = 
   with(long_format_mcs,
-       case_when(.imp == 0 & !is.na(standardised_maths_gcse) ~ standardised_maths_gcse, #in original dataset if GCSE not missing, set this to be GCSE 
-                 .imp == 0 & is.na(standardised_maths_gcse) ~ standardised_maths_n5, #in original data if GCSE missing, replace with N5
-                 .imp == 0 & !is.na(standardised_maths_n5) ~standardised_maths_n5, #in original data if N5 not missing, set this to be N5
-                 .imp == 0 & is.na(standardised_maths_n5) ~ standardised_maths_gcse, #in original data if N5 missing, set as GCSE
+       case_when(long_format_mcs_1$.imp == 0 & !is.na(standardised_maths_gcse) ~ standardised_maths_gcse, #in original dataset if GCSE not missing, set this to be GCSE 
+                 long_format_mcs_1$.imp == 0 & is.na(standardised_maths_gcse) ~ standardised_maths_n5, #in original data if GCSE missing, replace with N5
+                 long_format_mcs_1$.imp == 0 & !is.na(standardised_maths_n5) ~standardised_maths_n5, #in original data if N5 not missing, set this to be N5
+                 long_format_mcs_1$.imp == 0 & is.na(standardised_maths_n5) ~ standardised_maths_gcse, #in original data if N5 missing, set as GCSE
                  country != 3 ~ standardised_maths_gcse, #if both GCSE and N5 still missing, and country not scotland, set to be imputed GCSE
                  country == 3 ~ standardised_maths_n5)) #if both GCSE and N5 still missing, and country is scotland, set to be N5
 
@@ -387,44 +389,48 @@ long_format_mcs$standardised_maths =
 #combine together to one outcome
 long_format_mcs$standardised_science = 
   with(long_format_mcs,
-       case_when(.imp == 0 & !is.na(standardised_science_gcse) ~ standardised_science_gcse, #in original dataset if GCSE not missing, set this to be GCSE 
-                 .imp == 0 & is.na(standardised_science_gcse) ~ standardised_science_n5, #in original data if GCSE missing, replace with N5
-                 .imp == 0 & !is.na(standardised_science_n5) ~standardised_science_n5, #in original data if N5 not missing, set this to be N5
-                 .imp == 0 & is.na(standardised_science_n5) ~ standardised_science_gcse, #in original data if N5 missing, set as GCSE
+       case_when(long_format_mcs_1$.imp == 0 & !is.na(standardised_science_gcse) ~ standardised_science_gcse, #in original dataset if GCSE not missing, set this to be GCSE 
+                 long_format_mcs_1$.imp == 0 & is.na(standardised_science_gcse) ~ standardised_science_n5, #in original data if GCSE missing, replace with N5
+                 long_format_mcs_1$.imp == 0 & !is.na(standardised_science_n5) ~standardised_science_n5, #in original data if N5 not missing, set this to be N5
+                 long_format_mcs_1$.imp == 0 & is.na(standardised_science_n5) ~ standardised_science_gcse, #in original data if N5 missing, set as GCSE
                  country != 3 ~ standardised_science_gcse, #if both GCSE and N5 still missing, and country not scotland, set to be imputed GCSE
                  country == 3 ~ standardised_science_n5)) #if both GCSE and N5 still missing, and country is scotland, set to be N5
 
 #create outcome variable for Welsh sensitivity analysis - average core GCSE subjects including Welsh for those in Wales or N5.
 long_format_mcs$standardised_core_subjectsWelsh = 
   with(long_format_mcs,
-       case_when(.imp == 0 & !is.na(standardised_welsh_averageScore) ~ standardised_welsh_averageScore, #in original dataset if GCSE not missing, set this to be GCSE 
-                 .imp == 0 & is.na(standardised_welsh_averageScore) ~ standardised_average_grade_n5, #in original data if GCSE missing, replace with N5
-                 .imp == 0 & !is.na(standardised_average_grade_n5) ~standardised_average_grade_n5, #in original data if N5 not missing, set this to be N5
-                 .imp == 0 & is.na(standardised_average_grade_n5) ~ standardised_welsh_averageScore, #in original data if N5 missing, set as GCSE
+       case_when(long_format_mcs_1$.imp == 0 & !is.na(standardised_welsh_averageScore) ~ standardised_welsh_averageScore, #in original dataset if GCSE not missing, set this to be GCSE 
+                 long_format_mcs_1$.imp == 0 & is.na(standardised_welsh_averageScore) ~ standardised_average_grade_n5, #in original data if GCSE missing, replace with N5
+                 long_format_mcs_1$.imp == 0 & !is.na(standardised_average_grade_n5) ~standardised_average_grade_n5, #in original data if N5 not missing, set this to be N5
+                 long_format_mcs_1$.imp == 0 & is.na(standardised_average_grade_n5) ~ standardised_welsh_averageScore, #in original data if N5 missing, set as GCSE
                  country != 3 ~ standardised_welsh_averageScore, #if both GCSE and N5 still missing, and country not scotland, set to be imputed GCSE
                  country == 3 ~ standardised_average_grade_n5)) #if both GCSE and N5 still missing, and country is scotland, set to be N5
 
 #create binary variable to indicate whether a cohort member has a grade on the core subjects 
 long_format_mcs$has_core_subjects = 
   with(long_format_mcs,
-       case_when(.imp == 0 & !is.na(average_grade) ~ "1", 
-                 .imp == 0 & !is.na(average_grade_n5) ~ "1",
-                 .imp == 0 & is.na(average_grade) & benchmark_binary == 0 ~ "0", 
-                 .imp == 0 & is.na(average_grade_n5) & benchmark_binary == 0 ~ "0",
+       case_when(long_format_mcs_1$.imp == 0 & !is.na(average_grade) ~ "1", 
+                 long_format_mcs_1$.imp == 0 & !is.na(average_grade_n5) ~ "1",
+                 long_format_mcs_1$.imp == 0 & is.na(average_grade) & benchmark_binary == 0 ~ "0", 
+                 long_format_mcs_1$.imp == 0 & is.na(average_grade_n5) & benchmark_binary == 0 ~ "0",
                  benchmark_binary == 1 ~ "1", 
                  benchmark_binary == 0 ~ "0"))
 long_format_mcs$has_core_subjects = as.factor(long_format_mcs$has_core_subjects)
 
 #convert back to mids object.
-imputed_mcs2<-as.mids(long_format_mcs)
+imputed_mcs2_test<-as.mids(long_format_mcs)
+
+#convert back to mids object so can add in standardised variables now have derived post-imputation continuous variables
+
+
 
 #save mids object to working directory####
 
-write.mice.imputation(mi.res=imputed_mcs2, name = glue("{today()}_vocabulary_education_imputedMAIN"),
+write.mice.imputation(mi.res=imputed_mcs2_test, name = glue("{today()}_vocabulary_education_imputedTEST"),
                       include.varnames = TRUE, long=TRUE,dattype = "csv", mids2spss = FALSE)
 
 #get each individual imputed dataset#####
-imputed_mcs2_0 <- complete(imputed_mcs2)
+
 imputed_mcs2_1 <- complete(imputed_mcs2,1)
 imputed_mcs2_2 <- complete(imputed_mcs2,2)
 imputed_mcs2_3 <- complete(imputed_mcs2,3)
