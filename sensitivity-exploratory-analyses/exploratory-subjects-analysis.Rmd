@@ -90,7 +90,7 @@ imputed_mcs2 = as.mids(exploratory_analysis)
 ```{r}
 #unadjusted relationship
 
-continuous_unadjustedEnglish = with(imputed_mcs2, lm(standardised_english ~ age5_standardised, weights = weight))
+continuous_unadjustedEnglish = with(imputed_mcs2, lm(standardised_english ~ standardised_age5_vocab, weights = weight))
 
 continuous_unadjusted_resultsEnglish = round(summary(pool(continuous_unadjustedEnglish), conf.int = TRUE),2)
 
@@ -101,12 +101,12 @@ continuous_model1English= with(imputed_mcs2, lm(standardised_english ~ sex + eth
 
 continuous_model2English = with(imputed_mcs2, lm(standardised_english ~ sex + ethnicity + EAL + country +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised, 
+                                         imd + standardised_caregiver_vocab, 
                                         weights = weight))
 
 continuous_model3English = with(imputed_mcs2, lm(standardised_english ~ sex + ethnicity + EAL + country +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised + age5_standardised, 
+                                         imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                         weights = weight))
 
 continuous_model1ResultsEnglish = summary(pool(continuous_model1English), conf.int = TRUE)
@@ -134,7 +134,7 @@ D1(continuous_model3English, continuous_model2English)
 
 maths
 ```{r}
-continuous_unadjustedMaths = with(imputed_mcs2, lm(standardised_maths ~ age5_standardised, weights = weight))
+continuous_unadjustedMaths = with(imputed_mcs2, lm(standardised_maths ~ standardised_age5_vocab, weights = weight))
 
 continuous_unadjusted_resultsMaths = round(summary(pool(continuous_unadjustedMaths), conf.int = TRUE),2)
 
@@ -145,12 +145,12 @@ continuous_model1Maths= with(imputed_mcs2, lm(standardised_maths ~ sex + ethnici
 
 continuous_model2Maths = with(imputed_mcs2, lm(standardised_maths ~ sex + ethnicity + EAL + country +
                                                    highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                                   imd + caregiver_vocabStandardised, 
+                                                   imd + standardised_caregiver_vocab, 
                                                  weights = weight))
 
 continuous_model3Maths = with(imputed_mcs2, lm(standardised_maths ~ sex + ethnicity + EAL + country +
                                                    highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                                   imd + caregiver_vocabStandardised + age5_standardised, 
+                                                   imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                                  weights = weight))
 
 continuous_model1ResultsMaths = summary(pool(continuous_model1Maths), conf.int = TRUE)
@@ -178,7 +178,7 @@ D1(continuous_model3Maths, continuous_model2Maths)
 
 science 
 ```{r}
-continuous_unadjustedScience = with(imputed_mcs2, lm(standardised_science ~ age5_standardised, weights = weight))
+continuous_unadjustedScience = with(imputed_mcs2, lm(standardised_science ~ standardised_age5_vocab, weights = weight))
 
 continuous_unadjusted_resultsScience = round(summary(pool(continuous_unadjustedScience), conf.int = TRUE),2)
 
@@ -189,12 +189,12 @@ continuous_model1Science= with(imputed_mcs2, lm(standardised_science ~ sex + eth
 
 continuous_model2Science = with(imputed_mcs2, lm(standardised_science ~ sex + ethnicity + EAL + country +
                                                    highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                                   imd + caregiver_vocabStandardised, 
+                                                   imd + standardised_caregiver_vocab, 
                                                  weights = weight))
 
 continuous_model3Science = with(imputed_mcs2, lm(standardised_science ~ sex + ethnicity + EAL + country +
                                                    highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                                   imd + caregiver_vocabStandardised + age5_standardised, 
+                                                   imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                                  weights = weight))
 
 continuous_model1ResultsScience = summary(pool(continuous_model1Science), conf.int = TRUE)
@@ -353,10 +353,10 @@ continuous_model3ResultsEnglish = continuous_model3ResultsEnglish %>% select(ter
 
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-continuous_model1ResultsEnglish = continuous_model1ResultsEnglish %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised") %>% 
+continuous_model1ResultsEnglish = continuous_model1ResultsEnglish %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model1_english =paste0(cont_model1R2English$est,"[", cont_model1R2English$`lo 95`, ";", cont_model1R2English$`hi 95`,"]"), .after = 39)
-continuous_model2ResultsEnglish = continuous_model2ResultsEnglish %>% add_row(term = "age5_standardised") %>% 
+continuous_model2ResultsEnglish = continuous_model2ResultsEnglish %>% add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model2_english =paste0(cont_model2R2English$est,"[", cont_model2R2English$`lo 95`, ";", cont_model2R2English$`hi 95`,"]"), .after = 39)
 continuous_model3ResultsEnglish = continuous_model3ResultsEnglish %>% 
   add_row(term = "R2", model3_english =paste0(cont_model3R2English$est,"[", cont_model3R2English$`lo 95`, ";", cont_model3R2English$`hi 95`,"]"), .after = 39)
@@ -386,10 +386,10 @@ continuous_model3ResultsMaths = continuous_model3ResultsMaths %>% select(term, m
 
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-continuous_model1ResultsMaths = continuous_model1ResultsMaths %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised") %>% 
+continuous_model1ResultsMaths = continuous_model1ResultsMaths %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model1_maths =paste0(cont_model1R2Maths$est,"[", cont_model1R2Maths$`lo 95`, ";", cont_model1R2Maths$`hi 95`,"]"), .after = 39)
-continuous_model2ResultsMaths = continuous_model2ResultsMaths %>% add_row(term = "age5_standardised") %>% 
+continuous_model2ResultsMaths = continuous_model2ResultsMaths %>% add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model2_maths =paste0(cont_model2R2Maths$est,"[", cont_model2R2Maths$`lo 95`, ";", cont_model2R2Maths$`hi 95`,"]"), .after = 39)
 continuous_model3ResultsMaths = continuous_model3ResultsMaths %>% 
   add_row(term = "R2", model3_maths =paste0(cont_model3R2Maths$est,"[", cont_model3R2Maths$`lo 95`, ";", cont_model3R2Maths$`hi 95`,"]"), .after = 39)
@@ -420,10 +420,10 @@ continuous_model3ResultsScience = continuous_model3ResultsScience %>% select(ter
 
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-continuous_model1ResultsScience = continuous_model1ResultsScience %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised") %>% 
+continuous_model1ResultsScience = continuous_model1ResultsScience %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model1_science =paste0(cont_model1R2Science$est,"[", cont_model1R2Science$`lo 95`, ";", cont_model1R2Science$`hi 95`,"]"), .after = 39)
-continuous_model2ResultsScience = continuous_model2ResultsScience %>% add_row(term = "age5_standardised") %>% 
+continuous_model2ResultsScience = continuous_model2ResultsScience %>% add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model2_science =paste0(cont_model2R2Science$est,"[", cont_model2R2Science$`lo 95`, ";", cont_model2R2Science$`hi 95`,"]"), .after = 39)
 continuous_model3ResultsScience = continuous_model3ResultsScience %>% 
   add_row(term = "R2", model3_science =paste0(cont_model3R2Science$est,"[", cont_model3R2Science$`lo 95`, ";", cont_model3R2Science$`hi 95`,"]"), .after = 39)
