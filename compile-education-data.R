@@ -2547,4 +2547,4 @@ write.csv(descriptives_analysis, file = "education_dataForContDescriptives1.csv"
 
 
 #save full cohort sample as a csv file- to get descriptives
-write.csv(descriptives_data, file = "cohort_data1.csv")
+write.csv(analysis_data, file = "cohort_data1.csv")
