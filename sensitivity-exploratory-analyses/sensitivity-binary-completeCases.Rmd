@@ -70,7 +70,7 @@ remember, having grade 4/c above in core subjects is the reference category.
 ```{r}
 #unadjusted relationship
 
-binary_unadjusted = with(imputed_mcs2, glm(benchmark_binary ~ age5_standardised,
+binary_unadjusted = with(imputed_mcs2, glm(benchmark_binary ~ standardised_age5_vocab,
                                         family = binomial,  weights = weight))
 
 binary_unadjusted_results = round(summary(pool(binary_unadjusted), conf.int = TRUE, exponentiate = TRUE),2)
@@ -82,12 +82,12 @@ binary_model1 = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL 
 
 binary_model2 = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised, 
+                                         imd + standardised_caregiver_vocab, 
                                        family = binomial, weights = weight))
 
 binary_model3 = with(imputed_mcs2, glm(benchmark_binary ~ sex + ethnicity + EAL + country +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised + age5_standardised, 
+                                         imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                        family = binomial, weights = weight))
 
 binary_model1Results = summary(pool(binary_model1), conf.int = TRUE, exponentiate = TRUE)
@@ -162,9 +162,9 @@ binary_model2Results = binary_model2Results %>% select(term, model2_OR)
 binary_model3Results = binary_model3Results %>% select(term, model3_OR)
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-binary_model1Results = binary_model1Results %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised")
-binary_model2Results = binary_model2Results %>% add_row(term = "age5_standardised")
+binary_model1Results = binary_model1Results %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab")
+binary_model2Results = binary_model2Results %>% add_row(term = "standardised_age5_vocab")
 
 binary_outcomeResults = cbind(binary_model1Results, binary_model2Results, binary_model3Results)
 binary_outcomeResults = binary_outcomeResults %>% select(!3 & !5)
@@ -561,7 +561,7 @@ levels(imputed_data25$composite_quintiles)[5] = "5"
 
 compositeModerator_model <- function(df) {
   fit <- glm(benchmark_binary ~ sex + ethnicity + EAL + country +
-               + caregiver_vocabStandardised + ses_latent*age5_standardised, 
+               + standardised_caregiver_vocab + ses_latent*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -578,7 +578,7 @@ moderator_composite <- summary(pool(as.mira(compositeModerator)),conf.int = TRUE
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 noCompositeModerator_model <- function(df) {
   fit1 <- glm(benchmark_binary ~ sex + ethnicity + EAL + country +
-                + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
+                + standardised_caregiver_vocab +  ses_latent + standardised_age5_vocab , 
               family = binomial, weights = weight, data=df)
   return(fit1)
 }
