@@ -53,6 +53,7 @@ imputed_data= mi.res
 vocabulary_education<-read.csv("education_data1.csv")
 vocabulary_education[,1]<- NULL
 
+
 long_format_mcs <- mice::complete(imputed_data, "long", include=TRUE)
 
 continuous_cc = vocabulary_education %>% filter((!is.na(average_grade) | !is.na(average_grade_n5)))
@@ -71,7 +72,7 @@ does vocabulary predict level of achievement in core subjects regardless of pass
 ```{r}
 #unadjusted relationship
 
-continuous_unadjusted = with(imputed_mcs2, lm(standardised_core_subjects ~ age5_standardised, weights = weight))
+continuous_unadjusted = with(imputed_mcs2, lm(standardised_core_subjects ~ standardised_age5_vocab, weights = weight))
 
 continuous_unadjusted_results = round(summary(pool(continuous_unadjusted), conf.int = TRUE),2)
 
@@ -82,12 +83,12 @@ continuous_model1 = with(imputed_mcs2, lm(standardised_core_subjects ~ sex + eth
 
 continuous_model2 = with(imputed_mcs2, lm(standardised_core_subjects ~ sex + ethnicity + EAL + country +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised, 
+                                         imd + standardised_caregiver_vocab, 
                                         weights = weight))
 
 continuous_model3 = with(imputed_mcs2, lm(standardised_core_subjects ~ sex + ethnicity + EAL + country +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised + age5_standardised, 
+                                         imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                         weights = weight))
 
 continuous_model1Results = summary(pool(continuous_model1), conf.int = TRUE)
@@ -171,10 +172,10 @@ continuous_model3Results = continuous_model3Results %>% select(term, model3_b)
 
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-continuous_model1Results = continuous_model1Results %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised") %>% 
+continuous_model1Results = continuous_model1Results %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model1_b =paste0(cont_model1R2$est,"[", cont_model1R2$`lo 95`, ";", cont_model1R2$`hi 95`,"]"), .after = 39)
-continuous_model2Results = continuous_model2Results %>% add_row(term = "age5_standardised") %>% 
+continuous_model2Results = continuous_model2Results %>% add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model2_b =paste0(cont_model2R2$est,"[", cont_model2R2$`lo 95`, ";", cont_model2R2$`hi 95`,"]"), .after = 39)
 continuous_model3Results = continuous_model3Results %>% 
   add_row(term = "R2", model3_b =paste0(cont_model3R2$est,"[", cont_model3R2$`lo 95`, ";", cont_model3R2$`hi 95`,"]"), .after = 39)
