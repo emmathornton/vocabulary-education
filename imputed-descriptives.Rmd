@@ -86,17 +86,17 @@ weighted_proportions_imputed_datasets<- function (dataAll,variable) {
   return (results)
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2022-01-04_vocabulary_education_imputedMAIN/2022-01-04_vocabulary_education_imputedMAIN.Rdata")
+load("~/Documents/updated MCS datasets/education-datasetsDec22/2023-01-20_vocabulary_education_imputedMAIN/2023-01-20_vocabulary_education_imputedMAIN.Rdata")
 imputed_mcs2 = mi.res
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2022-01-05_vocabulary_education_imputedContinuousDescriptives/2022-01-05_vocabulary_education_imputedContinuousDescriptives.Rdata")
-continuous_descriptives_imputed = mi.res
+#load("~/Documents/PhD/updated MCS datasets/education-datasets/2022-01-05_vocabulary_education_imputedContinuousDescriptives/2022-01-05_vocabulary_education_imputedContinuousDescriptives.Rdata")
+#continuous_descriptives_imputed = mi.res
 
 #convert imputed data to long format without observed data
 long_format_mcs <- mice::complete(imputed_mcs2, "long", include=FALSE)
 #redorder nvq and occupational status to have same order as whole cohort data - for occupational status and nvq
 long_format_mcs$highest_nvq = factor(long_format_mcs$highest_nvq, levels = c("1", "2", "3", "4", "5", "0"))
 long_format_mcs$occupational_status = factor(long_format_mcs$occupational_status, levels = c( "2", "3", "4", "1"))
-long_format_descriptives <- mice::complete(continuous_descriptives_imputed , "long", include=TRUE)
+#long_format_descriptives <- mice::complete(continuous_descriptives_imputed , "long", include=TRUE)
 
 ```
 
@@ -104,6 +104,7 @@ for continuous outcome variable: need GCSE for england, wales and northern irela
 for N5 need scotland (country = 3)
 
 ```{r}
+long_format_descriptives <- mice::complete(imputed_mcs2, "long", include=TRUE)
 gcse= filter(long_format_descriptives, country !=3) %>% 
   select(!country)
 n5 = filter(long_format_descriptives, country == 3) %>% 
@@ -325,6 +326,12 @@ whole cohort descriptives , so can compare full cohort to analytic sample.
 #read in full cohort data
 mcs_cohort<-read.csv("cohort_data1.csv")
 mcs_cohort[,1]<- NULL
+mcs_cohort = mcs_cohort%>%
+  rename(mortgage = "new_mortgage", 
+         houseValue = "new_value", 
+         savings = "new_savings", 
+         debt = "new_debt", 
+         oecd_income = "income_quintiles") 
 #redorder nvq and occupational status variables 
 mcs_cohort$highest_nvq = factor(mcs_cohort$highest_nvq, levels = c("1", "2", "3", "4", "5", "0"))
 mcs_cohort$occupational_status = factor(mcs_cohort$occupational_status, levels = c( "2", "3", "4", "1"))
