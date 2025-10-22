@@ -1,0 +1,620 @@
+---
+title: "AIC values for vocabulary and SEC predicting attainment"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+```{r}
+#load packages and data####
+library(mice)
+library(pander)
+library(xtable)
+library(dplyr)
+library(gt)
+library(glue)
+library(tidyverse)
+library(miceadds)
+library(swfscMisc)
+library(imputools)
+library(haven)
+library(sjmisc)
+library(Hmisc)
+library(psych)
+library(lavaan)
+library(ggplot2)
+library(ggpubr)
+library(officer)
+library(flextable)
+library(ftExtra)
+library(ggeffects)
+library(gtools)
+
+#this will take a float (e.g. a p value) and return a string with 3 digits and no leading 0
+
+bv <- function(val) {
+  return(sub("^(-?)0.", "\\1.", sprintf("%.2f", val)))
+}
+
+#if the number is less than .001, it will give <.001. 
+pv1 <- function(val) {
+  return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
+}
+
+#load("~/Documents/updated MCS datasets/education-datasetsDec22/2022-12-13_vocabulary_education_imputedMAIN/2022-12-13_vocabulary_education_imputedMAIN.Rdata")
+load("~/Documents/updated MCS datasets/education-datasetsDec22/2023-01-20_vocabulary_education_imputedMAIN/2023-01-20_vocabulary_education_imputedMAIN.Rdata")
+imputed_mcs2 = mi.res
+
+```
+
+```{r Create composite SEC variable}
+#create individual imputed datasets for imputed data
+for (i in 1:25) {
+  assign(paste0("imputed_mcs2_", i), complete(imputed_mcs2, i))
+}
+
+#create imputed datasets as a list - this is so can run CFA over each dataset
+imputed_datasets = list(imputed_mcs2_1, imputed_mcs2_2, imputed_mcs2_3, imputed_mcs2_4, imputed_mcs2_5, 
+                        imputed_mcs2_6, imputed_mcs2_7, imputed_mcs2_8, imputed_mcs2_9, imputed_mcs2_10, 
+                        imputed_mcs2_11, imputed_mcs2_12, imputed_mcs2_13, imputed_mcs2_14, imputed_mcs2_15,
+                        imputed_mcs2_16, imputed_mcs2_17, imputed_mcs2_18, imputed_mcs2_19, imputed_mcs2_20, 
+                        imputed_mcs2_21, imputed_mcs2_22, imputed_mcs2_23, imputed_mcs2_24, imputed_mcs2_25)
+
+#define CFA model to create SEP
+SEP_model <- 'SEP =~ highest_nvq + oecd_income + wealth_quintiles + occupational_status + imd'
+
+#run CFA across 25 imputed datasets
+cfa_imputed = function(ert){
+  fit = cfa(SEP_model, 
+            data = ert,
+            ordered = c("highest_nvq", "oecd_income","wealth_quintiles", "occupational_status", "imd"), 
+            std.lv=TRUE, 
+            estimator="WLSMV")
+  ses_latent = lavPredict(fit, type = "lv")
+}
+
+#create and add SES latent variable to each dataset
+imputed_datasets$ses_latent = lapply(imputed_datasets, cfa_imputed)
+
+#get individual datasets from list - these will now have SEP composite (pull this out for each dataset). 
+#this is so can run the regression over each dataset. 
+imputed_data1 = imputed_datasets[[1]]
+imputed_data1$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[1]], center = TRUE, scale = TRUE))
+#imputed_data1$ses_latent = scale(imputed_data1$ses_latent, center = TRUE, scale = TRUE)
+imputed_data2 = imputed_datasets[[2]]
+imputed_data2$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[2]], center = TRUE, scale = TRUE))
+#imputed_data2$ses_latent = scale(imputed_data2$ses_latent, center = TRUE, scale = TRUE)
+imputed_data3 = imputed_datasets[[3]]
+imputed_data3$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[3]], center = TRUE, scale = TRUE))
+#imputed_data3$ses_latent = scale(imputed_data3$ses_latent, center = TRUE, scale = TRUE)
+imputed_data4 = imputed_datasets[[4]]
+imputed_data4$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[4]], center = TRUE, scale = TRUE))
+#imputed_data4$ses_latent = scale(imputed_data4$ses_latent, center = TRUE, scale = TRUE)
+imputed_data5 = imputed_datasets[[5]]
+imputed_data5$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[5]], center = TRUE, scale = TRUE))
+#imputed_data5$ses_latent = scale(imputed_data5$ses_latent, center = TRUE, scale = TRUE)
+imputed_data6 = imputed_datasets[[6]]
+imputed_data6$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[6]], center = TRUE, scale = TRUE))
+#imputed_data6$ses_latent = scale(imputed_data6$ses_latent, center = TRUE, scale = TRUE)
+imputed_data7 = imputed_datasets[[7]]
+imputed_data7$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[7]], center = TRUE, scale = TRUE))
+#imputed_data7$ses_latent = scale(imputed_data7$ses_latent, center = TRUE, scale = TRUE)
+imputed_data8 = imputed_datasets[[8]]
+imputed_data8$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[8]], center = TRUE, scale = TRUE))
+#imputed_data8$ses_latent = scale(imputed_data8$ses_latent, center = TRUE, scale = TRUE)
+imputed_data9 = imputed_datasets[[9]]
+imputed_data9$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[9]], center = TRUE, scale = TRUE))
+#imputed_data9$ses_latent = scale(imputed_data9$ses_latent, center = TRUE, scale = TRUE)
+imputed_data10 = imputed_datasets[[10]]
+imputed_data10$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[10]], center = TRUE, scale = TRUE))
+#imputed_data10$ses_latent = scale(imputed_data10$ses_latent, center = TRUE, scale = TRUE)
+imputed_data11 = imputed_datasets[[11]]
+imputed_data11$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[11]],center = TRUE, scale = TRUE))
+#imputed_data11$ses_latent = scale(imputed_data11$ses_latent, center = TRUE, scale = TRUE)
+imputed_data12 = imputed_datasets[[12]]
+imputed_data12$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[12]], center = TRUE, scale = TRUE))
+#imputed_data12$ses_latent = scale(imputed_data12$ses_latent, center = TRUE, scale = TRUE)
+imputed_data13 = imputed_datasets[[13]]
+imputed_data13$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[13]], center = TRUE, scale = TRUE))
+#imputed_data13$ses_latent = scale(imputed_data13$ses_latent, center = TRUE, scale = TRUE)
+imputed_data14 = imputed_datasets[[14]]
+imputed_data14$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[14]], center = TRUE, scale = TRUE))
+#imputed_data14$ses_latent = scale(imputed_data14$ses_latent, center = TRUE, scale = TRUE)
+imputed_data15 = imputed_datasets[[15]]
+imputed_data15$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[15]], center = TRUE, scale = TRUE))
+#imputed_data15$ses_latent = scale(imputed_data15$ses_latent, center = TRUE, scale = TRUE)
+imputed_data16 = imputed_datasets[[16]]
+imputed_data16$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[16]], center = TRUE, scale = TRUE))
+#imputed_data16$ses_latent = scale(imputed_data16$ses_latent, center = TRUE, scale = TRUE)
+imputed_data17 = imputed_datasets[[17]]
+imputed_data17$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[17]], center = TRUE, scale = TRUE))
+#imputed_data17$ses_latent = scale(imputed_data17$ses_latent, center = TRUE, scale = TRUE)
+imputed_data18 = imputed_datasets[[18]]
+imputed_data18$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[18]], center = TRUE, scale = TRUE))
+#imputed_data18$ses_latent = scale(imputed_data18$ses_latent, center = TRUE, scale = TRUE)
+imputed_data19 = imputed_datasets[[19]]
+imputed_data19$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[19]], center = TRUE, scale = TRUE))
+#imputed_data19$ses_latent = scale(imputed_data19$ses_latent, center = TRUE, scale = TRUE)
+imputed_data20 = imputed_datasets[[20]]
+imputed_data20$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[20]], center = TRUE, scale = TRUE))
+#imputed_data20$ses_latent = scale(imputed_data20$ses_latent, center = TRUE, scale = TRUE)
+imputed_data21 = imputed_datasets[[21]]
+imputed_data21$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[21]], center = TRUE, scale = TRUE))
+#imputed_data21$ses_latent = scale(imputed_data21$ses_latent, center = TRUE, scale = TRUE)
+imputed_data22 = imputed_datasets[[22]]
+imputed_data22$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[22]], center = TRUE, scale = TRUE))
+#imputed_data22$ses_latent = scale(imputed_data22$ses_latent, center = TRUE, scale = TRUE)
+imputed_data23 = imputed_datasets[[23]]
+imputed_data23$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[23]], center = TRUE, scale = TRUE))
+#imputed_data23$ses_latent = scale(imputed_data23$ses_latent, center = TRUE, scale = TRUE)
+imputed_data24 = imputed_datasets[[24]]
+imputed_data24$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[24]], center = TRUE, scale = TRUE))
+#imputed_data24$ses_latent = scale(imputed_data24$ses_latent, center = TRUE, scale = TRUE)
+imputed_data25 = imputed_datasets[[25]]
+imputed_data25$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[25]], center = TRUE, scale = TRUE))
+#imputed_data25$ses_latent = scale(imputed_data25$ses_latent, center = TRUE, scale = TRUE)
+
+#create composite SEC quintiles (these will be used for plotting later)
+#add composite quintiles to data
+#data 1
+imputed_data1$composite_quintiles = quantcut(imputed_data1$ses_latent,5)
+levels(imputed_data1$composite_quintiles)[1] = "1"
+levels(imputed_data1$composite_quintiles)[2] = "2"
+levels(imputed_data1$composite_quintiles)[3] = "3"
+levels(imputed_data1$composite_quintiles)[4] = "4"
+levels(imputed_data1$composite_quintiles)[5] = "5"
+#data2
+imputed_data2$composite_quintiles = quantcut(imputed_data2$ses_latent,5)
+levels(imputed_data2$composite_quintiles)[1] = "1"
+levels(imputed_data2$composite_quintiles)[2] = "2"
+levels(imputed_data2$composite_quintiles)[3] = "3"
+levels(imputed_data2$composite_quintiles)[4] = "4"
+levels(imputed_data2$composite_quintiles)[5] = "5"
+#data3
+imputed_data3$composite_quintiles = quantcut(imputed_data3$ses_latent,5)
+levels(imputed_data3$composite_quintiles)[1] = "1"
+levels(imputed_data3$composite_quintiles)[2] = "2"
+levels(imputed_data3$composite_quintiles)[3] = "3"
+levels(imputed_data3$composite_quintiles)[4] = "4"
+levels(imputed_data3$composite_quintiles)[5] = "5"
+#dat4
+imputed_data4$composite_quintiles = quantcut(imputed_data4$ses_latent,5)
+levels(imputed_data4$composite_quintiles)[1] = "1"
+levels(imputed_data4$composite_quintiles)[2] = "2"
+levels(imputed_data4$composite_quintiles)[3] = "3"
+levels(imputed_data4$composite_quintiles)[4] = "4"
+levels(imputed_data4$composite_quintiles)[5] = "5"
+#DATA5
+imputed_data5$composite_quintiles = quantcut(imputed_data5$ses_latent,5)
+levels(imputed_data5$composite_quintiles)[1] = "1"
+levels(imputed_data5$composite_quintiles)[2] = "2"
+levels(imputed_data5$composite_quintiles)[3] = "3"
+levels(imputed_data5$composite_quintiles)[4] = "4"
+levels(imputed_data5$composite_quintiles)[5] = "5"
+#data6
+imputed_data6$composite_quintiles = quantcut(imputed_data6$ses_latent,5)
+levels(imputed_data6$composite_quintiles)[1] = "1"
+levels(imputed_data6$composite_quintiles)[2] = "2"
+levels(imputed_data6$composite_quintiles)[3] = "3"
+levels(imputed_data6$composite_quintiles)[4] = "4"
+levels(imputed_data6$composite_quintiles)[5] = "5"
+#data7
+imputed_data7$composite_quintiles = quantcut(imputed_data7$ses_latent,5)
+levels(imputed_data7$composite_quintiles)[1] = "1"
+levels(imputed_data7$composite_quintiles)[2] = "2"
+levels(imputed_data7$composite_quintiles)[3] = "3"
+levels(imputed_data7$composite_quintiles)[4] = "4"
+levels(imputed_data7$composite_quintiles)[5] = "5"
+#data 8
+imputed_data8$composite_quintiles = quantcut(imputed_data8$ses_latent,5)
+levels(imputed_data8$composite_quintiles)[1] = "1"
+levels(imputed_data8$composite_quintiles)[2] = "2"
+levels(imputed_data8$composite_quintiles)[3] = "3"
+levels(imputed_data8$composite_quintiles)[4] = "4"
+levels(imputed_data8$composite_quintiles)[5] = "5"
+#data 9 
+imputed_data9$composite_quintiles = quantcut(imputed_data9$ses_latent,5)
+levels(imputed_data9$composite_quintiles)[1] = "1"
+levels(imputed_data9$composite_quintiles)[2] = "2"
+levels(imputed_data9$composite_quintiles)[3] = "3"
+levels(imputed_data9$composite_quintiles)[4] = "4"
+levels(imputed_data9$composite_quintiles)[5] = "5"
+#data10
+imputed_data10$composite_quintiles = quantcut(imputed_data10$ses_latent,5)
+levels(imputed_data10$composite_quintiles)[1] = "1"
+levels(imputed_data10$composite_quintiles)[2] = "2"
+levels(imputed_data10$composite_quintiles)[3] = "3"
+levels(imputed_data10$composite_quintiles)[4] = "4"
+levels(imputed_data10$composite_quintiles)[5] = "5"
+#data11
+imputed_data11$composite_quintiles = quantcut(imputed_data11$ses_latent,5)
+levels(imputed_data11$composite_quintiles)[1] = "1"
+levels(imputed_data11$composite_quintiles)[2] = "2"
+levels(imputed_data11$composite_quintiles)[3] = "3"
+levels(imputed_data11$composite_quintiles)[4] = "4"
+levels(imputed_data11$composite_quintiles)[5] = "5"
+#data12
+imputed_data12$composite_quintiles = quantcut(imputed_data12$ses_latent,5)
+levels(imputed_data12$composite_quintiles)[1] = "1"
+levels(imputed_data12$composite_quintiles)[2] = "2"
+levels(imputed_data12$composite_quintiles)[3] = "3"
+levels(imputed_data12$composite_quintiles)[4] = "4"
+levels(imputed_data12$composite_quintiles)[5] = "5"
+#data13
+imputed_data13$composite_quintiles = quantcut(imputed_data13$ses_latent,5)
+levels(imputed_data13$composite_quintiles)[1] = "1"
+levels(imputed_data13$composite_quintiles)[2] = "2"
+levels(imputed_data13$composite_quintiles)[3] = "3"
+levels(imputed_data13$composite_quintiles)[4] = "4"
+levels(imputed_data13$composite_quintiles)[5] = "5"
+#data14
+imputed_data14$composite_quintiles = quantcut(imputed_data14$ses_latent,5)
+levels(imputed_data14$composite_quintiles)[1] = "1"
+levels(imputed_data14$composite_quintiles)[2] = "2"
+levels(imputed_data14$composite_quintiles)[3] = "3"
+levels(imputed_data14$composite_quintiles)[4] = "4"
+levels(imputed_data14$composite_quintiles)[5] = "5"
+#data15
+imputed_data15$composite_quintiles = quantcut(imputed_data15$ses_latent,5)
+levels(imputed_data15$composite_quintiles)[1] = "1"
+levels(imputed_data15$composite_quintiles)[2] = "2"
+levels(imputed_data15$composite_quintiles)[3] = "3"
+levels(imputed_data15$composite_quintiles)[4] = "4"
+levels(imputed_data15$composite_quintiles)[5] = "5"
+#data16
+imputed_data16$composite_quintiles = quantcut(imputed_data16$ses_latent,5)
+levels(imputed_data16$composite_quintiles)[1] = "1"
+levels(imputed_data16$composite_quintiles)[2] = "2"
+levels(imputed_data16$composite_quintiles)[3] = "3"
+levels(imputed_data16$composite_quintiles)[4] = "4"
+levels(imputed_data16$composite_quintiles)[5] = "5"
+#data 17
+imputed_data17$composite_quintiles = quantcut(imputed_data17$ses_latent,5)
+levels(imputed_data17$composite_quintiles)[1] = "1"
+levels(imputed_data17$composite_quintiles)[2] = "2"
+levels(imputed_data17$composite_quintiles)[3] = "3"
+levels(imputed_data17$composite_quintiles)[4] = "4"
+levels(imputed_data17$composite_quintiles)[5] = "5"
+#data18
+imputed_data18$composite_quintiles = quantcut(imputed_data18$ses_latent,5)
+levels(imputed_data18$composite_quintiles)[1] = "1"
+levels(imputed_data18$composite_quintiles)[2] = "2"
+levels(imputed_data18$composite_quintiles)[3] = "3"
+levels(imputed_data18$composite_quintiles)[4] = "4"
+levels(imputed_data18$composite_quintiles)[5] = "5"
+#data 19
+imputed_data19$composite_quintiles = quantcut(imputed_data19$ses_latent,5)
+levels(imputed_data19$composite_quintiles)[1] = "1"
+levels(imputed_data19$composite_quintiles)[2] = "2"
+levels(imputed_data19$composite_quintiles)[3] = "3"
+levels(imputed_data19$composite_quintiles)[4] = "4"
+levels(imputed_data19$composite_quintiles)[5] = "5"
+#data 20
+imputed_data20$composite_quintiles = quantcut(imputed_data20$ses_latent,5)
+levels(imputed_data20$composite_quintiles)[1] = "1"
+levels(imputed_data20$composite_quintiles)[2] = "2"
+levels(imputed_data20$composite_quintiles)[3] = "3"
+levels(imputed_data20$composite_quintiles)[4] = "4"
+levels(imputed_data20$composite_quintiles)[5] = "5"
+#data 21
+imputed_data21$composite_quintiles = quantcut(imputed_data21$ses_latent,5)
+levels(imputed_data21$composite_quintiles)[1] = "1"
+levels(imputed_data21$composite_quintiles)[2] = "2"
+levels(imputed_data21$composite_quintiles)[3] = "3"
+levels(imputed_data21$composite_quintiles)[4] = "4"
+levels(imputed_data21$composite_quintiles)[5] = "5"
+#data22
+imputed_data22$composite_quintiles = quantcut(imputed_data22$ses_latent,5)
+levels(imputed_data22$composite_quintiles)[1] = "1"
+levels(imputed_data22$composite_quintiles)[2] = "2"
+levels(imputed_data22$composite_quintiles)[3] = "3"
+levels(imputed_data22$composite_quintiles)[4] = "4"
+levels(imputed_data22$composite_quintiles)[5] = "5"
+#data 23
+imputed_data23$composite_quintiles = quantcut(imputed_data23$ses_latent,5)
+levels(imputed_data23$composite_quintiles)[1] = "1"
+levels(imputed_data23$composite_quintiles)[2] = "2"
+levels(imputed_data23$composite_quintiles)[3] = "3"
+levels(imputed_data23$composite_quintiles)[4] = "4"
+levels(imputed_data23$composite_quintiles)[5] = "5"
+#data 24
+imputed_data24$composite_quintiles = quantcut(imputed_data24$ses_latent,5)
+levels(imputed_data24$composite_quintiles)[1] = "1"
+levels(imputed_data24$composite_quintiles)[2] = "2"
+levels(imputed_data24$composite_quintiles)[3] = "3"
+levels(imputed_data24$composite_quintiles)[4] = "4"
+levels(imputed_data24$composite_quintiles)[5] = "5"
+#data 25
+imputed_data25$composite_quintiles = quantcut(imputed_data25$ses_latent,5)
+levels(imputed_data25$composite_quintiles)[1] = "1"
+levels(imputed_data25$composite_quintiles)[2] = "2"
+levels(imputed_data25$composite_quintiles)[3] = "3"
+levels(imputed_data25$composite_quintiles)[4] = "4"
+levels(imputed_data25$composite_quintiles)[5] = "5"
+
+```
+
+
+```{r AIc values for vocabulary}
+#model with vocabulary predicting education ####
+vocab <- function(df) {
+  fit <- glm(success ~ sex + ethnicity + EAL + country +
+               + standardised_caregiver_vocab + standardised_age5_vocab, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+
+#results
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+vocabResults <- lapply(list(imputed_data1, imputed_data2, imputed_data3, imputed_data4, imputed_data5,
+                                    imputed_data6, imputed_data7, imputed_data8, imputed_data9, imputed_data10,
+                                    imputed_data11, imputed_data12, imputed_data13, imputed_data14, imputed_data15,
+                                    imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20,
+                                    imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25),
+                               vocab)
+
+#Get aic and deviance values for each imputed dataset and pool for the vocab model with covariates. 
+AIC_vocab <- data.frame(matrix(lapply(vocabResults, AIC)))
+names(AIC_vocab) <- c("AIC")
+deviance_vocab <- data.frame(matrix(lapply(vocabResults, function(x) -logLik(x)[1]*2 )))
+names(deviance_vocab) <- c("deviance")
+fit_stats_vocab <- data.frame(AIC_vocab, deviance_vocab)
+fit_stats_vocab$AIC <- as.numeric(fit_stats_vocab$AIC)
+fit_stats_vocab$deviance <- as.numeric(fit_stats_vocab$deviance)
+vocab_combined_aic = combine_imputed_descriptives(fit_stats_vocab)
+
+```
+
+```{r composite SEC model}
+#composite SEC ####
+#model with vocabulary predicting education
+composite <- function(df) {
+  fit <- glm(success ~ sex + ethnicity + EAL + country +
+               + standardised_caregiver_vocab + ses_latent, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+compositeResults <- lapply(list(imputed_data1, imputed_data2, imputed_data3, imputed_data4, imputed_data5,
+                            imputed_data6, imputed_data7, imputed_data8, imputed_data9, imputed_data10,
+                            imputed_data11, imputed_data12, imputed_data13, imputed_data14, imputed_data15,
+                            imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20,
+                            imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25),
+                       composite)
+
+#Get aic and deviance values for each imputed dataset and pool for the vocab model with covariates. 
+AIC_composite <- data.frame(matrix(lapply(compositeResults, AIC)))
+names(AIC_composite) <- c("AIC")
+deviance_composite <- data.frame(matrix(lapply(compositeResults, function(x) -logLik(x)[1]*2 )))
+names(deviance_composite) <- c("deviance")
+fit_stats_composite <- data.frame(AIC_composite, deviance_composite)
+fit_stats_composite$AIC <- as.numeric(fit_stats_composite$AIC)
+fit_stats_composite$deviance <- as.numeric(fit_stats_composite$deviance)
+composite_combined_aic = combine_imputed_descriptives(fit_stats_composite)
+
+
+
+```
+
+```{r Individual SEC predictors in separate models}
+#parent education ####
+nvq <- function(df) {
+  fit <- glm(success ~ sex + ethnicity + EAL + country +
+               + standardised_caregiver_vocab + highest_nvq, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+nvqResults <- lapply(list(imputed_data1, imputed_data2, imputed_data3, imputed_data4, imputed_data5,
+                                imputed_data6, imputed_data7, imputed_data8, imputed_data9, imputed_data10,
+                                imputed_data11, imputed_data12, imputed_data13, imputed_data14, imputed_data15,
+                                imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20,
+                                imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25),
+                           nvq)
+
+#Get aic and deviance values for each imputed dataset and pool for the vocab model with covariates. 
+AIC_nvq <- data.frame(matrix(lapply(nvqResults, AIC)))
+names(AIC_nvq) <- c("AIC")
+deviance_nvq <- data.frame(matrix(lapply(nvqResults, function(x) -logLik(x)[1]*2 )))
+names(deviance_nvq) <- c("deviance")
+fit_stats_nvq <- data.frame(AIC_nvq, deviance_nvq)
+fit_stats_nvq$AIC <- as.numeric(fit_stats_nvq$AIC)
+fit_stats_nvq$deviance <- as.numeric(fit_stats_nvq$deviance)
+nvq_combined_aic = combine_imputed_descriptives(fit_stats_nvq)
+
+#model with occupation predicting education####
+occupation <- function(df) {
+  fit <- glm(success ~ sex + ethnicity + EAL + country +
+               + standardised_caregiver_vocab + occupational_status, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+occupationResults <- lapply(list(imputed_data1, imputed_data2, imputed_data3, imputed_data4, imputed_data5,
+                                 imputed_data6, imputed_data7, imputed_data8, imputed_data9, imputed_data10,
+                                 imputed_data11, imputed_data12, imputed_data13, imputed_data14, imputed_data15,
+                                 imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20,
+                                 imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25),
+                            occupation)
+
+#Get aic and deviance values for each imputed dataset and pool for the vocab model with covariates. 
+AIC_occupation <- data.frame(matrix(lapply(occupationResults, AIC)))
+names(AIC_occupation) <- c("AIC")
+deviance_occupation <- data.frame(matrix(lapply(occupationResults, function(x) -logLik(x)[1]*2 )))
+names(deviance_occupation) <- c("deviance")
+fit_stats_occupation <- data.frame(AIC_occupation, deviance_occupation)
+fit_stats_occupation$AIC <- as.numeric(fit_stats_occupation$AIC)
+fit_stats_occupation$deviance <- as.numeric(fit_stats_occupation$deviance)
+occupation_combined_aic = combine_imputed_descriptives(fit_stats_occupation)
+
+
+#model with income predicting education####
+
+income <- function(df) {
+  fit <- glm(success ~ sex + ethnicity + EAL + country +
+               + standardised_caregiver_vocab + oecd_income, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+incomeResults <- lapply(list(imputed_data1, imputed_data2, imputed_data3, imputed_data4, imputed_data5,
+                             imputed_data6, imputed_data7, imputed_data8, imputed_data9, imputed_data10,
+                             imputed_data11, imputed_data12, imputed_data13, imputed_data14, imputed_data15,
+                             imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20,
+                             imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25),
+                        income)
+
+#Get aic and deviance values for each imputed dataset and pool for the vocab model with covariates. 
+AIC_income <- data.frame(matrix(lapply(incomeResults, AIC)))
+names(AIC_income) <- c("AIC")
+deviance_income <- data.frame(matrix(lapply(incomeResults, function(x) -logLik(x)[1]*2 )))
+names(deviance_income) <- c("deviance")
+fit_stats_income <- data.frame(AIC_income, deviance_income)
+fit_stats_income$AIC <- as.numeric(fit_stats_income$AIC)
+fit_stats_income$deviance <- as.numeric(fit_stats_income$deviance)
+income_combined_aic = combine_imputed_descriptives(fit_stats_income)
+
+
+#model with wealth predicting education####
+wealth <- function(df) {
+  fit <- glm(success ~ sex + ethnicity + EAL + country +
+               + standardised_caregiver_vocab + wealth_quintiles, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+wealthResults <- lapply(list(imputed_data1, imputed_data2, imputed_data3, imputed_data4, imputed_data5,
+                             imputed_data6, imputed_data7, imputed_data8, imputed_data9, imputed_data10,
+                             imputed_data11, imputed_data12, imputed_data13, imputed_data14, imputed_data15,
+                             imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20,
+                             imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25),
+                        wealth)
+
+#Get aic and deviance values for each imputed dataset and pool for the vocab model with covariates. 
+AIC_wealth <- data.frame(matrix(lapply(wealthResults, AIC)))
+names(AIC_wealth) <- c("AIC")
+deviance_wealth <- data.frame(matrix(lapply(wealthResults, function(x) -logLik(x)[1]*2 )))
+names(deviance_wealth) <- c("deviance")
+fit_stats_wealth <- data.frame(AIC_wealth, deviance_wealth)
+fit_stats_wealth$AIC <- as.numeric(fit_stats_wealth$AIC)
+fit_stats_wealth$deviance <- as.numeric(fit_stats_wealth$deviance)
+wealth_combined_aic = combine_imputed_descriptives(fit_stats_wealth)
+
+
+#model with IMD predicting education ####
+imd <- function(df) {
+  fit <- glm(success ~ sex + ethnicity + EAL + country +
+               + standardised_caregiver_vocab + imd, 
+             family = binomial, weights = weight, data=df)
+  return(fit)
+}
+
+
+#put new imputed datasets into lists (i.e. ones with the latent variable in them) and apply regression model to each
+imdResults <- lapply(list(imputed_data1, imputed_data2, imputed_data3, imputed_data4, imputed_data5,
+                          imputed_data6, imputed_data7, imputed_data8, imputed_data9, imputed_data10,
+                          imputed_data11, imputed_data12, imputed_data13, imputed_data14, imputed_data15,
+                          imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20,
+                          imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25),
+                     imd)
+
+#Get aic and deviance values for each imputed dataset and pool for the vocab model with covariates. 
+AIC_imd <- data.frame(matrix(lapply(imdResults, AIC)))
+names(AIC_imd) <- c("AIC")
+deviance_imd <- data.frame(matrix(lapply(imdResults, function(x) -logLik(x)[1]*2 )))
+names(deviance_imd) <- c("deviance")
+fit_stats_imd <- data.frame(AIC_imd, deviance_imd)
+fit_stats_imd$AIC <- as.numeric(fit_stats_imd$AIC)
+fit_stats_imd$deviance <- as.numeric(fit_stats_imd$deviance)
+imd_combined_aic = combine_imputed_descriptives(fit_stats_imd)
+
+
+```
+
+format dataframes for table 
+
+```{r}
+vocab_aic_values = vocab_combined_aic[c(1,3:4), c(1)]
+composite_aic_values = composite_combined_aic[c(1,3:4), c(1)]
+nvq_aic_values = nvq_combined_aic[c(1,3:4), c(1)]
+income_aic_values = income_combined_aic[c(1,3:4), c(1)]
+occupation_aic_values = occupation_combined_aic[c(1,3:4), c(1)]
+wealth_aic_values = wealth_combined_aic[c(1,3:4), c(1)]
+imd_aic_values = imd_combined_aic[c(1,3:4), c(1)]
+
+aic_values = rbind(vocab_aic_values, composite_aic_values, nvq_aic_values, 
+                   income_aic_values, occupation_aic_values, wealth_aic_values, 
+                   imd_aic_values)
+
+aic_values <- as.data.frame(aic_values)
+names(aic_values) <- c("AIC", "lower", "upper")
+
+aic_values = round(aic_values, 2)
+
+
+aic_values$result = paste0(aic_values$AIC, "[", aic_values$lower, ";", aic_values$upper, "]")
+
+
+#add in column for delta AIC (AIC-minAIC)
+
+aic_values = aic_values %>% 
+  mutate(delta_aic = round(AIC - min(AIC),2)) 
+aic_values$delta_aic[aic_values$delta_aic == 0 ] <- c("AIC*")
+aic_values = aic_values %>%  add_column(Indicator= c("Age 5 Vocab", "Composite SEC",
+                                                     "Parent Education", "Income",
+                                                     "Occupational Status",
+                                                     "Wealth",  
+                                                     "Neighbourhood Deprivation"),.before =1)
+  
+aic_values1 <- aic_values %>% 
+  select(Indicator, result, delta_aic)
+
+
+```
+
+make table
+
+```{r}
+my_border = border= fp_border(color="black", width=1)
+
+aic_flex<- aic_values1 %>% 
+  flextable() %>% 
+
+  #add_header_row(top = TRUE, values = "Partial R2 (%)", colwidths = 5) %>% 
+ #font(fontname = "Times", part="all") %>% 
+  fontsize(size=10, part = "all") %>% 
+  align(j=1, align="left", part="all") %>% 
+  align(j=2:3, align="center", part="all") %>% 
+ color(j=1:3, color="black", part="all") %>% 
+ width(j=1, width=1.3) %>% 
+  width(j=2,  width=1) %>% 
+  width(j=3,  width=1) %>% 
+ #line_spacing(i=1:8, space=1.5) %>% 
+  border_remove() %>% 
+  hline_top(j=1:3, part="all", border=my_border) %>% 
+  hline_bottom(j=1:3,part="body",  border=my_border) %>% 
+  set_header_labels(indicator= "Indicator", result = "AIC", delta_aic = "dAIC") %>% 
+ # footnote(value=as_paragraph(c("AIC* = best model",  
+#"Values are the mean AIC values across 25 imputed datasets", 
+#"All models adjusted for sex, ethnicity and EAL.")),
+      #     ref_symbols = c(" "), inline=TRUE) %>% 
+ # fontsize(size=8, part="footer") %>% 
+  #font(fontname = "Times New Roman", part="footer") %>% 
+     print( preview = "docx") 
+
+```
