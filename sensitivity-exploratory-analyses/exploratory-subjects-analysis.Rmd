@@ -43,14 +43,41 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2022-01-04_vocabulary_education_imputedMAIN/2022-01-04_vocabulary_education_imputedMAIN.Rdata")
-
+load("~/Documents/updated MCS datasets/education-datasetsDec22/2023-01-20_vocabulary_education_imputedMAIN/2023-01-20_vocabulary_education_imputedMAIN.Rdata")
 imputed_data= mi.res
+
+#load original data to get analytical sample
+vocabulary_education<-read.csv("education_data1.csv")
+vocabulary_education[,1]<- NULL
 
 long_format_mcs <- mice::complete(imputed_data, "long", include=TRUE)
 
-exploratory = long_format_mcs %>% filter(.imp ==0 & (!is.na(age5_vocab)) | (!is.na(standardised_english)) |
-                                                             (!is.na(standardised_maths)) | (!is.na(standardised_science)))
+#combine gcse and n5 so can select analytical sample
+vocabulary_education$english_n5 = as.numeric(vocabulary_education$english_n5)
+vocabulary_education$maths_n5 = as.numeric(vocabulary_education$maths_n5)
+vocabulary_education$science_n5 = as.numeric(vocabulary_education$science_n5)
+vocabulary_education = 
+  vocabulary_education %>% mutate(english = case_when(
+    !is.na(english_gcse) ~ english_gcse,
+    is.na(english_gcse) ~ english_n5, 
+    !is.na(english_n5) ~ english_n5,
+    is.na(english_n5) ~ english_gcse)) %>% 
+  mutate(maths = 
+           case_when(!is.na(maths_gcse)~maths_gcse,
+                     is.na(maths_gcse) ~ maths_n5, 
+                     !is.na(maths_n5) ~maths_n5,
+                     is.na(maths_n5) ~ maths_gcse)) %>% 
+  mutate(science = 
+           case_when(!is.na(science_gcse)~science_gcse,
+                     is.na(science_gcse) ~ science_n5, 
+                     !is.na(science_n5) ~science_n5,
+                     is.na(science_n5) ~ science_gcse)) %>% 
+  select(-english_gcse, -english_n5, -maths_gcse, -maths_n5, -science_gcse, -science_n5)
+
+
+exploratory = vocabulary_education %>% filter(!is.na(age5_vocab) | !is.na(english) |
+                                                             !is.na(maths) | !is.na(science))
+
 exploratory_analysis = long_format_mcs[long_format_mcs$mcsid %in% exploratory$mcsid,] 
 imputed_mcs2 = as.mids(exploratory_analysis)
 
@@ -465,7 +492,7 @@ results_exploratory <- regression_resultsTable %>%
   hline_top(j = 2:10, part = "all", border = my_border) %>% 
   bold(j = 1, i = c(1,47, 49), bold = TRUE) %>% 
   italic(j = 1, i = c(1,47, 49), italic = TRUE) %>% 
-  add_header_lines(values = c("Table S9: Predicting Educational Attainment in English, Maths and Science (N=15,576)"))
+  add_header_lines(values = c("Table S9: Predicting Educational Attainment in English, Maths and Science (N=15,475)"))
  
  print(results_exploratory, preview = "docx")  
   
