@@ -1,0 +1,457 @@
+---
+title: "Adjusting for RTM"
+output:
+  html_document:
+    df_print: paged
+editor_options: 
+  chunk_output_type: console
+---
+
+Read in imputed dataset and libraries/functions
+
+
+```{r}
+
+library(mice)
+library(pander)
+library(xtable)
+library(dplyr)
+library(gt)
+library(glue)
+library(tidyverse)
+library(miceadds)
+library(swfscMisc)
+library(imputools)
+library(haven)
+library(sjmisc)
+library(Hmisc)
+library(psych)
+library(lavaan)
+library(ggplot2)
+library(ggpubr)
+library(officer)
+library(flextable)
+library(ftExtra)
+library(ggeffects)
+library(gtools)
+
+#this will take a float (e.g. a p value) and return a string with 3 digits and no leading 0
+
+bv <- function(val) {
+  return(sub("^(-?)0.", "\\1.", sprintf("%.2f", val)))
+}
+
+#if the number is less than .001, it will give <.001. 
+pv1 <- function(val) {
+  return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
+}
+
+#load("~/Documents/updated MCS datasets/education-datasetsDec22/2022-12-13_vocabulary_education_imputedMAIN/2022-12-13_vocabulary_education_imputedMAIN.Rdata")
+load("2023-01-20_vocabulary_education_imputedMAIN.Rdata")
+imputed_mcs2 = mi.res
+
+
+```
+
+
+Create SEC factor score in each imputed dataset
+```{r}
+#use composite SEC as the main moderator = run CFA to get composite factor score. 
+#create dataset of each individual imputed data
+
+#create individual imputed datasets for imputed data
+for (i in 1:25) {
+  assign(paste0("imputed_mcs2_", i), complete(imputed_mcs2, i))
+}
+
+#factor analysis to get factor score####
+#factor analysis model
+
+
+#create imputed datasets as a list - this is so can run CFA over each dataset
+imputed_datasets = list(imputed_mcs2_1, imputed_mcs2_2, imputed_mcs2_3, imputed_mcs2_4, imputed_mcs2_5, 
+                        imputed_mcs2_6, imputed_mcs2_7, imputed_mcs2_8, imputed_mcs2_9, imputed_mcs2_10, 
+                        imputed_mcs2_11, imputed_mcs2_12, imputed_mcs2_13, imputed_mcs2_14, imputed_mcs2_15,
+                        imputed_mcs2_16, imputed_mcs2_17, imputed_mcs2_18, imputed_mcs2_19, imputed_mcs2_20, 
+                        imputed_mcs2_21, imputed_mcs2_22, imputed_mcs2_23, imputed_mcs2_24, imputed_mcs2_25)
+
+#define CFA model to create SEP
+SEP_model <- 'SEP =~ highest_nvq + oecd_income + wealth_quintiles + occupational_status + imd'
+
+#run CFA across 25 imputed datasets
+cfa_imputed = function(ert){
+  fit = cfa(SEP_model, 
+            data = ert,
+            ordered = c("highest_nvq", "oecd_income","wealth_quintiles", "occupational_status", "imd"), 
+            std.lv=TRUE, 
+            estimator="WLSMV")
+  ses_latent = lavPredict(fit, type = "lv")
+}
+
+#create and add SES latent variable to each dataset
+imputed_datasets$ses_latent = lapply(imputed_datasets, cfa_imputed)
+
+#use composite SEC as the main moderator = run CFA to get composite factor score. 
+#create dataset of each individual imputed data
+
+#create individual imputed datasets for imputed data
+for (i in 1:25) {
+  assign(paste0("imputed_mcs2_", i), complete(imputed_mcs2, i))
+}
+
+
+#factor analysis to get factor score####
+#factor analysis model
+
+
+#create imputed datasets as a list - this is so can run CFA over each dataset
+imputed_datasets = list(imputed_mcs2_1, imputed_mcs2_2, imputed_mcs2_3, imputed_mcs2_4, imputed_mcs2_5, 
+                        imputed_mcs2_6, imputed_mcs2_7, imputed_mcs2_8, imputed_mcs2_9, imputed_mcs2_10, 
+                        imputed_mcs2_11, imputed_mcs2_12, imputed_mcs2_13, imputed_mcs2_14, imputed_mcs2_15,
+                        imputed_mcs2_16, imputed_mcs2_17, imputed_mcs2_18, imputed_mcs2_19, imputed_mcs2_20, 
+                        imputed_mcs2_21, imputed_mcs2_22, imputed_mcs2_23, imputed_mcs2_24, imputed_mcs2_25)
+
+#define CFA model to create SEP
+SEP_model <- 'SEP =~ highest_nvq + oecd_income + wealth_quintiles + occupational_status + imd'
+
+#run CFA across 25 imputed datasets
+cfa_imputed = function(ert){
+  fit = cfa(SEP_model, 
+            data = ert,
+            ordered = c("highest_nvq", "oecd_income","wealth_quintiles", "occupational_status", "imd"), 
+            std.lv=TRUE, 
+            estimator="WLSMV")
+  ses_latent = lavPredict(fit, type = "lv")
+}
+
+#create and add SES latent variable to each dataset
+imputed_datasets$ses_latent = lapply(imputed_datasets, cfa_imputed)
+
+# Iterate over the indices of the imputed_datasets list to extract into datasets
+for (i in 1:25) {
+  # Extract the dataset at the current index
+  dataset <- imputed_datasets[[i]]
+  
+  # Assign the dataset to the corresponding variable
+  assign(paste0("imputed_data", i), dataset)
+}
+
+#add factor score to each imputed dataset
+
+imputed_data1$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[1]], center = TRUE, scale = TRUE))
+imputed_data2$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[2]], center = TRUE, scale = TRUE))
+imputed_data3$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[3]], center = TRUE, scale = TRUE))
+imputed_data4$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[4]], center = TRUE, scale = TRUE))
+imputed_data5$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[5]], center = TRUE, scale = TRUE))
+imputed_data6$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[6]], center = TRUE, scale = TRUE))
+imputed_data7$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[7]], center = TRUE, scale = TRUE))
+imputed_data8$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[8]], center = TRUE, scale = TRUE))
+imputed_data9$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[9]], center = TRUE, scale = TRUE))
+imputed_data10$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[10]], center = TRUE, scale = TRUE))
+imputed_data11$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[11]],center = TRUE, scale = TRUE))
+imputed_data12$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[12]], center = TRUE, scale = TRUE))
+imputed_data13$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[13]], center = TRUE, scale = TRUE))
+imputed_data14$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[14]], center = TRUE, scale = TRUE))
+imputed_data15$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[15]], center = TRUE, scale = TRUE))
+imputed_data16$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[16]], center = TRUE, scale = TRUE))
+imputed_data17$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[17]], center = TRUE, scale = TRUE))
+imputed_data18$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[18]], center = TRUE, scale = TRUE))
+imputed_data19$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[19]], center = TRUE, scale = TRUE))
+imputed_data20$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[20]], center = TRUE, scale = TRUE))
+imputed_data21$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[21]], center = TRUE, scale = TRUE))
+imputed_data22$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[22]], center = TRUE, scale = TRUE))
+imputed_data23$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[23]], center = TRUE, scale = TRUE))
+imputed_data24$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[24]], center = TRUE, scale = TRUE))
+imputed_data25$ses_latent = as.numeric(scale(imputed_datasets$ses_latent[[25]], center = TRUE, scale = TRUE))
+
+
+
+
+
+# Convert factor score into quintiles
+
+#data 1
+imputed_data1$composite_quintiles = quantcut(imputed_data1$ses_latent,5)
+levels(imputed_data1$composite_quintiles)[1] = "1"
+levels(imputed_data1$composite_quintiles)[2] = "2"
+levels(imputed_data1$composite_quintiles)[3] = "3"
+levels(imputed_data1$composite_quintiles)[4] = "4"
+levels(imputed_data1$composite_quintiles)[5] = "5"
+#data2
+imputed_data2$composite_quintiles = quantcut(imputed_data2$ses_latent,5)
+levels(imputed_data2$composite_quintiles)[1] = "1"
+levels(imputed_data2$composite_quintiles)[2] = "2"
+levels(imputed_data2$composite_quintiles)[3] = "3"
+levels(imputed_data2$composite_quintiles)[4] = "4"
+levels(imputed_data2$composite_quintiles)[5] = "5"
+#data3
+imputed_data3$composite_quintiles = quantcut(imputed_data3$ses_latent,5)
+levels(imputed_data3$composite_quintiles)[1] = "1"
+levels(imputed_data3$composite_quintiles)[2] = "2"
+levels(imputed_data3$composite_quintiles)[3] = "3"
+levels(imputed_data3$composite_quintiles)[4] = "4"
+levels(imputed_data3$composite_quintiles)[5] = "5"
+#dat4
+imputed_data4$composite_quintiles = quantcut(imputed_data4$ses_latent,5)
+levels(imputed_data4$composite_quintiles)[1] = "1"
+levels(imputed_data4$composite_quintiles)[2] = "2"
+levels(imputed_data4$composite_quintiles)[3] = "3"
+levels(imputed_data4$composite_quintiles)[4] = "4"
+levels(imputed_data4$composite_quintiles)[5] = "5"
+#DATA5
+imputed_data5$composite_quintiles = quantcut(imputed_data5$ses_latent,5)
+levels(imputed_data5$composite_quintiles)[1] = "1"
+levels(imputed_data5$composite_quintiles)[2] = "2"
+levels(imputed_data5$composite_quintiles)[3] = "3"
+levels(imputed_data5$composite_quintiles)[4] = "4"
+levels(imputed_data5$composite_quintiles)[5] = "5"
+#data6
+imputed_data6$composite_quintiles = quantcut(imputed_data6$ses_latent,5)
+levels(imputed_data6$composite_quintiles)[1] = "1"
+levels(imputed_data6$composite_quintiles)[2] = "2"
+levels(imputed_data6$composite_quintiles)[3] = "3"
+levels(imputed_data6$composite_quintiles)[4] = "4"
+levels(imputed_data6$composite_quintiles)[5] = "5"
+#data7
+imputed_data7$composite_quintiles = quantcut(imputed_data7$ses_latent,5)
+levels(imputed_data7$composite_quintiles)[1] = "1"
+levels(imputed_data7$composite_quintiles)[2] = "2"
+levels(imputed_data7$composite_quintiles)[3] = "3"
+levels(imputed_data7$composite_quintiles)[4] = "4"
+levels(imputed_data7$composite_quintiles)[5] = "5"
+#data 8
+imputed_data8$composite_quintiles = quantcut(imputed_data8$ses_latent,5)
+levels(imputed_data8$composite_quintiles)[1] = "1"
+levels(imputed_data8$composite_quintiles)[2] = "2"
+levels(imputed_data8$composite_quintiles)[3] = "3"
+levels(imputed_data8$composite_quintiles)[4] = "4"
+levels(imputed_data8$composite_quintiles)[5] = "5"
+#data 9 
+imputed_data9$composite_quintiles = quantcut(imputed_data9$ses_latent,5)
+levels(imputed_data9$composite_quintiles)[1] = "1"
+levels(imputed_data9$composite_quintiles)[2] = "2"
+levels(imputed_data9$composite_quintiles)[3] = "3"
+levels(imputed_data9$composite_quintiles)[4] = "4"
+levels(imputed_data9$composite_quintiles)[5] = "5"
+#data10
+imputed_data10$composite_quintiles = quantcut(imputed_data10$ses_latent,5)
+levels(imputed_data10$composite_quintiles)[1] = "1"
+levels(imputed_data10$composite_quintiles)[2] = "2"
+levels(imputed_data10$composite_quintiles)[3] = "3"
+levels(imputed_data10$composite_quintiles)[4] = "4"
+levels(imputed_data10$composite_quintiles)[5] = "5"
+#data11
+imputed_data11$composite_quintiles = quantcut(imputed_data11$ses_latent,5)
+levels(imputed_data11$composite_quintiles)[1] = "1"
+levels(imputed_data11$composite_quintiles)[2] = "2"
+levels(imputed_data11$composite_quintiles)[3] = "3"
+levels(imputed_data11$composite_quintiles)[4] = "4"
+levels(imputed_data11$composite_quintiles)[5] = "5"
+#data12
+imputed_data12$composite_quintiles = quantcut(imputed_data12$ses_latent,5)
+levels(imputed_data12$composite_quintiles)[1] = "1"
+levels(imputed_data12$composite_quintiles)[2] = "2"
+levels(imputed_data12$composite_quintiles)[3] = "3"
+levels(imputed_data12$composite_quintiles)[4] = "4"
+levels(imputed_data12$composite_quintiles)[5] = "5"
+#data13
+imputed_data13$composite_quintiles = quantcut(imputed_data13$ses_latent,5)
+levels(imputed_data13$composite_quintiles)[1] = "1"
+levels(imputed_data13$composite_quintiles)[2] = "2"
+levels(imputed_data13$composite_quintiles)[3] = "3"
+levels(imputed_data13$composite_quintiles)[4] = "4"
+levels(imputed_data13$composite_quintiles)[5] = "5"
+#data14
+imputed_data14$composite_quintiles = quantcut(imputed_data14$ses_latent,5)
+levels(imputed_data14$composite_quintiles)[1] = "1"
+levels(imputed_data14$composite_quintiles)[2] = "2"
+levels(imputed_data14$composite_quintiles)[3] = "3"
+levels(imputed_data14$composite_quintiles)[4] = "4"
+levels(imputed_data14$composite_quintiles)[5] = "5"
+#data15
+imputed_data15$composite_quintiles = quantcut(imputed_data15$ses_latent,5)
+levels(imputed_data15$composite_quintiles)[1] = "1"
+levels(imputed_data15$composite_quintiles)[2] = "2"
+levels(imputed_data15$composite_quintiles)[3] = "3"
+levels(imputed_data15$composite_quintiles)[4] = "4"
+levels(imputed_data15$composite_quintiles)[5] = "5"
+#data16
+imputed_data16$composite_quintiles = quantcut(imputed_data16$ses_latent,5)
+levels(imputed_data16$composite_quintiles)[1] = "1"
+levels(imputed_data16$composite_quintiles)[2] = "2"
+levels(imputed_data16$composite_quintiles)[3] = "3"
+levels(imputed_data16$composite_quintiles)[4] = "4"
+levels(imputed_data16$composite_quintiles)[5] = "5"
+#data 17
+imputed_data17$composite_quintiles = quantcut(imputed_data17$ses_latent,5)
+levels(imputed_data17$composite_quintiles)[1] = "1"
+levels(imputed_data17$composite_quintiles)[2] = "2"
+levels(imputed_data17$composite_quintiles)[3] = "3"
+levels(imputed_data17$composite_quintiles)[4] = "4"
+levels(imputed_data17$composite_quintiles)[5] = "5"
+#data18
+imputed_data18$composite_quintiles = quantcut(imputed_data18$ses_latent,5)
+levels(imputed_data18$composite_quintiles)[1] = "1"
+levels(imputed_data18$composite_quintiles)[2] = "2"
+levels(imputed_data18$composite_quintiles)[3] = "3"
+levels(imputed_data18$composite_quintiles)[4] = "4"
+levels(imputed_data18$composite_quintiles)[5] = "5"
+#data 19
+imputed_data19$composite_quintiles = quantcut(imputed_data19$ses_latent,5)
+levels(imputed_data19$composite_quintiles)[1] = "1"
+levels(imputed_data19$composite_quintiles)[2] = "2"
+levels(imputed_data19$composite_quintiles)[3] = "3"
+levels(imputed_data19$composite_quintiles)[4] = "4"
+levels(imputed_data19$composite_quintiles)[5] = "5"
+#data 20
+imputed_data20$composite_quintiles = quantcut(imputed_data20$ses_latent,5)
+levels(imputed_data20$composite_quintiles)[1] = "1"
+levels(imputed_data20$composite_quintiles)[2] = "2"
+levels(imputed_data20$composite_quintiles)[3] = "3"
+levels(imputed_data20$composite_quintiles)[4] = "4"
+levels(imputed_data20$composite_quintiles)[5] = "5"
+#data 21
+imputed_data21$composite_quintiles = quantcut(imputed_data21$ses_latent,5)
+levels(imputed_data21$composite_quintiles)[1] = "1"
+levels(imputed_data21$composite_quintiles)[2] = "2"
+levels(imputed_data21$composite_quintiles)[3] = "3"
+levels(imputed_data21$composite_quintiles)[4] = "4"
+levels(imputed_data21$composite_quintiles)[5] = "5"
+#data22
+imputed_data22$composite_quintiles = quantcut(imputed_data22$ses_latent,5)
+levels(imputed_data22$composite_quintiles)[1] = "1"
+levels(imputed_data22$composite_quintiles)[2] = "2"
+levels(imputed_data22$composite_quintiles)[3] = "3"
+levels(imputed_data22$composite_quintiles)[4] = "4"
+levels(imputed_data22$composite_quintiles)[5] = "5"
+#data 23
+imputed_data23$composite_quintiles = quantcut(imputed_data23$ses_latent,5)
+levels(imputed_data23$composite_quintiles)[1] = "1"
+levels(imputed_data23$composite_quintiles)[2] = "2"
+levels(imputed_data23$composite_quintiles)[3] = "3"
+levels(imputed_data23$composite_quintiles)[4] = "4"
+levels(imputed_data23$composite_quintiles)[5] = "5"
+#data 24
+imputed_data24$composite_quintiles = quantcut(imputed_data24$ses_latent,5)
+levels(imputed_data24$composite_quintiles)[1] = "1"
+levels(imputed_data24$composite_quintiles)[2] = "2"
+levels(imputed_data24$composite_quintiles)[3] = "3"
+levels(imputed_data24$composite_quintiles)[4] = "4"
+levels(imputed_data24$composite_quintiles)[5] = "5"
+#data 25
+imputed_data25$composite_quintiles = quantcut(imputed_data25$ses_latent,5)
+levels(imputed_data25$composite_quintiles)[1] = "1"
+levels(imputed_data25$composite_quintiles)[2] = "2"
+levels(imputed_data25$composite_quintiles)[3] = "3"
+levels(imputed_data25$composite_quintiles)[4] = "4"
+levels(imputed_data25$composite_quintiles)[5] = "5"
+
+#Put imputed datasets back into a list so can apply function across the list of datasets
+imputed_datasets1 = list(imputed_data1, imputed_data2, imputed_data3, imputed_data4, imputed_data5, 
+                         imputed_data6, imputed_data7, imputed_data8, imputed_data9, imputed_data10, 
+                         imputed_data11, imputed_data12, imputed_data13, imputed_data14, imputed_data15,
+                         imputed_data16, imputed_data17, imputed_data18, imputed_data19, imputed_data20, 
+                         imputed_data21, imputed_data22, imputed_data23, imputed_data24, imputed_data25)
+
+```
+
+binary var P value adjustment 2 parallel
+
+```{r}
+
+library(parallel)
+numCores <- detectCores()
+options(warn=-1)
+RNGkind("L'Ecuyer-CMRG")
+set.seed(1895)
+
+simulateCB <- function(model,nsim){
+  preds=predict(model)
+  simvals=matrix(nrow = length(preds),ncol=0)
+  for(k in 1:nsim){
+    simvals=cbind(simvals,preds+rnorm(length(preds)))
+  }
+  return(as.data.frame(simvals))
+}
+
+binarize <- 
+  function(preds,threshold_percentile){
+cutoff=quantile(preds,1-threshold_percentile)
+return(as.numeric(preds > cutoff))
+}
+
+#loop over 25 imputed datasets
+#1. estimate actual p value by doing a model comparison of interaction term vs no interaction term
+#2. Simulation model - Simulate m datasets from the null model, each with the same number of observations n as in the observed data.
+#3. Fit original model to this null data
+#4. obtain p-values for original and simulated datasets (p values for if interaction term improves model fit)
+#5. calculate proportion of simulated p values that are smaller than or equal to actual p value - this proportion will be new p value.
+#6. this will give 25 p-values (1 per imputed dataset). average of these will be the pooled p-value. 
+
+RTM_sim <- function(dataset){  
+    # interaction_model
+  interaction_model <- glm(success ~ sex + ethnicity + EAL + country +
+                             standardised_caregiver_vocab + ses_latent * standardised_age5_vocab, 
+                           family = binomial, weights = weight, data = dataset)
+  
+  # reduced_model
+  reduced_model <- glm(success ~ sex + ethnicity + EAL + country +
+                         standardised_caregiver_vocab + ses_latent + standardised_age5_vocab, 
+                       family = binomial, weights = weight, data = dataset)
+  
+  # p_actual_model
+  p_actual_model <- format(anova(interaction_model, reduced_model, test = "Chisq")[2, 5],scientific = FALSE)
+
+#2.  
+  # N and simulation_model
+  N <- 10000 #number of simulations
+  simulation_model <- glm(success ~ sex + ethnicity + EAL + country +
+                            standardised_caregiver_vocab + ses_latent + standardised_age5_vocab, 
+                          weights = weight, family = binomial, data = dataset)
+
+
+  # Perform simulations
+  sims_cont <- simulateCB(simulation_model, nsim = N)
+#  sims=apply(sims_cont,2,binarize)
+  sims=apply(sims_cont,2, function(x) binarize(x,   threshold_percentile=mean(as.numeric(dataset$success == 1))))
+
+    p_sim <- vector()
+#3.   
+  for (j in 1:N) {
+    dataset$GCSE_binary_predicted_null <- sims[, j]
+    M3 <- glm(GCSE_binary_predicted_null ~ sex + ethnicity + EAL + country +
+                standardised_caregiver_vocab +
+                standardised_age5_vocab * ses_latent, 
+              weights = weight,
+              data = dataset, family = binomial)
+    M3_reduced <- glm(GCSE_binary_predicted_null ~ sex + ethnicity + EAL + country +
+                        standardised_caregiver_vocab +
+                        standardised_age5_vocab + ses_latent, 
+                      weights = weight,
+                      data = dataset, family = binomial)
+#4. 
+    p_sim[j] <- format(anova(M3, M3_reduced, test = "Chisq")[2, 5],   scientific = FALSE)
+  }
+#5. 
+#  p_sim_mean_vector[i] <- mean(as.numeric(p_sim))
+#  p_sim_count_vector[i] <- mean(as.numeric(p_sim <= p_actual_model))
+
+  return(c(format(p_actual_model, scientific = FALSE),mean(as.numeric(p_sim)),mean(as.numeric(p_sim <= p_actual_model))))
+
+  }
+
+p_sim_stats = mclapply(imputed_datasets1,RTM_sim,mc.cores = numCores)
+
+# Print the results
+p_sim_mean = 0
+N_datasets=25
+for (k in 1:N_datasets) {
+  p_sim_this = unlist(p_sim_stats[k])
+  cat("Dataset", k, "p_actual:", p_sim_this[1], "p_sim_mean:", p_sim_this[2], 
+      "p_sim_count:", p_sim_this[3], "\n")
+  p_sim_mean = p_sim_mean + (as.numeric(p_sim_this[3])/N_datasets)
+}
+print(p_sim_mean)
+
+```
+
