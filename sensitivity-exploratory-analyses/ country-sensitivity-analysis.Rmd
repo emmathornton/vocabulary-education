@@ -23,7 +23,7 @@ library(glue)
 library(tidyverse)
 library(miceadds)
 library(swfscMisc)
-library(imputools)
+#library(imputools)
 library(haven)
 library(sjmisc)
 library(Hmisc)
@@ -48,7 +48,7 @@ pv1 <- function(val) {
   return(paste("=", sub("^(-?)0.", "\\1.", sprintf("%.3f", val))))
 }
 
-load("~/Documents/PhD/updated MCS datasets/education-datasets/2022-01-04_vocabulary_education_imputedMAIN/2022-01-04_vocabulary_education_imputedMAIN.Rdata")
+load("~/Documents/updated MCS datasets/education-datasetsDec22/2023-01-20_vocabulary_education_imputedMAIN/2023-01-20_vocabulary_education_imputedMAIN.Rdata")
 
 imputed_mcs2 = mi.res
 ```
@@ -102,7 +102,7 @@ England only analyses
 #england####
 
 #1.binary outcome of core subjects 
-binary_unadjustedEngland = with(england_imputed, glm(benchmark_binary ~ age5_standardised,
+binary_unadjustedEngland = with(england_imputed, glm(benchmark_binary ~ standardised_age5_vocab,
                                         family = binomial,  weights = weight))
 
 binary_unadjusted_resultsEngland = round(summary(pool(binary_unadjustedEngland), conf.int = TRUE, exponentiate = TRUE),2)
@@ -113,12 +113,12 @@ binary_model1England = with(england_imputed, glm(benchmark_binary ~ sex + ethnic
 
 binary_model2England= with(england_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised, 
+                                         imd + standardised_caregiver_vocab, 
                                        family = binomial, weights = weight))
 
 binary_model3England = with(england_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised + age5_standardised, 
+                                         imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                        family = binomial, weights = weight))
 
 
@@ -148,7 +148,7 @@ D1(binary_model3England, binary_model2England)
 ```{r}
 #unadjusted relationship
 
-continuous_unadjustedEngland = with(england_imputed, lm(standardised_core_subjects ~ age5_standardised, weights = weight))
+continuous_unadjustedEngland = with(england_imputed, lm(standardised_core_subjects ~ standardised_age5_vocab, weights = weight))
 
 continuous_unadjusted_resultsEngland = round(summary(pool(continuous_unadjustedEngland), conf.int = TRUE),2)
 
@@ -159,12 +159,12 @@ continuous_model1England = with(england_imputed, lm(standardised_core_subjects ~
 
 continuous_model2England = with(england_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised, 
+                                         imd + standardised_caregiver_vocab, 
                                         weights = weight))
 
 continuous_model3England = with(england_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                          highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                         imd + caregiver_vocabStandardised + age5_standardised, 
+                                         imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                         weights = weight))
 
 continuous_model1ResultsEngland= summary(pool(continuous_model1England), conf.int = TRUE)
@@ -278,9 +278,9 @@ binary_model2ResultsEngland = binary_model2ResultsEngland %>% select(term, model
 binary_model3ResultsEngland = binary_model3ResultsEngland %>% select(term, model3_OR)
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-binary_model1ResultsEngland = binary_model1ResultsEngland %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised")
-binary_model2ResultsEngland = binary_model2ResultsEngland %>% add_row(term = "age5_standardised")
+binary_model1ResultsEngland = binary_model1ResultsEngland %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab")
+binary_model2ResultsEngland = binary_model2ResultsEngland %>% add_row(term = "standardised_age5_vocab")
 
 binary_outcomeResultsEngland = cbind(binary_model1ResultsEngland, binary_model2ResultsEngland, binary_model3ResultsEngland)
 binary_outcomeResultsEngland = binary_outcomeResultsEngland %>% select(!3 & !5)
@@ -306,10 +306,10 @@ continuous_model3ResultsEngland = continuous_model3ResultsEngland %>% select(ter
 
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-continuous_model1ResultsEngland = continuous_model1ResultsEngland %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised") %>% 
+continuous_model1ResultsEngland = continuous_model1ResultsEngland %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model1_b =paste0(cont_model1R2England$est,"[", cont_model1R2England$`lo 95`, ";", cont_model1R2England$`hi 95`,"]"), .after = 39)
-continuous_model2ResultsEngland = continuous_model2ResultsEngland %>% add_row(term = "age5_standardised") %>% 
+continuous_model2ResultsEngland = continuous_model2ResultsEngland %>% add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model2_b =paste0(cont_model2R2England$est,"[", cont_model2R2England$`lo 95`, ";", cont_model2R2England$`hi 95`,"]"), .after = 39)
 continuous_model3ResultsEngland = continuous_model3ResultsEngland %>% 
   add_row(term = "R2", model3_b =paste0(cont_model3R2England$est,"[", cont_model3R2England$`lo 95`, ";", cont_model3R2England$`hi 95`,"]"), .after = 39)
@@ -390,7 +390,7 @@ Wales only analyses
 #wales####
 
 #1.binary outcome of core subjects 
-binary_unadjustedWales = with(wales_imputed, glm(benchmark_binary ~ age5_standardised,
+binary_unadjustedWales = with(wales_imputed, glm(benchmark_binary ~ standardised_age5_vocab,
                                                      family = binomial,  weights = weight))
 
 binary_unadjusted_resultsWales = round(summary(pool(binary_unadjustedWales), conf.int = TRUE, exponentiate = TRUE),2)
@@ -401,12 +401,12 @@ binary_model1Wales = with(wales_imputed, glm(benchmark_binary ~ sex + ethnicity_
 
 binary_model2Wales= with(wales_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                                  imd + caregiver_vocabStandardised, 
+                                                  imd + standardised_caregiver_vocab, 
                                                 family = binomial, weights = weight))
 
 binary_model3Wales = with(wales_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                                    highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                                   imd + caregiver_vocabStandardised + age5_standardised, 
+                                                   imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                                  family = binomial, weights = weight))
 
 
@@ -436,7 +436,7 @@ D1(binary_model3Wales, binary_model2Wales)
 ```{r}
 #unadjusted relationship
 
-continuous_unadjustedWales = with(wales_imputed, lm(standardised_core_subjects ~ age5_standardised, weights = weight))
+continuous_unadjustedWales = with(wales_imputed, lm(standardised_core_subjects ~ standardised_age5_vocab, weights = weight))
 
 continuous_unadjusted_resultsWales = round(summary(pool(continuous_unadjustedWales), conf.int = TRUE),2)
 
@@ -447,12 +447,12 @@ continuous_model1Wales = with(wales_imputed, lm(standardised_core_subjects ~ sex
 
 continuous_model2Wales = with(wales_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                                       highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                                      imd + caregiver_vocabStandardised, 
+                                                      imd + standardised_caregiver_vocab, 
                                                     weights = weight))
 
 continuous_model3Wales = with(wales_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                                       highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                                      imd + caregiver_vocabStandardised + age5_standardised, 
+                                                      imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                                     weights = weight))
 
 continuous_model1ResultsWales= summary(pool(continuous_model1Wales), conf.int = TRUE)
@@ -566,9 +566,9 @@ binary_model2ResultsWales = binary_model2ResultsWales %>% select(term, model2_OR
 binary_model3ResultsWales = binary_model3ResultsWales %>% select(term, model3_OR)
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-binary_model1ResultsWales = binary_model1ResultsWales %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised")
-binary_model2ResultsWales = binary_model2ResultsWales %>% add_row(term = "age5_standardised")
+binary_model1ResultsWales = binary_model1ResultsWales %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab")
+binary_model2ResultsWales = binary_model2ResultsWales %>% add_row(term = "standardised_age5_vocab")
 
 binary_outcomeResultsWales = cbind(binary_model1ResultsWales, binary_model2ResultsWales, binary_model3ResultsWales)
 binary_outcomeResultsWales = binary_outcomeResultsWales %>% select(!3 & !5)
@@ -593,10 +593,10 @@ continuous_model3ResultsWales = continuous_model3ResultsWales %>% select(term, m
 
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-continuous_model1ResultsWales = continuous_model1ResultsWales %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised") %>% 
+continuous_model1ResultsWales = continuous_model1ResultsWales %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model1_b =paste0(cont_model1R2Wales$est,"[", cont_model1R2Wales$`lo 95`, ";", cont_model1R2Wales$`hi 95`,"]"), .after = 32)
-continuous_model2ResultsWales = continuous_model2ResultsWales %>% add_row(term = "age5_standardised") %>% 
+continuous_model2ResultsWales = continuous_model2ResultsWales %>% add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model2_b =paste0(cont_model2R2Wales$est,"[", cont_model2R2Wales$`lo 95`, ";", cont_model2R2Wales$`hi 95`,"]"), .after = 32)
 continuous_model3ResultsWales = continuous_model3ResultsWales %>% 
   add_row(term = "R2", model3_b =paste0(cont_model3R2Wales$est,"[", cont_model3R2Wales$`lo 95`, ";", cont_model3R2Wales$`hi 95`,"]"), .after = 32)
@@ -678,7 +678,7 @@ Scotland only analyses
 #scotland####
 
 #1.binary outcome of core subjects 
-binary_unadjustedScotland = with(scotland_imputed, glm(benchmark_binary ~ age5_standardised,
+binary_unadjustedScotland = with(scotland_imputed, glm(benchmark_binary ~ standardised_age5_vocab,
                                                  family = binomial,  weights = weight))
 
 binary_unadjusted_resultsScotland = round(summary(pool(binary_unadjustedScotland), conf.int = TRUE, exponentiate = TRUE),2)
@@ -689,12 +689,12 @@ binary_model1Scotland = with(scotland_imputed, glm(benchmark_binary ~ sex + ethn
 
 binary_model2Scotland= with(scotland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                               highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                              imd + caregiver_vocabStandardised, 
+                                              imd + standardised_caregiver_vocab, 
                                             family = binomial, weights = weight))
 
 binary_model3Scotland = with(scotland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                                highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                               imd + caregiver_vocabStandardised + age5_standardised, 
+                                               imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                              family = binomial, weights = weight))
 
 
@@ -724,7 +724,7 @@ D1(binary_model3Scotland, binary_model2Scotland)
 ```{r}
 #unadjusted relationship
 
-continuous_unadjustedScotland = with(scotland_imputed, lm(standardised_core_subjects ~ age5_standardised, weights = weight))
+continuous_unadjustedScotland = with(scotland_imputed, lm(standardised_core_subjects ~ standardised_age5_vocab, weights = weight))
 
 continuous_unadjusted_resultsScotland = round(summary(pool(continuous_unadjustedScotland), conf.int = TRUE),2)
 
@@ -735,12 +735,12 @@ continuous_model1Scotland = with(scotland_imputed, lm(standardised_core_subjects
 
 continuous_model2Scotland = with(scotland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                                  imd + caregiver_vocabStandardised, 
+                                                  imd + standardised_caregiver_vocab, 
                                                 weights = weight))
 
 continuous_model3Scotland = with(scotland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                                  imd + caregiver_vocabStandardised + age5_standardised, 
+                                                  imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                                 weights = weight))
 
 continuous_model1ResultsScotland= summary(pool(continuous_model1Scotland), conf.int = TRUE)
@@ -854,9 +854,9 @@ binary_model2ResultsScotland = binary_model2ResultsScotland %>% select(term, mod
 binary_model3ResultsScotland = binary_model3ResultsScotland %>% select(term, model3_OR)
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-binary_model1ResultsScotland = binary_model1ResultsScotland %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised")
-binary_model2ResultsScotland = binary_model2ResultsScotland %>% add_row(term = "age5_standardised")
+binary_model1ResultsScotland = binary_model1ResultsScotland %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab")
+binary_model2ResultsScotland = binary_model2ResultsScotland %>% add_row(term = "standardised_age5_vocab")
 
 binary_outcomeResultsScotland = cbind(binary_model1ResultsScotland, binary_model2ResultsScotland, binary_model3ResultsScotland)
 binary_outcomeResultsScotland = binary_outcomeResultsScotland %>% select(!3 & !5)
@@ -881,10 +881,10 @@ continuous_model3ResultsScotland = continuous_model3ResultsScotland %>% select(t
 
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-continuous_model1ResultsScotland = continuous_model1ResultsScotland %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised") %>% 
+continuous_model1ResultsScotland = continuous_model1ResultsScotland %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model1_b =paste0(cont_model1R2Scotland$est,"[", cont_model1R2Scotland$`lo 95`, ";", cont_model1R2Scotland$`hi 95`,"]"), .after = 32)
-continuous_model2ResultsScotland = continuous_model2ResultsScotland %>% add_row(term = "age5_standardised") %>% 
+continuous_model2ResultsScotland = continuous_model2ResultsScotland %>% add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model2_b =paste0(cont_model2R2Scotland$est,"[", cont_model2R2Scotland$`lo 95`, ";", cont_model2R2Scotland$`hi 95`,"]"), .after = 32)
 continuous_model3ResultsScotland = continuous_model3ResultsScotland %>% 
   add_row(term = "R2", model3_b =paste0(cont_model3R2Scotland$est,"[", cont_model3R2Scotland$`lo 95`, ";", cont_model3R2Scotland$`hi 95`,"]"), .after = 32)
@@ -968,7 +968,7 @@ Ni only analyses
 #northern_ireland####
 
 #1.binary outcome of core subjects 
-binary_unadjustedNi = with(northern_ireland_imputed, glm(benchmark_binary ~ age5_standardised,
+binary_unadjustedNi = with(northern_ireland_imputed, glm(benchmark_binary ~ standardised_age5_vocab,
                                                  family = binomial,  weights = weight))
 
 binary_unadjusted_resultsNi = round(summary(pool(binary_unadjustedNi), conf.int = TRUE, exponentiate = TRUE),2)
@@ -979,12 +979,12 @@ binary_model1Ni = with(northern_ireland_imputed, glm(benchmark_binary ~ sex + et
 
 binary_model2Ni= with(northern_ireland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                               highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                              imd + caregiver_vocabStandardised, 
+                                              imd + standardised_caregiver_vocab, 
                                             family = binomial, weights = weight))
 
 binary_model3Ni = with(northern_ireland_imputed, glm(benchmark_binary ~ sex + ethnicity_binary + EAL_binary +
                                                highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                               imd + caregiver_vocabStandardised + age5_standardised, 
+                                               imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                              family = binomial, weights = weight))
 
 
@@ -1014,7 +1014,7 @@ D1(binary_model3Ni, binary_model2Ni)
 ```{r}
 #unadjusted relationship
 
-continuous_unadjustedNi = with(northern_ireland_imputed, lm(standardised_core_subjects ~ age5_standardised, weights = weight))
+continuous_unadjustedNi = with(northern_ireland_imputed, lm(standardised_core_subjects ~ standardised_age5_vocab, weights = weight))
 
 continuous_unadjusted_resultsNi = round(summary(pool(continuous_unadjustedNi), conf.int = TRUE),2)
 
@@ -1025,12 +1025,12 @@ continuous_model1Ni = with(northern_ireland_imputed, lm(standardised_core_subjec
 
 continuous_model2Ni = with(northern_ireland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary+ 
                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                                  imd + caregiver_vocabStandardised, 
+                                                  imd + standardised_caregiver_vocab, 
                                                 weights = weight))
 
 continuous_model3Ni = with(northern_ireland_imputed, lm(standardised_core_subjects ~ sex + ethnicity_binary + EAL_binary + 
                                                   highest_nvq + oecd_income + occupational_status + wealth_quintiles + 
-                                                  imd + caregiver_vocabStandardised + age5_standardised, 
+                                                  imd + standardised_caregiver_vocab + standardised_age5_vocab, 
                                                 weights = weight))
 
 continuous_model1ResultsNi= summary(pool(continuous_model1Ni), conf.int = TRUE)
@@ -1144,9 +1144,9 @@ binary_model2ResultsNi = binary_model2ResultsNi %>% select(term, model2_OR)
 binary_model3ResultsNi = binary_model3ResultsNi %>% select(term, model3_OR)
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-binary_model1ResultsNi = binary_model1ResultsNi %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised")
-binary_model2ResultsNi = binary_model2ResultsNi %>% add_row(term = "age5_standardised")
+binary_model1ResultsNi = binary_model1ResultsNi %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab")
+binary_model2ResultsNi = binary_model2ResultsNi %>% add_row(term = "standardised_age5_vocab")
 
 binary_outcomeResultsNi = cbind(binary_model1ResultsNi, binary_model2ResultsNi, binary_model3ResultsNi)
 binary_outcomeResultsNi = binary_outcomeResultsNi %>% select(!3 & !5)
@@ -1171,10 +1171,10 @@ continuous_model3ResultsNi = continuous_model3ResultsNi %>% select(term, model3_
 
 
 #add column to make it the same length for all 3 models - needs to be as long as model 3 
-continuous_model1ResultsNi = continuous_model1ResultsNi %>% add_row(term = "caregiver_vocabStandardised") %>% 
-  add_row(term = "age5_standardised") %>% 
+continuous_model1ResultsNi = continuous_model1ResultsNi %>% add_row(term = "standardised_caregiver_vocab") %>% 
+  add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model1_b =paste0(cont_model1R2Ni$est,"[", cont_model1R2Ni$`lo 95`, ";", cont_model1R2Ni$`hi 95`,"]"), .after = 32)
-continuous_model2ResultsNi = continuous_model2ResultsNi %>% add_row(term = "age5_standardised") %>% 
+continuous_model2ResultsNi = continuous_model2ResultsNi %>% add_row(term = "standardised_age5_vocab") %>% 
   add_row(term = "R2", model2_b =paste0(cont_model2R2Ni$est,"[", cont_model2R2Ni$`lo 95`, ";", cont_model2R2Ni$`hi 95`,"]"), .after = 32)
 continuous_model3ResultsNi = continuous_model3ResultsNi %>% 
   add_row(term = "R2", model3_b =paste0(cont_model3R2Ni$est,"[", cont_model3R2Ni$`lo 95`, ";", cont_model3R2Ni$`hi 95`,"]"), .after = 32)
@@ -1572,7 +1572,7 @@ levels(imputed_dataEngland25$composite_quintiles)[5] = "5"
 
 compositeModerator_england <- function(df) {
   fit <- glm(success ~ sex + ethnicity_binary + EAL_binary + 
-               + caregiver_vocabStandardised + ses_latent*age5_standardised, 
+               + standardised_caregiver_vocab + ses_latent*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -1589,7 +1589,7 @@ moderator_compositeEngland <- summary(pool(as.mira(compositeModerator_england)),
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 nocompositeModerator_england<- function(df) {
   fit1 <- glm(success ~ sex + ethnicity_binary + EAL_binary + 
-                + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
+                + standardised_caregiver_vocab +  ses_latent + standardised_age5_vocab , 
               family = binomial, weights = weight, data=df)
   return(fit1)
 }
@@ -1929,7 +1929,7 @@ levels(imputed_dataWales25$composite_quintiles)[5] = "5"
 
 compositeModerator_wales <- function(df) {
   fit <- glm(success ~ sex + ethnicity_binary + EAL_binary + 
-               + caregiver_vocabStandardised + ses_latent*age5_standardised, 
+               + standardised_caregiver_vocab + ses_latent*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -1946,7 +1946,7 @@ moderator_compositeWales <- summary(pool(as.mira(compositeModerator_wales)),conf
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 nocompositeModerator_wales<- function(df) {
   fit1 <- glm(success ~ sex + ethnicity_binary + EAL_binary + 
-                + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
+                + standardised_caregiver_vocab +  ses_latent + standardised_age5_vocab , 
               family = binomial, weights = weight, data=df)
   return(fit1)
 }
@@ -2285,7 +2285,7 @@ levels(imputed_dataScotland25$composite_quintiles)[5] = "5"
 
 compositeModerator_scotland <- function(df) {
   fit <- glm(success ~ sex + ethnicity_binary + EAL_binary +  
-               + caregiver_vocabStandardised + ses_latent*age5_standardised, 
+               + standardised_caregiver_vocab + ses_latent*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -2302,7 +2302,7 @@ moderator_compositeScotland <- summary(pool(as.mira(compositeModerator_scotland)
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 nocompositeModerator_scotland<- function(df) {
   fit1 <- glm(success ~ sex + ethnicity_binary + EAL_binary +
-                + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
+                + standardised_caregiver_vocab +  ses_latent + standardised_age5_vocab , 
               family = binomial, weights = weight, data=df)
   return(fit1)
 }
@@ -2642,7 +2642,7 @@ levels(imputed_dataNI25$composite_quintiles)[5] = "5"
 
 compositeModerator_northern_ireland <- function(df) {
   fit <- glm(success ~ sex + ethnicity_binary + EAL_binary +
-               + caregiver_vocabStandardised + ses_latent*age5_standardised, 
+               + standardised_caregiver_vocab + ses_latent*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -2659,7 +2659,7 @@ moderator_compositeNI <- summary(pool(as.mira(compositeModerator_northern_irelan
 #model without interaction term - for model comparison -will be run over 25 imputed datasets in the list
 nocompositeModerator_northern_ireland<- function(df) {
   fit1 <- glm(success ~ sex + ethnicity_binary + EAL_binary + 
-                + caregiver_vocabStandardised +  ses_latent + age5_standardised , 
+                + standardised_caregiver_vocab +  ses_latent + standardised_age5_vocab , 
               family = binomial, weights = weight, data=df)
   return(fit1)
 }
@@ -2689,7 +2689,7 @@ plot for moderation analysis in each country
 
 compositeQuintiles_englandModel <- function(df) {
   fit <- glm(success ~ sex + ethnicity + EAL + 
-               + caregiver_vocabStandardised + composite_quintiles*age5_standardised, 
+               + standardised_caregiver_vocab + composite_quintiles*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -2702,13 +2702,13 @@ compositeQuintiles_england <- lapply(list(imputed_dataEngland1, imputed_dataEngl
                                   imputed_dataEngland21, imputed_dataEngland22, imputed_dataEngland23, imputed_dataEngland24, imputed_dataEngland25),
                              compositeQuintiles_englandModel)
 #get probabilities
-composite_quintiles_england = lapply(compositeQuintiles_england, ggpredict, terms = c("age5_standardised", "composite_quintiles"))
+composite_quintiles_england = lapply(compositeQuintiles_england, ggpredict, terms = c("standardised_age5_vocab", "composite_quintiles"))
 
 
 #wales
 compositeQuintiles_walesModel <- function(df) {
   fit <- glm(success ~ sex + ethnicity_binary + EAL + 
-               + caregiver_vocabStandardised + composite_quintiles*age5_standardised, 
+               + standardised_caregiver_vocab + composite_quintiles*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -2721,12 +2721,12 @@ compositeQuintiles_wales <- lapply(list(imputed_dataWales1, imputed_dataWales2, 
                                           imputed_dataWales21, imputed_dataWales22, imputed_dataWales23, imputed_dataWales24, imputed_dataWales25),
                                      compositeQuintiles_walesModel)
 #get probabilities
-composite_quintiles_wales = lapply(compositeQuintiles_wales, ggpredict, terms = c("age5_standardised", "composite_quintiles"))
+composite_quintiles_wales = lapply(compositeQuintiles_wales, ggpredict, terms = c("standardised_age5_vocab", "composite_quintiles"))
 
 #scotland
 compositeQuintiles_scotlandModel <- function(df) {
   fit <- glm(success ~ sex + ethnicity_binary + EAL + 
-               + caregiver_vocabStandardised + composite_quintiles*age5_standardised, 
+               + standardised_caregiver_vocab + composite_quintiles*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -2739,13 +2739,13 @@ compositeQuintiles_scotland <- lapply(list(imputed_dataScotland1, imputed_dataSc
                                           imputed_dataScotland21, imputed_dataScotland22, imputed_dataScotland23, imputed_dataScotland24, imputed_dataScotland25),
                                      compositeQuintiles_scotlandModel)
 #get probabilities
-composite_quintiles_scotland = lapply(compositeQuintiles_scotland, ggpredict, terms = c("age5_standardised", "composite_quintiles"))
+composite_quintiles_scotland = lapply(compositeQuintiles_scotland, ggpredict, terms = c("standardised_age5_vocab", "composite_quintiles"))
 
 
 #northern ireland
 compositeQuintiles_northern_irelandModel <- function(df) {
   fit <- glm(success ~ sex + ethnicity_binary + EAL +
-               + caregiver_vocabStandardised + composite_quintiles*age5_standardised, 
+               + standardised_caregiver_vocab + composite_quintiles*standardised_age5_vocab, 
              family = binomial, weights = weight, data=df)
   return(fit)
 }
@@ -2759,25 +2759,25 @@ compositeQuintiles_northern_ireland <- lapply(list(imputed_dataNI1, imputed_data
                              compositeQuintiles_northern_irelandModel)
 
 #get predicted probabilities
-composite_quintiles_northern_ireland = lapply(compositeQuintiles_northern_ireland, ggpredict, terms = c("age5_standardised", "composite_quintiles"))
+composite_quintiles_northern_ireland = lapply(compositeQuintiles_northern_ireland, ggpredict, terms = c("standardised_age5_vocab", "composite_quintiles"))
 
 #plot 
  
-england_plot = plot(pool_predictions(composite_quintiles_england), ci = FALSE,
+england_plot = plot(pool_predictions(composite_quintiles_england), show_ci = FALSE,
                                limits = c(0, 1), 
                                breaks = seq(0, 1, by = 0.1)) +
-  scale_colour_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
-                      name="SEC Composite", 
-                      breaks=c("1", "2", "3", "4", "5"),
-                      labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile"))+
-  scale_fill_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
-                    name="SEC Composite",
-                    breaks=c("1", "2", "3", "4", "5"),
-                    labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
+  scale_colour_manual(values=c("#f17300", "#f6a55c", "#9dbcd7", "#6596c1","#054a91"), 
+                      name="SEC factor score", 
+                      breaks=c("5", "4","3", "2", "1"),
+                      labels=c("Highest Quintile", "Quintile 4", "Quintile 3", "Quintile 2", "Lowest Quintile"))+
+  scale_fill_manual(values=c("#f17300", "#f6a55c", "#9dbcd7", "#6596c1","#054a91"), 
+                    name="SEC factor score",
+                    breaks=c("5", "4","3", "2", "1"),
+                      labels=c("Highest Quintile", "Quintile 4", "Quintile 3", "Quintile 2", "Lowest Quintile"))+
   labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
        y = "Achieving ≥ Grade 4 on Core Subjects ", 
        title = "England") +
-  labs(colour = "SEC Composite") +
+  labs(colour = "SEC factor score") +
   theme_classic() +
   scale_x_continuous(breaks=seq(-3, 4, .5)) +
   theme(panel.grid.major.y = element_line(colour = "gainsboro", size = 0.2),
@@ -2785,21 +2785,21 @@ england_plot = plot(pool_predictions(composite_quintiles_england), ci = FALSE,
         panel.grid.minor.y = element_blank(), 
         plot.title = element_text(size = 12, face = "italic", family = "Times")) 
 
-wales_plot = plot(pool_predictions(composite_quintiles_wales), ci = FALSE,
+wales_plot = plot(pool_predictions(composite_quintiles_wales), show_ci = FALSE,
                                limits = c(0, 1), 
                                breaks = seq(0, 1, by = 0.1)) +
-  scale_colour_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
-                      name="SEC Composite", 
-                      breaks=c("1", "2", "3", "4", "5"),
-                      labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile"))+
-  scale_fill_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
-                    name="SEC Composite",
-                    breaks=c("1", "2", "3", "4", "5"),
-                    labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
+  scale_colour_manual(values=c("#f17300", "#f6a55c", "#9dbcd7", "#6596c1","#054a91"), 
+                      name="SEC factor score", 
+                      breaks=c("5", "4","3", "2", "1"),
+                      labels=c("Highest Quintile", "Quintile 4", "Quintile 3", "Quintile 2", "Lowest Quintile"))+
+  scale_fill_manual(values=c("#f17300", "#f6a55c", "#9dbcd7", "#6596c1","#054a91"), 
+                    name="SEC factor score",
+                    breaks=c("5", "4","3", "2", "1"),
+                      labels=c("Highest Quintile", "Quintile 4", "Quintile 3", "Quintile 2", "Lowest Quintile"))+
   labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
        y = "Achieving ≥ Grade 4 on Core Subjects ", 
        title = "Wales") +
-  labs(colour = "SEC Composite") +
+  labs(colour = "SEC factor score") +
   theme_classic() +
   scale_x_continuous(breaks=seq(-3, 4, .5)) +
   theme(panel.grid.major.y = element_line(colour = "gainsboro", size = 0.2),
@@ -2807,21 +2807,21 @@ wales_plot = plot(pool_predictions(composite_quintiles_wales), ci = FALSE,
         panel.grid.minor.y = element_blank(), 
         plot.title = element_text(size = 12, face = "italic", family = "Times")) 
 
-scotland_plot = plot(pool_predictions(composite_quintiles_scotland), ci = FALSE,
+scotland_plot = plot(pool_predictions(composite_quintiles_scotland), show_ci = FALSE,
                                limits = c(0, 1), 
                                breaks = seq(0, 1, by = 0.1)) +
-  scale_colour_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
-                      name="SEC Composite", 
-                      breaks=c("1", "2", "3", "4", "5"),
-                      labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile"))+
-  scale_fill_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
-                    name="SEC Composite",
-                    breaks=c("1", "2", "3", "4", "5"),
-                    labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
+  scale_colour_manual(values=c("#f17300", "#f6a55c", "#9dbcd7", "#6596c1","#054a91"), 
+                       name="SEC factor score", 
+                      breaks=c("5", "4","3", "2", "1"),
+                      labels=c("Highest Quintile", "Quintile 4", "Quintile 3", "Quintile 2", "Lowest Quintile"))+
+  scale_fill_manual(values=c("#f17300", "#f6a55c", "#9dbcd7", "#6596c1","#054a91"), 
+                     name="SEC factor score", 
+                      breaks=c("5", "4","3", "2", "1"),
+                      labels=c("Highest Quintile", "Quintile 4", "Quintile 3", "Quintile 2", "Lowest Quintile"))+
   labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
        y = "Achieving ≥ Grade 4 on Core Subjects ", 
        title = "Scotland") +
-  labs(colour = "SEC Composite") +
+  labs(colour = "SEC factor score") +
   theme_classic() +
   scale_x_continuous(breaks=seq(-3, 4, .5)) +
   theme(panel.grid.major.y = element_line(colour = "gainsboro", size = 0.2),
@@ -2830,21 +2830,21 @@ scotland_plot = plot(pool_predictions(composite_quintiles_scotland), ci = FALSE,
         plot.title = element_text(size = 12, face = "italic", family = "Times")) 
 
 
-NI_plot = plot(pool_predictions(composite_quintiles_northern_ireland), ci = FALSE,
+NI_plot = plot(pool_predictions(composite_quintiles_northern_ireland), show_ci = FALSE,
                                limits = c(0, 1), 
                                breaks = seq(0, 1, by = 0.1)) +
-  scale_colour_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
-                      name="SEC Composite", 
-                      breaks=c("1", "2", "3", "4", "5"),
-                      labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile"))+
-  scale_fill_manual(values=c("#054a91", "#6596c1","#9dbcd7" , "#f6a55c", "#f17300"), 
-                    name="SEC Composite",
-                    breaks=c("1", "2", "3", "4", "5"),
-                    labels=c("Lowest Quintile", "Quintile 2", "Quintile 3", "Quintile 4", "Highest Quintile")) +
+  scale_colour_manual(values=c("#f17300", "#f6a55c", "#9dbcd7", "#6596c1","#054a91"), 
+                      name="SEC factor score", 
+                      breaks=c("5", "4","3", "2", "1"),
+                      labels=c("Highest Quintile", "Quintile 4", "Quintile 3", "Quintile 2", "Lowest Quintile"))+
+  scale_fill_manual(values=c("#f17300", "#f6a55c", "#9dbcd7", "#6596c1","#054a91"), 
+                     name="SEC factor score", 
+                      breaks=c("5", "4","3", "2", "1"),
+                      labels=c("Highest Quintile", "Quintile 4", "Quintile 3", "Quintile 2", "Lowest Quintile"))+
   labs(x = "Age 5 Vocabulary Score \n (Standardised)", 
        y = "Achieving ≥ Grade 4 on Core Subjects ", 
        title = "Northern Ireland") +
-  labs(colour = "SEC Composite") +
+  labs(colour = "SEC factor score") +
   theme_classic() +
   scale_x_continuous(breaks=seq(-3, 4, .5)) +
   theme(panel.grid.major.y = element_line(colour = "gainsboro", size = 0.2),
@@ -2855,12 +2855,12 @@ NI_plot = plot(pool_predictions(composite_quintiles_northern_ireland), ci = FALS
 plots = ggarrange(england_plot, wales_plot, scotland_plot, NI_plot, 
                   ncol =2, nrow=2,  align = c( "hv"))
 
-plots = annotate_figure(plots, top = text_grob("Figure S2: Predicted Probabilities of Achieving the Benchmark Threshold for Vocabulary Moderated by SEC in each country", 
+plots = annotate_figure(plots, top = text_grob("Figure S3: Predicted probabilities of achieving benchmark qualifications for vocabulary moderated by SEC in each country", 
                                                       color = "black", face = "italic", size = 20, family = "Times"))
 
 plots = plots + labs(caption ="*Predicted probabilities when categorical potential confounders (sex, ethnicity and EAL status set to reference levels and mean caregiver vocabulary score.") +
   theme(plot.caption = element_text(size = 14, face = "italic", family = "Times"))
 
-ggsave("country-interaction-plots.png", plots, width=15, height=10, units= "in" ,dpi=300)
+ggsave("country-interaction-plots.png", plots, width=17, height=10, units= "in" ,dpi=300)
 ```
 
