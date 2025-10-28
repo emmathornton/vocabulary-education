@@ -80,8 +80,8 @@ dat = data %>%
          "vocab" = age5_vocab,
          "f1" = highest_nvq, 
          "f2" = oecd_income,
-         "f3" = occupational_status, 
-         "f4" = wealth_quintiles, 
+         "f3" = wealth_quintiles, 
+         "f4" = occupational_status, 
          "f5" = imd) 
 
 
@@ -110,8 +110,8 @@ sem_binary =  mplusObject(
     vocab !age 5 vocab
     f1 !parent education
     f2 !income
-    f3 !occupational status
-    f4 !wealth
+    f3 !wealth
+    f4 !occupational status
     f5; !imd
   categorical = bin_y f1 f2 f3 f4 f5;",
           
@@ -199,8 +199,8 @@ sem_cont =  mplusObject(
     vocab !age 5 vocab
     f1 !parent education
     f2 !income
-    f3 !occupational status
-    f4 !wealth
+    f3 !wealth 
+    f4 !occupational status
     f5; !imd
   categorical = f1 f2 f3 f4 f5;",
   
